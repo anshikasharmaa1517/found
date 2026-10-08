@@ -1,0 +1,16 @@
+{
+  "app": "python app.py",
+  "context": {
+    "env": "dev",
+    "envs": {
+      "dev": {
+        "deletion_protection": false,
+        "web_origins": ["http://localhost:5173"]
+      },
+      "demo": {
+        "deletion_protection": true,
+        "web_origins": ["http://localhost:5173"]
+      }
+    }
+  }
+}
