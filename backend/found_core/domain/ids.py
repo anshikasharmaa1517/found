@@ -27,3 +27,9 @@ def source_id(incident_id: str, name_norm: str) -> str:
     """Deterministic, so one organization name maps to one source per incident."""
     digest = hashlib.sha256(f"{incident_id}|{name_norm}".encode()).hexdigest()
     return f"src_{digest[:16]}"
+
+
+def review_item_id(item_type: str, ref_id: str) -> str:
+    """Deterministic, so a retried writer finds the item it already created."""
+    digest = hashlib.sha256(f"{item_type}|{ref_id}".encode()).hexdigest()
+    return f"rev_{digest[:16]}"

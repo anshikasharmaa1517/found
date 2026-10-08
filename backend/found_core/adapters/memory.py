@@ -12,6 +12,7 @@ from found_core.domain.models import (
     Claim,
     IdemMarker,
     Organization,
+    ReviewItem,
     Source,
     Subject,
     Subscription,
@@ -36,6 +37,7 @@ class InMemoryFoundRepository:
         self.name_tokens: dict[str, set[str]] = {}
         self.subscriptions: dict[str, Subscription] = {}
         self.alerts: dict[tuple[str, str], Alert] = {}
+        self.review_items: dict[str, ReviewItem] = {}
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
@@ -94,6 +96,10 @@ class InMemoryFoundRepository:
     def list_sources(self, incident_id: str) -> list[Source]:
         return [s for s in self.sources.values() if s.incident_id == incident_id]
 
+    def get_source(self, incident_id: str, source_id: str) -> Source | None:
+        source = self.sources.get(source_id)
+        return source if source and source.incident_id == incident_id else None
+
     def publish_claim_tx(self, plan: PublishPlan) -> Claim:
         key = (plan.marker.org_id, plan.marker.external_reference)
         with self._lock:
@@ -127,3 +133,22 @@ class InMemoryFoundRepository:
 
     def add_subscription(self, subscription: Subscription) -> None:
         self.subscriptions[subscription.id] = subscription
+
+    def list_subscriptions(self, subject_id: str) -> list[Subscription]:
+        found = [s for s in self.subscriptions.values() if s.subject_id == subject_id]
+        return sorted(found, key=lambda s: s.id)
+
+    def put_alert_if_absent(self, alert: Alert) -> bool:
+        key = (alert.subscription_id, alert.claim_id)
+        with self._lock:
+            if key in self.alerts:
+                return False
+            self.alerts[key] = alert
+            return True
+
+    def put_review_item_if_absent(self, item: ReviewItem) -> bool:
+        with self._lock:
+            if item.id in self.review_items:
+                return False
+            self.review_items[item.id] = item
+            return True

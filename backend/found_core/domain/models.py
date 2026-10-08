@@ -8,6 +8,8 @@ from found_core.domain.enums import (
     DeliveryStatus,
     ExtractionMethod,
     Relation,
+    ReviewItemType,
+    ReviewStatus,
     Severity,
     SourceType,
     SubjectType,
@@ -81,6 +83,7 @@ class Subscription(_Entity):
     channel_inapp: bool = True
     channel_sms: bool = False
     channel_email: bool = False
+    active: bool = True
 
 
 class Alert(_Entity):
@@ -97,6 +100,19 @@ class Alert(_Entity):
     message: str
     delivery_status: DeliveryStatus
     held_reason: str | None = None
+    created_at: datetime
+
+
+class ReviewItem(_Entity):
+    """One per (item_type, ref_id); the id is derived from both."""
+
+    id: str
+    incident_id: str
+    item_type: ReviewItemType
+    ref_id: str
+    subject_id: str | None = None
+    status: ReviewStatus = ReviewStatus.OPEN
+    priority: int
     created_at: datetime
 
 

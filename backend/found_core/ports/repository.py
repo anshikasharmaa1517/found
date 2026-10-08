@@ -5,11 +5,14 @@ from typing import Protocol
 
 from found_core.domain.enums import SubjectType
 from found_core.domain.models import (
+    Alert,
     Claim,
     IdemMarker,
     Organization,
+    ReviewItem,
     Source,
     Subject,
+    Subscription,
 )
 
 
@@ -66,6 +69,7 @@ class FoundRepository(Protocol):
 
     def list_sources(self, incident_id: str) -> list[Source]: ...
 
+    def get_source(self, incident_id: str, source_id: str) -> Source | None: ...
 
     def publish_claim_tx(self, plan: PublishPlan) -> Claim: ...
 
@@ -74,3 +78,13 @@ class FoundRepository(Protocol):
     def list_subject_claims(
         self, subject_id: str, before_seq: int | None = None
     ) -> list[Claim]: ...
+
+    def list_subscriptions(self, subject_id: str) -> list[Subscription]: ...
+
+    def put_alert_if_absent(self, alert: Alert) -> bool:
+        """Store the alert unless one exists for its (subscription, claim). True if stored."""
+        ...
+
+    def put_review_item_if_absent(self, item: ReviewItem) -> bool:
+        """Store the item unless one exists for its (type, ref). True if stored."""
+        ...

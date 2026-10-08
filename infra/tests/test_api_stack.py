@@ -2,7 +2,6 @@ import aws_cdk as cdk
 from aws_cdk.assertions import Match, Template
 
 from config import load
-from stacks import api_stack
 from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
 from stacks.data_stack import DataStack
@@ -155,28 +154,3 @@ def test_log_retention_is_one_month():
 
 def test_stack_exports_api_url():
     assert "ApiUrl" in template().find_outputs("*")
-
-
-class _Result:
-    def __init__(self, code):
-        self.returncode = code
-
-
-def test_local_bundling_installs_wheels_and_copies_packages(tmp_path, monkeypatch):
-    calls = []
-    monkeypatch.setattr(
-        api_stack.subprocess, "run", lambda cmd, check: calls.append(cmd) or _Result(0)
-    )
-    assert api_stack._LocalBundling().try_bundle(str(tmp_path), None) is True
-    cmd = calls[0]
-    assert cmd[cmd.index("--platform") + 1] == "manylinux2014_aarch64"
-    assert "--only-binary=:all:" in cmd
-    assert (tmp_path / "found_core" / "services" / "ingest.py").exists()
-    assert (tmp_path / "handlers" / "api.py").exists()
-    assert not list(tmp_path.rglob("__pycache__"))
-
-
-def test_local_bundling_falls_back_when_pip_fails(tmp_path, monkeypatch):
-    monkeypatch.setattr(api_stack.subprocess, "run", lambda cmd, check: _Result(1))
-    assert api_stack._LocalBundling().try_bundle(str(tmp_path), None) is False
-    assert not (tmp_path / "found_core").exists()

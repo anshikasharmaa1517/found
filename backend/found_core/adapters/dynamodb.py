@@ -16,6 +16,7 @@ from found_core.domain.models import (
     Claim,
     IdemMarker,
     Organization,
+    ReviewItem,
     Source,
     Subject,
     Subscription,
@@ -76,6 +77,10 @@ def subscription_key(subject_id: str, subscription_id: str) -> dict[str, str]:
 
 def alert_key(subscription_id: str, claim_id: str) -> dict[str, str]:
     return {"PK": f"SUB#{subscription_id}", "SK": f"ALR#{claim_id}"}
+
+
+def review_item_key(incident_id: str, review_id: str) -> dict[str, str]:
+    return {"PK": f"INC#{incident_id}", "SK": f"REV#{review_id}"}
 
 
 def marker_key(org_id: str, external_reference: str) -> dict[str, str]:
@@ -175,6 +180,18 @@ def alert_item(alert: Alert) -> dict[str, Any]:
         "GSI3PK": f"ALERT#{alert.id}",
         "GSI3SK": "META",
         "entity_type": "ALERT",
+        "schema_version": SCHEMA_VERSION,
+        **attrs,
+    }
+
+
+def review_item_item(item: ReviewItem) -> dict[str, Any]:
+    attrs = _attrs(item)
+    return {
+        **review_item_key(item.incident_id, item.id),
+        "GSI2PK": f"REVQ#{item.incident_id}#{item.status}",
+        "GSI2SK": f"{item.priority}#{attrs['created_at']}#{item.id}",
+        "entity_type": "REVIEW_ITEM",
         "schema_version": SCHEMA_VERSION,
         **attrs,
     }
@@ -301,6 +318,10 @@ class DynamoFoundRepository:
         )
         return [Source.model_validate(_fields(i)) for i in items]
 
+    def get_source(self, incident_id: str, source_id: str) -> Source | None:
+        item = self._get(source_key(incident_id, source_id))
+        return Source.model_validate(_fields(item)) if item else None
+
     def publish_claim_tx(self, plan: PublishPlan) -> Claim:
         claim = plan.claim
         subject = plan.subject
@@ -385,6 +406,20 @@ class DynamoFoundRepository:
 
     def _get(self, key: dict[str, str]) -> dict[str, Any] | None:
         return self._table.get_item(Key=key, ConsistentRead=True).get("Item")
+
+    def list_subscriptions(self, subject_id: str) -> list[Subscription]:
+        items = self._query(
+            KeyConditionExpression=Key("PK").eq(f"SUBJ#{subject_id}")
+            & Key("SK").begins_with("SUB#"),
+            ConsistentRead=True,
+        )
+        return [Subscription.model_validate(_fields(i)) for i in items]
+
+    def put_alert_if_absent(self, alert: Alert) -> bool:
+        return self._put_if_absent(alert_item(alert))
+
+    def put_review_item_if_absent(self, item: ReviewItem) -> bool:
+        return self._put_if_absent(review_item_item(item))
 
     def _put_if_absent(self, item: dict[str, Any]) -> bool:
         try:

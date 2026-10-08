@@ -138,3 +138,72 @@ def test_event_names_match_backend():
 
 def test_stack_exports_bus_and_dlq():
     assert {"EventBusName", "PipeDlqUrl"} <= set(template().find_outputs("*"))
+
+
+def test_watcher_function_settings():
+    template().has_resource_properties(
+        "AWS::Lambda::Function",
+        {
+            "FunctionName": "found-dev-watcher",
+            "Handler": "handlers.watcher.handler",
+            "Runtime": "python3.12",
+            "Architectures": ["arm64"],
+            "TracingConfig": {"Mode": "Active"},
+            "Environment": {"Variables": Match.object_like({"TABLE_NAME": Match.any_value()})},
+            "DeadLetterConfig": {"TargetArn": Match.any_value()},
+        },
+    )
+
+
+def test_watcher_function_retries_twice_within_an_hour():
+    template().has_resource_properties(
+        "AWS::Lambda::EventInvokeConfig",
+        {"MaximumRetryAttempts": 2, "MaximumEventAgeInSeconds": 3600},
+    )
+
+
+def test_claim_inserted_rule_targets_watcher_with_retries_and_dlq():
+    t = template()
+    rules = t.find_resources(
+        "AWS::Events::Rule", {"Properties": {"Name": "found-dev-claim-inserted"}}
+    )
+    (rule,) = rules.values()
+    props = rule["Properties"]
+    assert props["EventPattern"] == {
+        "source": ["found.ddb"],
+        "detail-type": ["found.ddb.change"],
+        "detail": {
+            "eventName": ["INSERT"],
+            "dynamodb": {"NewImage": {"entity_type": {"S": ["CLAIM"]}}},
+        },
+    }
+    (target,) = props["Targets"]
+    assert target["RetryPolicy"] == {"MaximumRetryAttempts": 5, "MaximumEventAgeInSeconds": 3600}
+    assert "WatcherDlq" in json.dumps(target["DeadLetterConfig"])
+    assert "WatcherFunction" in json.dumps(target["Arn"])
+    assert "Bus" in json.dumps(props["EventBusName"])
+
+
+def test_watcher_dlq_accepts_failed_rule_deliveries():
+    t = template()
+    t.has_resource_properties("AWS::SQS::Queue", {"QueueName": "found-dev-watcher-dlq"})
+    policies = t.find_resources("AWS::SQS::QueuePolicy")
+    statements = [
+        s for p in policies.values() for s in p["Properties"]["PolicyDocument"]["Statement"]
+    ]
+    assert any(
+        s.get("Principal") == {"Service": "events.amazonaws.com"}
+        and s["Action"] == "sqs:SendMessage"
+        for s in statements
+    )
+
+
+def test_watcher_can_query_and_write_the_table():
+    t = template()
+    actions = {
+        a
+        for p in t.find_resources("AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+        for a in (s["Action"] if isinstance(s["Action"], list) else [s["Action"]])
+    }
+    assert {"dynamodb:Query", "dynamodb:PutItem", "dynamodb:GetItem"} <= actions

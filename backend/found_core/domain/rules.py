@@ -15,6 +15,7 @@ from found_core.domain.enums import (
     STATUS_TYPES,
     DeliveryStatus,
     Relation,
+    ReviewItemType,
     Severity,
     SubjectType,
 )
@@ -107,6 +108,13 @@ def delivery_for(claim_type: str, subscription: Subscription) -> tuple[DeliveryS
     if not (subscription.channel_sms or subscription.channel_email):
         return DeliveryStatus.NOT_REQUIRED, None
     return DeliveryStatus.PENDING, None
+
+
+# 1 is the most urgent. A family may be waiting on a held sensitive alert.
+REVIEW_PRIORITY: dict[ReviewItemType, int] = {
+    ReviewItemType.HELD_ALERT: 1,
+    ReviewItemType.CONFLICT: 2,
+}
 
 
 def alert_message(kind: str, subject_name: str, source_name: str, claim: Claim) -> str:

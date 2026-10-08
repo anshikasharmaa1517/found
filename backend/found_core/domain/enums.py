@@ -43,6 +43,19 @@ class DeliveryStatus(StrEnum):
     FAILED = "FAILED"
 
 
+class ReviewItemType(StrEnum):
+    CONFLICT = "conflict"
+    IDENTITY = "identity"
+    INTAKE = "intake"
+    FINDING = "finding"
+    HELD_ALERT = "held_alert"
+
+
+class ReviewStatus(StrEnum):
+    OPEN = "OPEN"
+    DONE = "DONE"
+
+
 class ExtractionMethod(StrEnum):
     STRUCTURED_FORM = "structured_form"
     INTAKE_CONFIRMED = "textract+bedrock, human-confirmed"

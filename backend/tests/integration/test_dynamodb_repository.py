@@ -3,15 +3,18 @@ from datetime import UTC, datetime
 import pytest
 from boto3.dynamodb.conditions import Key
 
-from found_core.adapters.dynamodb import organization_item
+from found_core.adapters.dynamodb import organization_item, subscription_item
 from found_core.domain.commands import PublishCommand
 from found_core.domain.errors import ReferenceConflict
 from found_core.domain.models import (
+    Alert,
     Claim,
     IdemMarker,
     Organization,
+    ReviewItem,
     Source,
     Subject,
+    Subscription,
 )
 from found_core.ports.repository import (
     IdempotencyConflict,
@@ -318,3 +321,68 @@ def test_get_subjects_batches_past_the_key_limit(service, repo):
         service, *[f"Person {chr(97 + i // 26)}{chr(97 + i % 26)}" for i in range(105)]
     )
     assert len(repo.get_subjects(list(ids.values()))) == 105
+
+
+def test_get_source_is_scoped_to_incident(repo):
+    repo.ensure_source(SOURCE)
+    assert repo.get_source("inc_1", "src_police") == SOURCE
+    assert repo.get_source("inc_2", "src_police") is None
+
+
+def test_list_subscriptions_reads_only_the_subjects_followers(repo, table):
+    subs = [
+        Subscription(id="sub_1", subject_id="per_1", user_id="u1", channel_sms=True),
+        Subscription(id="sub_2", subject_id="per_1", user_id="u2", active=False),
+        Subscription(id="sub_3", subject_id="per_2", user_id="u3"),
+    ]
+    for sub in subs:
+        table.put_item(Item=subscription_item(sub))
+    repo.ensure_source(SOURCE)
+    repo.publish_claim_tx(plan())
+    assert repo.list_subscriptions("per_1") == subs[:2]
+    assert len(repo.list_subject_claims("per_1")) == 1
+
+
+def alert(alert_id="alr_1", subscription_id="sub_1"):
+    return Alert(
+        id=alert_id,
+        incident_id="inc_1",
+        subject_id="per_1",
+        subscription_id=subscription_id,
+        claim_id="clm_1",
+        user_id="u1",
+        relation="FIRST",
+        severity="info",
+        message="First report.",
+        delivery_status="PENDING",
+        created_at=datetime(2026, 10, 5, 10, 15, tzinfo=UTC),
+    )
+
+
+def test_alert_is_stored_once_per_subscription_and_claim(repo, table):
+    assert repo.put_alert_if_absent(alert()) is True
+    assert repo.put_alert_if_absent(alert(alert_id="alr_2")) is False
+    assert repo.put_alert_if_absent(alert(alert_id="alr_3", subscription_id="sub_2")) is True
+    item = table.get_item(Key={"PK": "SUB#sub_1", "SK": "ALR#clm_1"})["Item"]
+    assert item["id"] == "alr_1" and item["entity_type"] == "ALERT"
+    assert item["GSI1PK"] == "USER#u1"
+    assert item["GSI1SK"] == "ALR#2026-10-05T10:15:00Z#alr_1"
+    assert item["GSI3PK"] == "ALERT#alr_1"
+
+
+def test_review_item_is_stored_once_and_queued_by_priority(repo, table):
+    item = ReviewItem(
+        id="rev_1",
+        incident_id="inc_1",
+        item_type="conflict",
+        ref_id="clm_1",
+        subject_id="per_1",
+        priority=2,
+        created_at=datetime(2026, 10, 5, 10, 15, tzinfo=UTC),
+    )
+    assert repo.put_review_item_if_absent(item) is True
+    assert repo.put_review_item_if_absent(item) is False
+    stored = table.get_item(Key={"PK": "INC#inc_1", "SK": "REV#rev_1"})["Item"]
+    assert stored["entity_type"] == "REVIEW_ITEM" and stored["status"] == "OPEN"
+    assert stored["GSI2PK"] == "REVQ#inc_1#OPEN"
+    assert stored["GSI2SK"] == "2#2026-10-05T10:15:00Z#rev_1"
