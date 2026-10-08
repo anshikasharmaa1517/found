@@ -13,3 +13,5 @@ cdk.out/
 .env
 .env.*
 .DS_Store
+# Local eval output; the baseline is committed when a model is chosen.
+agent/evals/last_report.json
