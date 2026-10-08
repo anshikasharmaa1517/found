@@ -8,6 +8,7 @@ from found_core.adapters.cognito_jwt import CognitoTokenVerifier
 from found_core.domain.cursor import CursorCodec
 from found_core.ports.repository import FoundRepository
 from found_core.services.ingest import IngestService
+from found_core.services.map import MapService
 from found_core.services.people import PeopleService
 from found_core.services.realtime import ConnectionService, PushService
 from found_core.services.reports import ReportService
@@ -83,3 +84,8 @@ def token_verifier() -> CognitoTokenVerifier:
     return CognitoTokenVerifier(
         os.environ["AWS_REGION"], os.environ["USER_POOL_ID"], os.environ["USER_POOL_CLIENT_ID"]
     )
+
+
+@cache
+def map_service() -> MapService:
+    return MapService(repository())

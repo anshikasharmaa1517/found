@@ -35,6 +35,22 @@ class NewSubject(BaseModel):
     notes: str | None = Field(default=None, max_length=500)
 
 
+class ReportedLocation(BaseModel):
+    """A place as the report names it. Coordinates are optional but come as a pair."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    name: str = Field(min_length=1, max_length=120)
+    lat: float | None = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
+    lon: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def _pair(self) -> "ReportedLocation":
+        if (self.lat is None) != (self.lon is None):
+            raise ValueError("lat and lon must be given together")
+        return self
+
+
 class SubjectRef(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -70,6 +86,7 @@ class PublishCommand(BaseModel):
     original_text: str = Field(min_length=1, max_length=4000)
     external_reference: str
     reported_at: str | None = None
+    location: ReportedLocation | None = None
     extraction_method: ExtractionMethod = ExtractionMethod.STRUCTURED_FORM
 
     @model_validator(mode="after")
@@ -94,6 +111,12 @@ class PublishCommand(BaseModel):
             "original_text": self.original_text,
             "reported_at": self.reported_at,
             "extraction_method": self.extraction_method.value,
+            # Only present when given, so reports stored before locations keep their hash.
+            **(
+                {"location": self.location.model_dump(mode="json")}
+                if self.location is not None
+                else {}
+            ),
         }
 
     @classmethod

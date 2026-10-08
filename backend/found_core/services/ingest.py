@@ -14,8 +14,8 @@ from found_core.domain.errors import (
     ValidationFailed,
 )
 from found_core.domain.hashing import payload_hash
-from found_core.domain.ids import new_id, source_id
-from found_core.domain.models import Claim, IdemMarker, Source, Subject
+from found_core.domain.ids import location_id, new_id, source_id
+from found_core.domain.models import Claim, IdemMarker, Location, Source, Subject
 from found_core.domain.normalize import detect_mentions, normalize_text
 from found_core.ports.clock import Clock, SystemClock
 from found_core.ports.repository import (
@@ -64,6 +64,9 @@ class IngestService:
         mentions = detect_mentions(
             cmd.original_text, self._repo.list_sources(cmd.incident_id), exclude_id=source.id
         )
+        location = (
+            self._repo.ensure_location(self._location_for(cmd)) if cmd.location else None
+        )
         claim_id = self._new_id("clm")
         new_subject_id = (
             self._new_id(SUBJECT_ID_PREFIX[cmd.subject.type]) if cmd.subject.new else None
@@ -89,6 +92,7 @@ class IngestService:
                 extraction_method=cmd.extraction_method,
                 payload_hash=digest,
                 mentioned_source_ids=tuple(m.id for m in mentions),
+                location_id=location.id if location else None,
                 created_by=cmd.actor,
             )
             plan = PublishPlan(
@@ -136,6 +140,20 @@ class IngestService:
             name_norm=name_norm,
             source_type=cmd.org_type,
             organization_id=cmd.org_id,
+        )
+
+    @staticmethod
+    def _location_for(cmd: PublishCommand) -> Location:
+        assert cmd.location is not None
+        name_norm = normalize_text(cmd.location.name)
+        lat, lon = cmd.location.lat, cmd.location.lon
+        return Location(
+            id=location_id(cmd.incident_id, name_norm, lat, lon),
+            incident_id=cmd.incident_id,
+            name=cmd.location.name,
+            name_norm=name_norm,
+            lat=lat,
+            lon=lon,
         )
 
     def _resolve_subject(

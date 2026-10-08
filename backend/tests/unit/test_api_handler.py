@@ -8,7 +8,9 @@ from found_core import container
 from found_core.adapters.memory import InMemoryFoundRepository
 from found_core.domain.cursor import CursorCodec
 from found_core.domain.models import Alert, Organization
+from found_core.domain.places import CAVEAT
 from found_core.services.ingest import IngestService
+from found_core.services.map import MapService
 from found_core.services.people import PeopleService
 from found_core.services.reports import ReportService
 from found_core.services.subscriptions import SubscriptionService
@@ -88,6 +90,8 @@ def repo(monkeypatch):
     monkeypatch.setattr(container, "people_service", lambda: people)
     subs = SubscriptionService(r, CursorCodec(b"k" * 32), clock=FixedClock())
     monkeypatch.setattr(container, "subscription_service", lambda: subs)
+    maps = MapService(r, clock=FixedClock())
+    monkeypatch.setattr(container, "map_service", lambda: maps)
     return r
 
 
@@ -388,3 +392,40 @@ def test_alert_feed_view(repo):
 def test_alert_feed_bad_cursor_is_400(repo):
     status, body, _ = get("/v1/me/alerts", {"cursor": "abc.def"}, claims=FAMILY_CLAIMS)
     assert status == 400 and body["error"]["code"] == "BAD_REQUEST"
+
+
+def test_publish_with_location_and_read_the_map(repo):
+    located = {**BODY, "location": {"name": "Old Bridge", "lat": 30.7268, "lon": 78.4354}}
+    status, body, _ = publish(located)
+    assert status == 201 and body["claim"]["location_id"].startswith("loc_")
+    location_id = body["claim"]["location_id"]
+    publish({**BODY, "external_reference": "CH-9"})
+
+    status, body, _ = get("/v1/incidents/inc_1/map")
+    assert status == 200
+    assert body == {
+        "places": [
+            {
+                "location_id": location_id,
+                "name": "Old Bridge",
+                "lat": 30.7268,
+                "lon": 78.4354,
+                "reports": 1,
+                "by_status": {"MISSING": 1, "FOUND_SAFE": 0, "NEEDS_REVIEW": 0, "OTHER": 0},
+            }
+        ],
+        "located_reports": 1,
+        "unlocated_reports": 1,
+        "caveat": CAVEAT,
+        "updated_at": "2026-10-05T10:15:00Z",
+    }
+
+
+def test_map_of_unknown_incident_is_404(repo):
+    status, _, _ = get("/v1/incidents/inc_x/map")
+    assert status == 404
+
+
+def test_location_with_half_a_coordinate_is_422(repo):
+    status, body, _ = publish({**BODY, "location": {"name": "Old Bridge", "lat": 30.7}})
+    assert status == 422 and body["error"]["code"] == "VALIDATION_FAILED"

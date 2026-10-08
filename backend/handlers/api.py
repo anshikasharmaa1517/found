@@ -65,6 +65,7 @@ def claim_view(claim: Claim, source_name: str, source_type: str) -> dict[str, An
         "ingested_at": data["ingested_at"],
         "extraction_method": data["extraction_method"],
         "mentioned_source_ids": data["mentioned_source_ids"],
+        "location_id": data["location_id"],
         "payload_hash": data["payload_hash"],
     }
 
@@ -214,6 +215,32 @@ def get_timeline(person_id: str) -> Response:
             "identity": [],
             "entries": [entry_view(profile, e) for e in timeline.entries],
             "next_cursor": timeline.next_cursor,
+        },
+    )
+
+
+@app.get("/v1/incidents/<incident_id>/map")
+def incident_map(incident_id: str) -> Response:
+    result = container.map_service().incident_map(_caller(), incident_id)
+    counts = result.counts
+    return _json(
+        HTTPStatus.OK,
+        {
+            "places": [
+                {
+                    "location_id": p.location.id,
+                    "name": p.location.name,
+                    "lat": p.location.lat,
+                    "lon": p.location.lon,
+                    "reports": p.reports,
+                    "by_status": p.by_status,
+                }
+                for p in counts.places
+            ],
+            "located_reports": counts.located_reports,
+            "unlocated_reports": counts.unlocated_reports,
+            "caveat": counts.caveat,
+            "updated_at": result.updated_at.isoformat().replace("+00:00", "Z"),
         },
     )
 

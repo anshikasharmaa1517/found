@@ -16,6 +16,7 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    Location,
     Organization,
     ReviewItem,
     Source,
@@ -56,6 +57,10 @@ def organization_key(incident_id: str, org_id: str) -> dict[str, str]:
 
 def source_key(incident_id: str, source_id: str) -> dict[str, str]:
     return {"PK": f"INC#{incident_id}", "SK": f"SRC#{source_id}"}
+
+
+def location_key(incident_id: str, loc_id: str) -> dict[str, str]:
+    return {"PK": f"INC#{incident_id}", "SK": f"LOC#{loc_id}"}
 
 
 def subject_key(subject_id: str) -> dict[str, str]:
@@ -127,6 +132,20 @@ def source_item(source: Source) -> dict[str, Any]:
         "entity_type": "SOURCE",
         "schema_version": SCHEMA_VERSION,
         **_attrs(source),
+    }
+
+
+def location_item(location: Location) -> dict[str, Any]:
+    attrs = _attrs(location)
+    # DynamoDB stores numbers as Decimal; str() keeps the value exactly as given.
+    for axis in ("lat", "lon"):
+        if axis in attrs:
+            attrs[axis] = Decimal(str(attrs[axis]))
+    return {
+        **location_key(location.incident_id, location.id),
+        "entity_type": "LOCATION",
+        "schema_version": SCHEMA_VERSION,
+        **attrs,
     }
 
 
@@ -352,6 +371,27 @@ class DynamoFoundRepository:
     def get_source(self, incident_id: str, source_id: str) -> Source | None:
         item = self._get(source_key(incident_id, source_id))
         return Source.model_validate(_fields(item)) if item else None
+
+    def ensure_location(self, location: Location) -> Location:
+        if self._put_if_absent(location_item(location)):
+            return location
+        existing = self._get(location_key(location.incident_id, location.id))
+        if existing is None:  # pragma: no cover - deleted between calls, only on reset
+            raise RuntimeError("location vanished after conditional put")
+        return Location.model_validate(_fields(existing))
+
+    def list_locations(self, incident_id: str) -> list[Location]:
+        items = self._query(
+            KeyConditionExpression=Key("PK").eq(f"INC#{incident_id}")
+            & Key("SK").begins_with("LOC#")
+        )
+        return [Location.model_validate(_fields(i)) for i in items]
+
+    def list_incident_claims(self, incident_id: str) -> list[Claim]:
+        items = self._query(
+            IndexName="GSI1", KeyConditionExpression=Key("GSI1PK").eq(f"INC#{incident_id}#CLAIM")
+        )
+        return [Claim.model_validate(_fields(i)) for i in items]
 
     def publish_claim_tx(self, plan: PublishPlan) -> Claim:
         claim = plan.claim

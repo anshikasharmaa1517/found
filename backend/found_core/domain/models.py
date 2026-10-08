@@ -40,6 +40,17 @@ class Source(_Entity):
     organization_id: str | None = None
 
 
+class Location(_Entity):
+    """A reported place. Same incident, name and rounded coordinates give the same id."""
+
+    id: str
+    incident_id: str
+    name: str
+    name_norm: str
+    lat: float | None = None
+    lon: float | None = None
+
+
 class Subject(_Entity):
     """A person, place or other thing that claims are about. Deliberately has no status."""
 
@@ -73,6 +84,7 @@ class Claim(_Entity):
     extraction_method: ExtractionMethod
     payload_hash: str
     mentioned_source_ids: tuple[str, ...] = ()
+    location_id: str | None = None
     created_by: str
 
 

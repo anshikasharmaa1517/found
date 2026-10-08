@@ -12,6 +12,7 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    Location,
     Organization,
     ReviewItem,
     Source,
@@ -40,6 +41,7 @@ class InMemoryFoundRepository:
         self.alerts: dict[tuple[str, str], Alert] = {}
         self.review_items: dict[str, ReviewItem] = {}
         self.connections: dict[str, Connection] = {}
+        self.locations: dict[str, Location] = {}
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
@@ -211,3 +213,14 @@ class InMemoryFoundRepository:
     def list_user_connections(self, user_id: str) -> list[Connection]:
         found = [c for c in self.connections.values() if c.user_id == user_id]
         return sorted(found, key=lambda c: (c.connected_at, c.id))
+
+    def ensure_location(self, location: Location) -> Location:
+        with self._lock:
+            return self.locations.setdefault(location.id, location)
+
+    def list_locations(self, incident_id: str) -> list[Location]:
+        return [loc for loc in self.locations.values() if loc.incident_id == incident_id]
+
+    def list_incident_claims(self, incident_id: str) -> list[Claim]:
+        found = [c for c in self.claims.values() if c.incident_id == incident_id]
+        return sorted(found, key=lambda c: (c.ingested_at, c.id))

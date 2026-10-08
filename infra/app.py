@@ -9,6 +9,7 @@ from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
 from stacks.data_stack import DataStack
 from stacks.events_stack import EventsStack
+from stacks.maps_stack import MapsStack
 from stacks.realtime_stack import RealtimeStack
 
 
@@ -39,6 +40,8 @@ def build(app: cdk.App) -> None:
         web_client=auth.web_client,
         env=env,
     )
+
+    MapsStack(app, f"Found-{cfg.name}-Maps", cfg=cfg, env=env)
 
     cdk.Tags.of(app).add("project", "found")
     cdk.Tags.of(app).add("env", cfg.name)

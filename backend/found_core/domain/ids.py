@@ -39,3 +39,10 @@ def subscription_id(subject_id: str, user_id: str) -> str:
     """Deterministic, so one user has at most one subscription per subject."""
     digest = hashlib.sha256(f"{subject_id}|{user_id}".encode()).hexdigest()
     return f"sub_{digest[:16]}"
+
+
+def location_id(incident_id: str, name_norm: str, lat: float | None, lon: float | None) -> str:
+    """Deterministic: coordinates are rounded to about 10 m, so repeats share one place."""
+    where = "-|-" if lat is None or lon is None else f"{lat:.4f}|{lon:.4f}"
+    digest = hashlib.sha256(f"{incident_id}|{name_norm}|{where}".encode()).hexdigest()
+    return f"loc_{digest[:16]}"

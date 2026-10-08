@@ -11,6 +11,7 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    Location,
     Organization,
     ReviewItem,
     Source,
@@ -462,3 +463,31 @@ def test_connections_round_trip_with_ttl_and_lookups(repo, table):
     repo.delete_connection("c1")
     assert repo.get_connection("c1") is None
     assert repo.list_incident_connections("inc_1") == []
+
+
+def test_locations_keep_exact_coordinates(repo, table):
+    place = Location(
+        id="loc_1", incident_id="inc_1", name="Old Bridge", name_norm="old bridge",
+        lat=30.7268, lon=78.4354,
+    )  # fmt: skip
+    named = Location(
+        id="loc_2", incident_id="inc_1", name="Upper Village", name_norm="upper village"
+    )
+    assert repo.ensure_location(place) == place
+    assert repo.ensure_location(place.model_copy(update={"name": "Other"})) == place
+    repo.ensure_location(named)
+    item = table.get_item(Key={"PK": "INC#inc_1", "SK": "LOC#loc_1"})["Item"]
+    assert item["entity_type"] == "LOCATION"
+    assert sorted(repo.list_locations("inc_1"), key=lambda loc: loc.id) == [place, named]
+    assert repo.list_locations("inc_2") == []
+
+
+def test_list_incident_claims_reads_every_claim_of_the_incident(service, repo):
+    first = service.publish(cmd(ref="R1")).claim
+    second = service.publish(
+        cmd(ref="R2", location={"name": "Old Bridge", "lat": 30.7268, "lon": 78.4354})
+    ).claim
+    found = repo.list_incident_claims("inc_1")
+    assert {c.id for c in found} == {first.id, second.id}
+    assert next(c for c in found if c.id == second.id).location_id == second.location_id
+    assert repo.list_incident_claims("inc_2") == []

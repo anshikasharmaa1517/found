@@ -9,6 +9,7 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    Location,
     Organization,
     ReviewItem,
     Source,
@@ -115,3 +116,9 @@ class FoundRepository(Protocol):
     def list_incident_connections(self, incident_id: str) -> list[Connection]: ...
 
     def list_user_connections(self, user_id: str) -> list[Connection]: ...
+
+    def ensure_location(self, location: Location) -> Location: ...
+
+    def list_locations(self, incident_id: str) -> list[Location]: ...
+
+    def list_incident_claims(self, incident_id: str) -> list[Claim]: ...

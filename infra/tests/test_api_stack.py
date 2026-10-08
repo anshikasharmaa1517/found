@@ -67,6 +67,7 @@ def test_signed_in_routes_require_jwt():
         "GET /v1/incidents/{incident_id}/people",
         "GET /v1/people/{person_id}",
         "GET /v1/people/{person_id}/timeline",
+        "GET /v1/incidents/{incident_id}/map",
         "POST /v1/people/{person_id}/subscriptions",
         "DELETE /v1/subscriptions/{subscription_id}",
         "GET /v1/me/subscriptions",
