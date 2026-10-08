@@ -370,3 +370,96 @@ blockquote {
   color: var(--accent);
   border-color: var(--accent);
 }
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem 0.25rem;
+  margin: 0 0 1.25rem;
+  background: var(--surface);
+}
+
+legend {
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+textarea {
+  font: inherit;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  margin-bottom: 0;
+}
+
+.field select {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.field .hint,
+.field-error {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}
+
+.field-error {
+  color: var(--danger);
+}
+
+[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.choice-row input,
+label.inline input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.report label.inline {
+  margin-bottom: 1rem;
+}
+
+.picker {
+  border-style: dashed;
+}
+
+.picked {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.choices {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.choices li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0;
+}

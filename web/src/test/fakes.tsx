@@ -64,14 +64,21 @@ export interface Call {
   query: Query;
 }
 
+export interface Post {
+  path: string;
+  body: unknown;
+}
+
 /**
  * Answers requests by path and records every call. A handler may throw, for example an
  * ApiError, to stand in for an error response.
  */
 export function routedApi(
   routes: Record<string, (query: Query) => unknown>,
+  posts: Record<string, (body: unknown) => unknown> = {},
 ) {
   const calls: Call[] = [];
+  const sent: Post[] = [];
   const api: ApiClient = {
     get: async <T,>(path: string, query: Query = {}) => {
       calls.push({ path, query });
@@ -79,10 +86,15 @@ export function routedApi(
       if (!handler) throw new ApiError(404, "NOT_FOUND", "Not found.");
       return handler(query) as T;
     },
-    post: async <T,>() => ({}) as T,
+    post: async <T,>(path: string, body: unknown = {}) => {
+      sent.push({ path, body });
+      const handler = posts[path];
+      if (!handler) throw new ApiError(404, "NOT_FOUND", "Not found.");
+      return handler(body) as T;
+    },
     del: async () => undefined,
   };
-  return { api, calls };
+  return { api, calls, sent };
 }
 
 export function renderApp(

@@ -11,6 +11,7 @@ import { AppShell } from "./components/AppShell";
 import { HomePage } from "./pages/HomePage";
 import { PeoplePage } from "./pages/PeoplePage";
 import { PersonPage } from "./pages/PersonPage";
+import { ReportPage } from "./pages/ReportPage";
 import { SignInPage } from "./pages/SignInPage";
 
 function NotFound() {
@@ -44,6 +45,14 @@ export function AppRoutes({ defaultIncidentId }: { defaultIncidentId?: string } 
         <Route index element={<HomePage defaultIncidentId={defaultIncidentId} />} />
         <Route path="incidents/:incidentId/people" element={<PeoplePage />} />
         <Route path="people/:personId" element={<PersonPage />} />
+        <Route
+          path="incidents/:incidentId/report"
+          element={
+            <RequireAuth roles={["publisher"]}>
+              <ReportPage />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

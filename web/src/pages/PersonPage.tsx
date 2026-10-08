@@ -1,6 +1,8 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { useApi } from "../api/context";
+import { useUser } from "../auth/context";
+import { hasRole } from "../auth/user";
 import { getTimeline, type Order, type Summary, type TimelineEntry } from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { rememberedIncident } from "../incident";
@@ -85,6 +87,7 @@ export function PersonPage() {
   const order: Order = params.get("order") === "desc" ? "desc" : "asc";
   const key = `${personId}|${order}`;
   const incidentId = rememberedIncident();
+  const user = useUser();
 
   const [first, retry] = useLoad(key, () => getTimeline(api, personId, { order }));
   const pager = usePager(key, first.status === "ready" ? first.data.next_cursor : null, async (cursor) => {
@@ -111,6 +114,18 @@ export function PersonPage() {
       )}
       <h1>{person.name}</h1>
       <p className="muted">{person.age === null ? "Age not reported" : `Age ${person.age}`}</p>
+      {incidentId && hasRole(user, "publisher") && (
+        <p>
+          <Link
+            to={`/incidents/${encodeURIComponent(incidentId)}/report?${new URLSearchParams({
+              person: person.id,
+              name: person.name,
+            })}`}
+          >
+            Publish a report about this person
+          </Link>
+        </p>
+      )}
 
       <SummaryCard summary={summary} />
 

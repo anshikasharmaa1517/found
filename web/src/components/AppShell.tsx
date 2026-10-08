@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useMatch, useNavigate } from "react-router-dom";
 
 import { useAuth, useUser } from "../auth/context";
-import { displayName, mainRole, ROLE_LABELS } from "../auth/user";
+import { displayName, hasRole, mainRole, ROLE_LABELS } from "../auth/user";
 import { rememberedIncident } from "../incident";
 
 export function AppShell() {
@@ -36,6 +36,9 @@ export function AppShell() {
           </NavLink>
           {incidentId && (
             <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/people`}>People</NavLink>
+          )}
+          {incidentId && hasRole(user, "publisher") && (
+            <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/report`}>Report</NavLink>
           )}
         </nav>
         <div className="account">

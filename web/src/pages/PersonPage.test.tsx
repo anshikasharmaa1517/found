@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { Timeline, TimelineEntry } from "../api/people";
+import { userFromClaims } from "../auth/user";
 import { FakeGateway, REVIEWER, renderApp, routedApi, type Query } from "../test/fakes";
 
 const PATH = "/v1/people/per_1/timeline";
@@ -147,5 +148,21 @@ describe("person page", () => {
     localStorage.clear();
   });
 
+  it("offers publishers a report about this person, and nobody else", async () => {
+    localStorage.setItem("found.incidentId", "inc_1");
+    const { api } = routedApi({ [PATH]: () => timeline() });
+    const publisher = new FakeGateway();
+    publisher.user = userFromClaims({ sub: "p", name: "Desk", "cognito:groups": ["publisher"] });
+    const view = renderApp(publisher, "/people/per_1", api);
+    expect(
+      await screen.findByRole("link", { name: "Publish a report about this person" }),
+    ).toHaveAttribute("href", "/incidents/inc_1/report?person=per_1&name=Maya+Rawat");
+    view.unmount();
+
+    renderApp(signedIn(), "/people/per_1", api);
+    await screen.findByRole("heading", { name: "Maya Rawat" });
+    expect(screen.queryByRole("link", { name: /Publish a report/ })).not.toBeInTheDocument();
+    localStorage.clear();
+  });
 });
 
