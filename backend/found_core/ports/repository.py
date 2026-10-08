@@ -4,7 +4,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol
 
-from found_core.domain.enums import InvestigationStatus, SubjectType
+from found_core.domain.enums import (
+    DeliveryStatus,
+    InvestigationStatus,
+    ReviewItemType,
+    ReviewStatus,
+    SubjectType,
+)
 from found_core.domain.models import (
     Alert,
     Claim,
@@ -184,4 +190,29 @@ class FoundRepository(Protocol):
 
     def list_investigation_steps(self, investigation_id: str) -> list[InvestigationStep]:
         """Every step of the run, in order."""
+        ...
+
+    def list_review_items(
+        self,
+        incident_id: str,
+        status: ReviewStatus,
+        limit: int,
+        item_type: ReviewItemType | None = None,
+        after: dict[str, str] | None = None,
+    ) -> tuple[list[ReviewItem], dict[str, str] | None]:
+        """Most urgent first (priority, then age). The position is opaque to callers."""
+        ...
+
+    def resolve_review_item(
+        self, incident_id: str, review_id: str, resolved_by: str, note: str | None, at: datetime
+    ) -> ReviewItem | None:
+        """Mark an OPEN item DONE. None if it is missing or already done."""
+        ...
+
+    def get_alert(self, subscription_id: str, claim_id: str) -> Alert | None: ...
+
+    def release_held_alert(
+        self, subscription_id: str, claim_id: str, status: DeliveryStatus
+    ) -> bool:
+        """Move a HELD alert to `status`. False if it is not held (any more)."""
         ...

@@ -11,7 +11,13 @@ from typing import Any
 from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
-from found_core.domain.enums import InvestigationStatus, SubjectType
+from found_core.domain.enums import (
+    DeliveryStatus,
+    InvestigationStatus,
+    ReviewItemType,
+    ReviewStatus,
+    SubjectType,
+)
 from found_core.domain.investigation import CACHEABLE_STATUSES
 from found_core.domain.models import (
     Alert,
@@ -245,12 +251,21 @@ def alert_item(alert: Alert) -> dict[str, Any]:
     }
 
 
+def review_queue_pk(incident_id: str, status: ReviewStatus | str) -> str:
+    return f"REVQ#{incident_id}#{status}"
+
+
+def review_queue_sk(item: ReviewItem) -> str:
+    created = item.model_dump(mode="json")["created_at"]
+    return f"{item.priority}#{created}#{item.id}"
+
+
 def review_item_item(item: ReviewItem) -> dict[str, Any]:
     attrs = _attrs(item)
     return {
         **review_item_key(item.incident_id, item.id),
-        "GSI2PK": f"REVQ#{item.incident_id}#{item.status}",
-        "GSI2SK": f"{item.priority}#{attrs['created_at']}#{item.id}",
+        "GSI2PK": review_queue_pk(item.incident_id, item.status),
+        "GSI2SK": review_queue_sk(item),
         "entity_type": "REVIEW_ITEM",
         "schema_version": SCHEMA_VERSION,
         **attrs,
@@ -803,6 +818,107 @@ class DynamoFoundRepository:
         except ClientError as err:
             if _error_code(err) != "ConditionalCheckFailedException":
                 raise
+
+    def list_review_items(
+        self,
+        incident_id: str,
+        status: ReviewStatus,
+        limit: int,
+        item_type: ReviewItemType | None = None,
+        after: dict[str, str] | None = None,
+    ) -> tuple[list[ReviewItem], dict[str, str] | None]:
+        pk = review_queue_pk(incident_id, status)
+        kwargs: dict[str, Any] = {
+            "IndexName": "GSI2",
+            "KeyConditionExpression": Key("GSI2PK").eq(pk),
+            "Limit": limit + 1,
+        }
+        if item_type is not None:
+            kwargs["FilterExpression"] = Attr("item_type").eq(str(item_type))
+        if after is not None:
+            if set(after) != {"s", "r"}:
+                raise ValueError("position does not belong to this listing")
+            kwargs["ExclusiveStartKey"] = {
+                **review_item_key(incident_id, after["r"]),
+                "GSI2PK": pk,
+                "GSI2SK": after["s"],
+            }
+        items: list[ReviewItem] = []
+        while len(items) <= limit:
+            resp = self._table.query(**kwargs)
+            items += [ReviewItem.model_validate(_fields(i)) for i in resp.get("Items", [])]
+            last = resp.get("LastEvaluatedKey")
+            if not last:
+                break
+            kwargs["ExclusiveStartKey"] = last
+        if len(items) <= limit:
+            return items, None
+        page = items[:limit]
+        return page, {"s": review_queue_sk(page[-1]), "r": page[-1].id}
+
+    def resolve_review_item(
+        self, incident_id: str, review_id: str, resolved_by: str, note: str | None, at: datetime
+    ) -> ReviewItem | None:
+        current = self.get_review_item(incident_id, review_id)
+        if current is None or current.status != ReviewStatus.OPEN:
+            return None
+        done = current.model_copy(
+            update={
+                "status": ReviewStatus.DONE,
+                "resolved_by": resolved_by,
+                "resolved_at": at,
+                "note": note,
+            }
+        )
+        item = review_item_item(done)
+        names = {"#status": "status", "#note": "note"}
+        values: dict[str, Any] = {
+            ":done": str(ReviewStatus.DONE),
+            ":open": str(ReviewStatus.OPEN),
+            ":by": resolved_by,
+            ":at": item["resolved_at"],
+            ":pk": item["GSI2PK"],
+        }
+        expression = "SET #status = :done, resolved_by = :by, resolved_at = :at, GSI2PK = :pk"
+        if note is not None:
+            values[":note"] = note
+            expression += ", #note = :note"
+        try:
+            self._table.update_item(
+                Key=review_item_key(incident_id, review_id),
+                UpdateExpression=expression,
+                ConditionExpression="attribute_exists(PK) AND #status = :open",
+                ExpressionAttributeNames=names if note is not None else {"#status": "status"},
+                ExpressionAttributeValues=values,
+            )
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return None
+        return done
+
+    def get_alert(self, subscription_id: str, claim_id: str) -> Alert | None:
+        item = self._get(alert_key(subscription_id, claim_id))
+        return Alert.model_validate(_fields(item)) if item else None
+
+    def release_held_alert(
+        self, subscription_id: str, claim_id: str, status: DeliveryStatus
+    ) -> bool:
+        try:
+            self._table.update_item(
+                Key=alert_key(subscription_id, claim_id),
+                UpdateExpression="SET delivery_status = :new",
+                ConditionExpression="attribute_exists(PK) AND delivery_status = :held",
+                ExpressionAttributeValues={
+                    ":new": str(status),
+                    ":held": str(DeliveryStatus.HELD),
+                },
+            )
+            return True
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return False
 
     def put_investigation_step(self, step: InvestigationStep) -> bool:
         return self._put_if_absent(investigation_step_item(step))

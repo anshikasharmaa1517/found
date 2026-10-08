@@ -117,6 +117,13 @@ REVIEW_PRIORITY: dict[ReviewItemType, int] = {
 }
 
 
+def released_delivery(subscription: Subscription) -> DeliveryStatus:
+    """A held alert after a reviewer releases it: queued for text or email, or in-app only."""
+    if subscription.channel_sms or subscription.channel_email:
+        return DeliveryStatus.PENDING
+    return DeliveryStatus.NOT_REQUIRED
+
+
 def alert_message(kind: str, subject_name: str, source_name: str, claim: Claim) -> str:
     if claim.claim_type in SENSITIVE_CLAIM_TYPES:
         return (

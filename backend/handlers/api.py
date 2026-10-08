@@ -16,6 +16,7 @@ from found_core.domain.normalize import excerpt
 from found_core.domain.visibility import SENSITIVE_NOTICE
 from found_core.services.investigations import InvestigationDetail
 from found_core.services.people import PersonProfile, TimelineEntry
+from found_core.services.review import ReviewEntry
 
 logger = Logger(service="api")
 app = APIGatewayHttpResolver()
@@ -357,7 +358,14 @@ def investigation_view(detail: InvestigationDetail) -> dict[str, Any]:
             }
             for s in detail.steps
         ],
-        "review": None,
+        "review": None
+        if inv.review_status is None
+        else {
+            "decision": data["review_status"],
+            "by": inv.reviewed_by,
+            "note": inv.review_note,
+            "at": _iso(inv.reviewed_at),
+        },
     }
 
 
@@ -394,6 +402,90 @@ def start_investigation(claim_id: str) -> Response:
 @app.get("/v1/investigations/<investigation_id>")
 def get_investigation(investigation_id: str) -> Response:
     detail = container.investigation_service().get(_caller(), investigation_id)
+    return _json(HTTPStatus.OK, investigation_view(detail))
+
+
+def review_entry_view(entry: ReviewEntry) -> dict[str, Any]:
+    item = entry.item
+    data = item.model_dump(mode="json")
+    view: dict[str, Any] = {
+        "id": item.id,
+        "type": data["item_type"],
+        "status": data["status"],
+        "priority": item.priority,
+        "created_at": data["created_at"],
+        "ref_id": item.ref_id,
+        "resolved_by": item.resolved_by,
+        "resolved_at": data["resolved_at"],
+        "note": item.note,
+        "person": person_view(entry.subject) if entry.subject else None,
+        "claim": None,
+        "investigation": None,
+    }
+    if entry.claim is not None:
+        claim = entry.claim
+        view["claim"] = {
+            "id": claim.id,
+            "claim_type": claim.claim_type,
+            "source": entry.source.name if entry.source else claim.source_id,
+            "reported_at": claim.model_dump(mode="json")["reported_at"],
+            # Reviewers see sensitive reports in full; this route is reviewer-only.
+            "excerpt": excerpt(claim.original_text),
+        }
+    if entry.investigation is not None:
+        inv = entry.investigation
+        view["investigation"] = {
+            "id": inv.id,
+            "status": inv.status.value,
+            "attribution": inv.attribution.value if inv.attribution else None,
+            "comparison": inv.comparison.value if inv.comparison else None,
+            "outcome_reasons": list(inv.outcome_reasons),
+        }
+    return view
+
+
+@app.get("/v1/incidents/<incident_id>/review-queue")
+def review_queue(incident_id: str) -> Response:
+    page = container.review_service().queue(
+        _caller(),
+        incident_id,
+        item_type=_query("type"),
+        status=_query("status"),
+        limit=_query("limit"),
+        cursor=_query("cursor"),
+    )
+    return _json(
+        HTTPStatus.OK,
+        {
+            "items": [review_entry_view(e) for e in page.entries],
+            "next_cursor": page.next_cursor,
+        },
+    )
+
+
+@app.post("/v1/incidents/<incident_id>/review-items/<review_id>/resolve")
+def resolve_review_item(incident_id: str, review_id: str) -> Response:
+    caller = _caller()
+    body = _body(optional=True)
+    result = container.review_service().resolve(caller, incident_id, review_id, body)
+    item = result.item
+    return _json(
+        HTTPStatus.OK,
+        {
+            "id": item.id,
+            "status": item.status.value,
+            "resolved_by": item.resolved_by,
+            "alerts_released": result.alerts_released,
+        },
+    )
+
+
+@app.post("/v1/investigations/<investigation_id>/review")
+def review_investigation(investigation_id: str) -> Response:
+    caller = _caller()
+    body = _body()
+    container.review_service().review_finding(caller, investigation_id, body)
+    detail = container.investigation_service().get(caller, investigation_id)
     return _json(HTTPStatus.OK, investigation_view(detail))
 
 

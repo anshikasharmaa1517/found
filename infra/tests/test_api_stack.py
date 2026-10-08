@@ -78,6 +78,9 @@ def test_signed_in_routes_require_jwt():
         "GET /v1/me/alerts",
         "POST /v1/claims/{claim_id}/investigations",
         "GET /v1/investigations/{investigation_id}",
+        "POST /v1/investigations/{investigation_id}/review",
+        "GET /v1/incidents/{incident_id}/review-queue",
+        "POST /v1/incidents/{incident_id}/review-items/{review_id}/resolve",
     ):
         assert found[key]["AuthorizationType"] == "JWT"
 

@@ -255,3 +255,66 @@ def test_steps_are_stored_once_per_seq_and_read_in_order(repo, table):
     assert item["entity_type"] == "INVESTIGATION_STEP" and item["incident_id"] == "inc_1"
     # The investigation item itself is not a step.
     assert repo.get_investigation("inv_1").status == S.RUNNING
+
+
+def test_review_queue_pages_by_priority_and_moves_items_to_done(repo, table):
+    from found_core.domain.enums import ReviewStatus
+    from found_core.domain.models import ReviewItem
+
+    def item(n, priority, item_type="conflict"):
+        return ReviewItem(
+            id=f"rev_{n}",
+            incident_id="inc_1",
+            item_type=item_type,
+            ref_id=f"clm_{n}",
+            priority=priority,
+            created_at=AT + timedelta(minutes=n),
+        )
+
+    for n, priority, kind in ((1, 2, "conflict"), (2, 1, "held_alert"), (3, 2, "conflict")):
+        repo.put_review_item_if_absent(item(n, priority, kind))
+    page, after = repo.list_review_items("inc_1", ReviewStatus.OPEN, 2)
+    assert [i.id for i in page] == ["rev_2", "rev_1"]
+    rest, end = repo.list_review_items("inc_1", ReviewStatus.OPEN, 2, after=after)
+    assert [i.id for i in rest] == ["rev_3"] and end is None
+    only, _ = repo.list_review_items("inc_1", ReviewStatus.OPEN, 5, item_type="held_alert")
+    assert [i.id for i in only] == ["rev_2"]
+
+    done = repo.resolve_review_item("inc_1", "rev_1", "rev_user", "Checked.", AT)
+    assert done.status == ReviewStatus.DONE and done.note == "Checked."
+    assert repo.resolve_review_item("inc_1", "rev_1", "rev_user", None, AT) is None
+    assert repo.resolve_review_item("inc_1", "rev_x", "rev_user", None, AT) is None
+    stored = repo.get_review_item("inc_1", "rev_1")
+    assert stored.status == ReviewStatus.DONE and stored.resolved_by == "rev_user"
+    open_items, _ = repo.list_review_items("inc_1", ReviewStatus.OPEN, 5)
+    assert [i.id for i in open_items] == ["rev_2", "rev_3"]
+    done_items, _ = repo.list_review_items("inc_1", ReviewStatus.DONE, 5)
+    assert [i.id for i in done_items] == ["rev_1"]
+    assert repo.resolve_review_item("inc_1", "rev_3", "rev_user", None, AT).note is None
+
+
+def test_held_alert_is_released_once(repo):
+    from found_core.domain.enums import DeliveryStatus
+    from found_core.domain.models import Alert
+
+    alert = Alert(
+        id="alr_1",
+        incident_id="inc_1",
+        subject_id="per_1",
+        subscription_id="sub_1",
+        claim_id="clm_1",
+        user_id="u1",
+        relation="UPDATE",
+        severity="high",
+        message="A sensitive report was received.",
+        delivery_status="HELD",
+        held_reason="SENSITIVE_STATUS",
+        created_at=AT,
+    )
+    repo.put_alert_if_absent(alert)
+    assert repo.get_alert("sub_1", "clm_1") == alert
+    assert repo.release_held_alert("sub_1", "clm_1", DeliveryStatus.PENDING) is True
+    assert repo.release_held_alert("sub_1", "clm_1", DeliveryStatus.PENDING) is False
+    assert repo.release_held_alert("sub_x", "clm_1", DeliveryStatus.PENDING) is False
+    assert repo.get_alert("sub_1", "clm_1").delivery_status == DeliveryStatus.PENDING
+    assert repo.get_alert("sub_1", "clm_x") is None

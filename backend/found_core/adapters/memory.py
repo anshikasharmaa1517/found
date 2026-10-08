@@ -9,7 +9,13 @@ from dataclasses import replace
 from datetime import datetime
 from typing import Any
 
-from found_core.domain.enums import InvestigationStatus, SubjectType
+from found_core.domain.enums import (
+    DeliveryStatus,
+    InvestigationStatus,
+    ReviewItemType,
+    ReviewStatus,
+    SubjectType,
+)
 from found_core.domain.investigation import CACHEABLE_STATUSES
 from found_core.domain.models import (
     Alert,
@@ -332,9 +338,75 @@ class InMemoryFoundRepository:
             self.steps[key] = step
             return True
 
+    def list_review_items(
+        self,
+        incident_id: str,
+        status: ReviewStatus,
+        limit: int,
+        item_type: ReviewItemType | None = None,
+        after: dict[str, str] | None = None,
+    ) -> tuple[list[ReviewItem], dict[str, str] | None]:
+        found = sorted(
+            (
+                i
+                for i in self.review_items.values()
+                if i.incident_id == incident_id
+                and i.status == status
+                and (item_type is None or i.item_type == item_type)
+            ),
+            key=_queue_key,
+        )
+        if after is not None:
+            if set(after) != {"s", "r"}:
+                raise ValueError("position does not belong to this listing")
+            found = [i for i in found if _queue_key(i) > after["s"]]
+        page = found[:limit]
+        if len(found) <= limit:
+            return page, None
+        return page, {"s": _queue_key(page[-1]), "r": page[-1].id}
+
+    def resolve_review_item(
+        self, incident_id: str, review_id: str, resolved_by: str, note: str | None, at: datetime
+    ) -> ReviewItem | None:
+        with self._lock:
+            item = self.review_items.get(review_id)
+            if item is None or item.incident_id != incident_id or item.status != ReviewStatus.OPEN:
+                return None
+            done = item.model_copy(
+                update={
+                    "status": ReviewStatus.DONE,
+                    "resolved_by": resolved_by,
+                    "resolved_at": at,
+                    "note": note,
+                }
+            )
+            self.review_items[review_id] = done
+            return done
+
+    def get_alert(self, subscription_id: str, claim_id: str) -> Alert | None:
+        return self.alerts.get((subscription_id, claim_id))
+
+    def release_held_alert(
+        self, subscription_id: str, claim_id: str, status: DeliveryStatus
+    ) -> bool:
+        with self._lock:
+            alert = self.alerts.get((subscription_id, claim_id))
+            if alert is None or alert.delivery_status != DeliveryStatus.HELD:
+                return False
+            self.alerts[(subscription_id, claim_id)] = alert.model_copy(
+                update={"delivery_status": status}
+            )
+            return True
+
     def list_investigation_steps(self, investigation_id: str) -> list[InvestigationStep]:
         found = [s for (inv, _), s in self.steps.items() if inv == investigation_id]
         return sorted(found, key=lambda s: s.seq)
+
+
+def _queue_key(item: ReviewItem) -> str:
+    """Same order as the review queue index: priority, then creation time, then id."""
+    created = item.model_dump(mode="json")["created_at"]
+    return f"{item.priority}#{created}#{item.id}"
 
 
 def _feed_key(claim: Claim) -> str:

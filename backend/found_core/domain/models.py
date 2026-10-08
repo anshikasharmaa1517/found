@@ -135,6 +135,9 @@ class ReviewItem(_Entity):
     status: ReviewStatus = ReviewStatus.OPEN
     priority: int
     created_at: datetime
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    note: str | None = None
 
 
 class Connection(_Entity):

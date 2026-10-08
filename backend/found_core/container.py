@@ -14,6 +14,7 @@ from found_core.services.map import MapService
 from found_core.services.people import PeopleService
 from found_core.services.realtime import ConnectionService, PushService
 from found_core.services.reports import ReportService
+from found_core.services.review import ReviewService
 from found_core.services.runner import InvestigationRunner
 from found_core.services.subscriptions import SubscriptionService
 from found_core.services.watch import WatchService
@@ -157,3 +158,8 @@ def investigation_runner() -> InvestigationRunner:
     )
     invoker = AgentCoreInvoker(client, os.environ["RUNTIME_ARN"])
     return InvestigationRunner(repository(), budget_ledger(), invoker, config)
+
+
+@cache
+def review_service() -> ReviewService:
+    return ReviewService(repository(), cursor_codec())

@@ -29,6 +29,9 @@ SIGNED_IN_ROUTES = (
     ("GET", "/v1/me/alerts"),
     ("POST", "/v1/claims/{claim_id}/investigations"),
     ("GET", "/v1/investigations/{investigation_id}"),
+    ("POST", "/v1/investigations/{investigation_id}/review"),
+    ("GET", "/v1/incidents/{incident_id}/review-queue"),
+    ("POST", "/v1/incidents/{incident_id}/review-items/{review_id}/resolve"),
 )
 DEFAULT_THROTTLE = {"ThrottlingRateLimit": 20, "ThrottlingBurstLimit": 40}
 ROUTE_THROTTLES = {
