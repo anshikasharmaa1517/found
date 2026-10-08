@@ -14,7 +14,9 @@ from found_core.domain.findings import FindingInput
 class _Args(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    investigation_id: str = Field(min_length=1, max_length=64)
+    investigation_id: str = Field(
+        min_length=1, max_length=64, description="Set by the runtime for this run."
+    )
 
 
 class ClaimArgs(_Args):
@@ -92,9 +94,68 @@ def input_schema(args: type[BaseModel]) -> dict[str, Any]:
     return _inline(schema, schema.get("$defs", {}))
 
 
+_LIMIT_WORDS = (
+    ("minLength", "At least {} characters."),
+    ("maxLength", "At most {} characters."),
+    ("minimum", "At least {}."),
+    ("maximum", "At most {}."),
+    ("minItems", "At least {} items."),
+    ("maxItems", "At most {} items."),
+)
+
+
+def gateway_schema(node: dict[str, Any]) -> dict[str, Any]:
+    """Reduce an inlined schema to what a Gateway tool definition accepts.
+
+    Gateway keeps only type, description, properties, required and items, so allowed
+    values and limits move into the description, where the model still reads them.
+    The tools Lambda enforces each of them again.
+    """
+    notes = [node["description"]] if node.get("description") else []
+    if "enum" in node:
+        notes.append("One of: " + ", ".join(str(v) for v in node["enum"]) + ".")
+    if node.get("minLength") == 1 or node.get("minItems") == 1:
+        notes.append("Not empty.")
+    notes += [
+        text.format(node[key])
+        for key, text in _LIMIT_WORDS
+        if key in node and not (key in ("minLength", "minItems") and node[key] == 1)
+    ]
+    out: dict[str, Any] = {"type": node.get("type", "string")}
+    if notes:
+        out["description"] = " ".join(notes)
+    if "properties" in node:
+        out["properties"] = {k: gateway_schema(v) for k, v in node["properties"].items()}
+    if node.get("required"):
+        out["required"] = list(node["required"])
+    if "items" in node:
+        out["items"] = gateway_schema(node["items"])
+    return out
+
+
+def gateway_specs() -> list[dict[str, Any]]:
+    """The tool definitions deployed on the Gateway target (`specs.json`)."""
+    return [
+        {
+            "name": name,
+            "description": TOOL_DESCRIPTIONS[name],
+            "inputSchema": gateway_schema(input_schema(args)),
+        }
+        for name, args in TOOL_ARGS.items()
+    ]
+
+
 def tool_specs() -> list[dict[str, Any]]:
     """Gateway Lambda target tool schema: name, description and JSON input schema."""
     return [
         {"name": name, "description": TOOL_DESCRIPTIONS[name], "inputSchema": input_schema(args)}
         for name, args in TOOL_ARGS.items()
     ]
+
+
+if __name__ == "__main__":
+    import json
+    from pathlib import Path
+
+    target = Path(__file__).with_name("specs.json")
+    target.write_text(json.dumps(gateway_specs(), indent=2) + chr(10), encoding="utf-8")

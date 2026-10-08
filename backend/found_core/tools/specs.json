@@ -1,0 +1,180 @@
+[
+  {
+    "name": "get_report",
+    "description": "Read one report: its text, type, source, reported time and subject.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "description": "Set by the runtime for this run. Not empty. At most 64 characters."
+        },
+        "claim_id": {
+          "type": "string",
+          "description": "Not empty. At most 64 characters."
+        }
+      },
+      "required": [
+        "investigation_id",
+        "claim_id"
+      ]
+    }
+  },
+  {
+    "name": "list_mentioned_sources",
+    "description": "List the sources a report names in its text.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "description": "Set by the runtime for this run. Not empty. At most 64 characters."
+        },
+        "claim_id": {
+          "type": "string",
+          "description": "Not empty. At most 64 characters."
+        }
+      },
+      "required": [
+        "investigation_id",
+        "claim_id"
+      ]
+    }
+  },
+  {
+    "name": "find_reports_by_source",
+    "description": "List a source's reports, latest first, optionally about one subject (at most 10).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "description": "Set by the runtime for this run. Not empty. At most 64 characters."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "Not empty. At most 64 characters."
+        },
+        "subject_id": {
+          "type": "string",
+          "description": "At most 64 characters."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "At least 1. At most 10."
+        }
+      },
+      "required": [
+        "investigation_id",
+        "source_id"
+      ]
+    }
+  },
+  {
+    "name": "get_person_timeline",
+    "description": "List the reports about one person (at most 20, latest last).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "description": "Set by the runtime for this run. Not empty. At most 64 characters."
+        },
+        "person_id": {
+          "type": "string",
+          "description": "Not empty. At most 64 characters."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "At least 1. At most 20."
+        }
+      },
+      "required": [
+        "investigation_id",
+        "person_id"
+      ]
+    }
+  },
+  {
+    "name": "search_people",
+    "description": "Find people in this incident by name, optionally near an age.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "investigation_id": {
+          "type": "string",
+          "description": "Set by the runtime for this run. Not empty. At most 64 characters."
+        },
+        "name": {
+          "type": "string",
+          "description": "At least 2 characters. At most 120 characters."
+        },
+        "age": {
+          "type": "integer",
+          "description": "At least 0. At most 120."
+        }
+      },
+      "required": [
+        "investigation_id",
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "record_finding",
+    "description": "Record the one finding of this investigation: attribution, referenced source, comparison, a short summary and verbatim citations. Returns errors to correct.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "attribution": {
+          "type": "string",
+          "description": "One of: DIRECT, RELAY, UNCLEAR."
+        },
+        "referenced_source_id": {
+          "type": "string",
+          "description": "Id of a source from list_mentioned_sources. Leave out if none is named."
+        },
+        "comparison": {
+          "type": "string",
+          "description": "One of: SUPPORTS, DIFFERS, UNCLEAR, NOT_APPLICABLE."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Plain words. Not empty. At most 600 characters."
+        },
+        "citations": {
+          "type": "array",
+          "description": "Cite the investigated claim, and for a relay the source's claim. Not empty. At most 8 items.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "claim_id": {
+                "type": "string",
+                "description": "Id of a claim you read in this run."
+              },
+              "excerpt": {
+                "type": "string",
+                "description": "Text copied exactly from that claim, 10 to 300 characters."
+              }
+            },
+            "required": [
+              "claim_id",
+              "excerpt"
+            ]
+          }
+        },
+        "investigation_id": {
+          "type": "string",
+          "description": "Set by the runtime for this run. Not empty. At most 64 characters."
+        }
+      },
+      "required": [
+        "attribution",
+        "comparison",
+        "summary",
+        "citations",
+        "investigation_id"
+      ]
+    }
+  }
+]

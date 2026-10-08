@@ -252,4 +252,4 @@ def test_specs_cover_every_tool_without_references():
     assert set(finding["required"]) == {
         "investigation_id", "attribution", "comparison", "summary", "citations",
     }  # fmt: skip
-    assert finding["properties"]["referenced_source_id"] == {"type": "string"}
+    assert finding["properties"]["referenced_source_id"]["type"] == "string"

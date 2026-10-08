@@ -30,6 +30,7 @@ def test_app_synthesizes_each_environment(tmp_path, env_name):
         f"Found-{env_name}-Api.template.json",
         f"Found-{env_name}-Realtime.template.json",
         f"Found-{env_name}-Maps.template.json",
+        f"Found-{env_name}-Agent.template.json",
     }
 
 

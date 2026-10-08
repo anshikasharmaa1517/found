@@ -5,6 +5,7 @@ import os
 import aws_cdk as cdk
 
 from config import REGION, load
+from stacks.agent_stack import AgentStack
 from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
 from stacks.data_stack import DataStack
@@ -42,6 +43,8 @@ def build(app: cdk.App) -> None:
     )
 
     MapsStack(app, f"Found-{cfg.name}-Maps", cfg=cfg, env=env)
+
+    AgentStack(app, f"Found-{cfg.name}-Agent", cfg=cfg, table=data.table, env=env)
 
     cdk.Tags.of(app).add("project", "found")
     cdk.Tags.of(app).add("env", cfg.name)

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from found_core.domain.enums import (
     Attribution,
@@ -149,8 +149,8 @@ class Connection(_Entity):
 
 
 class Citation(_Entity):
-    claim_id: str
-    excerpt: str
+    claim_id: str = Field(description="Id of a claim you read in this run.")
+    excerpt: str = Field(description="Text copied exactly from that claim, 10 to 300 characters.")
 
 
 class Investigation(_Entity):

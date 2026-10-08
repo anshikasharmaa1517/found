@@ -28,10 +28,17 @@ class FindingInput(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     attribution: Attribution
-    referenced_source_id: str | None = None
+    referenced_source_id: str | None = Field(
+        default=None,
+        description="Id of a source from list_mentioned_sources. Leave out if none is named.",
+    )
     comparison: Comparison
-    summary: str = Field(min_length=1, max_length=SUMMARY_MAX)
-    citations: tuple[Citation, ...] = Field(min_length=1, max_length=MAX_CITATIONS)
+    summary: str = Field(min_length=1, max_length=SUMMARY_MAX, description="Plain words.")
+    citations: tuple[Citation, ...] = Field(
+        min_length=1,
+        max_length=MAX_CITATIONS,
+        description="Cite the investigated claim, and for a relay the source's claim.",
+    )
 
 
 @dataclass(frozen=True)
