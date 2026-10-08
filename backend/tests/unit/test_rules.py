@@ -2,10 +2,12 @@ import pytest
 
 from found_core.domain.enums import DeliveryStatus, Relation, Severity
 from found_core.domain.rules import (
+    age_matches,
     alert_message,
     classify,
     decide_alert,
     delivery_for,
+    relations,
     summarize,
 )
 
@@ -97,6 +99,7 @@ def test_summary_cites_latest_dated_report_and_keeps_conflicts():
     assert summary.cited_claim_id == "clm_2"
     assert summary.label == "Reported found safe"
     assert summary.conflicts == ["clm_1"]
+    assert summary.basis == "Latest dated status report"
     assert not summary.needs_review
 
 
@@ -108,3 +111,31 @@ def test_summary_flags_unresolved_conflict():
 def test_summary_without_status_reports():
     summary = summarize([claim(1, "SEEN_AT_LOCATION", T1)], "PERSON")
     assert summary.cited_claim_id is None
+    assert summary.basis == "No status reports yet"
+
+
+def test_summary_basis_says_when_time_is_unknown():
+    summary = summarize([claim(1, "MISSING", None)], "PERSON")
+    assert summary.cited_claim_id == "clm_1"
+    assert summary.basis == "Latest status report, reported time unknown"
+
+
+def test_relations_use_only_earlier_arrivals():
+    claims = [
+        claim(3, "SEEN_AT_LOCATION", T2),
+        claim(2, "MISSING", T1),
+        claim(1, "FOUND_SAFE", T2, source_id="src_hospital"),
+    ]
+    assert relations(claims) == {
+        "clm_1": Relation.FIRST,
+        "clm_2": Relation.HISTORICAL,
+        "clm_3": Relation.NOT_STATUS,
+    }
+
+
+@pytest.mark.parametrize(
+    ("age", "wanted", "expected"),
+    [(24, 24, True), (26, 24, True), (22, 24, True), (27, 24, False), (None, 24, True)],
+)
+def test_age_matches_within_tolerance_and_keeps_unknown(age, wanted, expected):
+    assert age_matches(age, wanted) is expected

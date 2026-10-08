@@ -10,6 +10,7 @@ from typing import Any
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
+from found_core.domain.enums import SubjectType
 from found_core.domain.models import (
     Alert,
     Claim,
@@ -21,6 +22,7 @@ from found_core.domain.models import (
 )
 from found_core.ports.repository import (
     IdempotencyConflict,
+    NamePosition,
     PublishPlan,
     SequenceConflict,
 )
@@ -31,6 +33,10 @@ _KEY_ATTRS = frozenset(
     {"PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK", "GSI3PK", "GSI3SK"}
 )
 _META_ATTRS = _KEY_ATTRS | {"entity_type", "schema_version", "ttl"}
+
+# BatchGetItem accepts at most this many keys per call.
+_BATCH_GET_MAX = 100
+_BATCH_GET_ATTEMPTS = 5
 
 # Positions of the conditional items in the publish transaction.
 _TX_MARKER, _TX_SUBJECT, _TX_CLAIM, _TX_SOURCE = 0, 1, 2, 3
@@ -50,6 +56,14 @@ def source_key(incident_id: str, source_id: str) -> dict[str, str]:
 
 def subject_key(subject_id: str) -> dict[str, str]:
     return {"PK": f"SUBJ#{subject_id}", "SK": "META"}
+
+
+def subject_list_pk(incident_id: str, subject_type: SubjectType) -> str:
+    return f"INC#{incident_id}#{subject_type}"
+
+
+def subject_list_sk(name_norm: str, subject_id: str) -> str:
+    return f"{name_norm}#{subject_id}"
 
 
 def claim_key(subject_id: str, seq: int) -> dict[str, str]:
@@ -107,8 +121,8 @@ def source_item(source: Source) -> dict[str, Any]:
 def subject_item(subject: Subject) -> dict[str, Any]:
     return {
         **subject_key(subject.id),
-        "GSI1PK": f"INC#{subject.incident_id}#{subject.subject_type}",
-        "GSI1SK": f"{subject.name_norm}#{subject.id}",
+        "GSI1PK": subject_list_pk(subject.incident_id, subject.subject_type),
+        "GSI1SK": subject_list_sk(subject.name_norm, subject.id),
         "entity_type": "SUBJECT",
         "schema_version": SCHEMA_VERSION,
         **_attrs(subject),
@@ -217,6 +231,54 @@ class DynamoFoundRepository:
     def get_subject(self, subject_id: str) -> Subject | None:
         item = self._get(subject_key(subject_id))
         return Subject.model_validate(_fields(item)) if item else None
+
+    def get_subjects(self, subject_ids: list[str]) -> list[Subject]:
+        wanted = list(dict.fromkeys(subject_ids))
+        found: dict[str, Subject] = {}
+        for start in range(0, len(wanted), _BATCH_GET_MAX):
+            keys = [subject_key(sid) for sid in wanted[start : start + _BATCH_GET_MAX]]
+            for item in self._batch_get(keys):
+                subject = Subject.model_validate(_fields(item))
+                found[subject.id] = subject
+        return [found[sid] for sid in wanted if sid in found]
+
+    def list_subjects(
+        self,
+        incident_id: str,
+        subject_type: SubjectType,
+        limit: int,
+        after: NamePosition | None = None,
+    ) -> list[Subject]:
+        pk = subject_list_pk(incident_id, subject_type)
+        kwargs: dict[str, Any] = {
+            "IndexName": "GSI1",
+            "KeyConditionExpression": Key("GSI1PK").eq(pk),
+            "Limit": limit,
+        }
+        if after is not None:
+            kwargs["ExclusiveStartKey"] = {
+                **subject_key(after.subject_id),
+                "GSI1PK": pk,
+                "GSI1SK": subject_list_sk(after.name_norm, after.subject_id),
+            }
+        subjects: list[Subject] = []
+        while len(subjects) < limit:
+            resp = self._table.query(**kwargs)
+            subjects += [Subject.model_validate(_fields(i)) for i in resp.get("Items", [])]
+            last = resp.get("LastEvaluatedKey")
+            if not last:
+                break
+            kwargs["ExclusiveStartKey"] = last
+            kwargs["Limit"] = limit - len(subjects)
+        return subjects[:limit]
+
+    def find_subject_ids_by_token(self, incident_id: str, prefix: str) -> list[str]:
+        items = self._query(
+            KeyConditionExpression=Key("PK").eq(f"NTOK#{incident_id}")
+            & Key("SK").begins_with(prefix),
+            ProjectionExpression="subject_id",
+        )
+        return sorted({i["subject_id"] for i in items})
 
     def ensure_source(self, source: Source) -> Source:
         try:
@@ -332,6 +394,17 @@ class DynamoFoundRepository:
             if _error_code(err) != "ConditionalCheckFailedException":
                 raise
             return False
+
+    def _batch_get(self, keys: list[dict[str, str]]) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        request: dict[str, Any] = {self._table.name: {"Keys": keys}}
+        for _ in range(_BATCH_GET_ATTEMPTS):
+            resp = self._client.batch_get_item(RequestItems=request)
+            items += resp.get("Responses", {}).get(self._table.name, [])
+            request = resp.get("UnprocessedKeys") or {}
+            if not request:
+                return items
+        raise RuntimeError("batch get left unprocessed keys")
 
     def _query(self, **kwargs: Any) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []

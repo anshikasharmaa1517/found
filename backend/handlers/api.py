@@ -11,7 +11,9 @@ from aws_lambda_powertools.logging import correlation_paths
 from found_core import container
 from found_core.domain.auth import Caller
 from found_core.domain.errors import BadRequest, FoundError
-from found_core.domain.models import Claim
+from found_core.domain.models import Claim, Subject
+from found_core.domain.normalize import excerpt
+from found_core.services.people import PersonProfile, TimelineEntry
 
 logger = Logger(service="api")
 app = APIGatewayHttpResolver()
@@ -65,6 +67,52 @@ def claim_view(claim: Claim, source_name: str, source_type: str) -> dict[str, An
     }
 
 
+def _query(name: str) -> str | None:
+    return app.current_event.get_query_string_value(name)
+
+
+def person_view(person: Subject) -> dict[str, Any]:
+    return {"id": person.id, "name": person.display_name, "age": person.age}
+
+
+def _source_name(profile: PersonProfile, source_id: str) -> str:
+    source = profile.sources.get(source_id)
+    return source.name if source else source_id
+
+
+def summary_view(profile: PersonProfile) -> dict[str, Any]:
+    summary = profile.summary
+    return {
+        "label": summary.label,
+        "basis": summary.basis,
+        "cited_claim_id": summary.cited_claim_id,
+        "conflicts": [
+            {
+                "claim_id": c.id,
+                "claim_type": c.claim_type,
+                "source": _source_name(profile, c.source_id),
+            }
+            for c in profile.conflicts
+        ],
+        "needs_review": summary.needs_review,
+    }
+
+
+def entry_view(profile: PersonProfile, entry: TimelineEntry) -> dict[str, Any]:
+    claim = entry.claim
+    return {
+        "claim_id": claim.id,
+        "seq": claim.seq,
+        "claim_type": claim.claim_type,
+        "value": claim.value,
+        "source_id": claim.source_id,
+        "source": _source_name(profile, claim.source_id),
+        "reported_at": claim.model_dump(mode="json")["reported_at"],
+        "relation": entry.relation.value,
+        "excerpt": excerpt(claim.original_text),
+    }
+
+
 @app.get("/v1/health")
 def health() -> Response:
     return _json(HTTPStatus.OK, {"status": "ok"})
@@ -78,6 +126,64 @@ def publish_report(incident_id: str) -> Response:
     view = claim_view(result.claim, result.publisher.name, result.publisher.org_type.value)
     status = HTTPStatus.OK if result.replayed else HTTPStatus.CREATED
     return _json(status, {"claim": view, "replayed": result.replayed})
+
+
+@app.get("/v1/incidents/<incident_id>/people")
+def list_people(incident_id: str) -> Response:
+    page = container.people_service().list_people(
+        _caller(),
+        incident_id,
+        q=_query("q"),
+        age=_query("age"),
+        limit=_query("limit"),
+        cursor=_query("cursor"),
+    )
+    return _json(
+        HTTPStatus.OK,
+        {"people": [person_view(p) for p in page.people], "next_cursor": page.next_cursor},
+    )
+
+
+@app.get("/v1/people/<person_id>")
+def get_person(person_id: str) -> Response:
+    profile = container.people_service().profile(_caller(), person_id)
+    person = profile.person
+    return _json(
+        HTTPStatus.OK,
+        {
+            "person": {
+                **person_view(person),
+                "incident_id": person.incident_id,
+                "notes": person.notes,
+                "report_count": profile.claim_count,
+            },
+            "summary": summary_view(profile),
+            # Identity decisions arrive with the resolver; until then there are none.
+            "identity": [],
+        },
+    )
+
+
+@app.get("/v1/people/<person_id>/timeline")
+def get_timeline(person_id: str) -> Response:
+    timeline = container.people_service().timeline(
+        _caller(),
+        person_id,
+        order=_query("order"),
+        limit=_query("limit"),
+        cursor=_query("cursor"),
+    )
+    profile = timeline.profile
+    return _json(
+        HTTPStatus.OK,
+        {
+            "person": person_view(profile.person),
+            "summary": summary_view(profile),
+            "identity": [],
+            "entries": [entry_view(profile, e) for e in timeline.entries],
+            "next_cursor": timeline.next_cursor,
+        },
+    )
 
 
 @app.exception_handler(FoundError)

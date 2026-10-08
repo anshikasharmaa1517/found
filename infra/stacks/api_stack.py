@@ -14,6 +14,7 @@ from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as ddb
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
+from aws_cdk import aws_secretsmanager as secretsmanager
 from constructs import Construct
 
 from config import EnvConfig
@@ -68,6 +69,12 @@ def backend_code() -> lambda_.Code:
 
 
 REPORTS_ROUTE = "POST /v1/incidents/{incident_id}/reports"
+# Every route below needs a signed-in user; the service checks the role.
+SIGNED_IN_ROUTES = (
+    ("GET", "/v1/incidents/{incident_id}/people"),
+    ("GET", "/v1/people/{person_id}"),
+    ("GET", "/v1/people/{person_id}/timeline"),
+)
 DEFAULT_THROTTLE = {"ThrottlingRateLimit": 20, "ThrottlingBurstLimit": 40}
 ROUTE_THROTTLES = {REPORTS_ROUTE: {"ThrottlingRateLimit": 10, "ThrottlingBurstLimit": 20}}
 
@@ -86,6 +93,16 @@ class ApiStack(cdk.Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        # HMAC key for pagination cursors, so clients cannot forge positions.
+        self.cursor_secret = secretsmanager.Secret(
+            self,
+            "CursorSecret",
+            description="Signs pagination cursors of the HTTP API.",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                password_length=64, exclude_punctuation=True
+            ),
+        )
+
         self.function = lambda_.Function(
             self,
             "ApiFunction",
@@ -99,6 +116,7 @@ class ApiStack(cdk.Stack):
             tracing=lambda_.Tracing.ACTIVE,
             environment={
                 "TABLE_NAME": table.table_name,
+                "CURSOR_SECRET_ARN": self.cursor_secret.secret_arn,
                 "POWERTOOLS_SERVICE_NAME": "api",
                 "LOG_LEVEL": "INFO",
             },
@@ -110,6 +128,7 @@ class ApiStack(cdk.Stack):
             ),
         )
         table.grant_read_write_data(self.function)
+        self.cursor_secret.grant_read(self.function)
 
         self.http_api = apigw.HttpApi(
             self,
@@ -144,6 +163,13 @@ class ApiStack(cdk.Stack):
             integration=integration,
             authorizer=jwt,
         )
+        for method, path in SIGNED_IN_ROUTES:
+            self.http_api.add_routes(
+                path=path,
+                methods=[apigw.HttpMethod(method)],
+                integration=integration,
+                authorizer=jwt,
+            )
 
         stage = self.http_api.default_stage.node.default_child
         stage.add_property_override("DefaultRouteSettings", DEFAULT_THROTTLE)

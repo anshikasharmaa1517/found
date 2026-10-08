@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 
+from found_core.domain.enums import SubjectType
 from found_core.domain.models import (
     Claim,
     IdemMarker,
@@ -10,6 +11,14 @@ from found_core.domain.models import (
     Source,
     Subject,
 )
+
+
+@dataclass(frozen=True)
+class NamePosition:
+    """A place in an incident's subjects sorted by normalized name, then id."""
+
+    name_norm: str
+    subject_id: str
 
 
 class IdempotencyConflict(Exception):
@@ -41,6 +50,17 @@ class FoundRepository(Protocol):
 
     def get_subject(self, subject_id: str) -> Subject | None: ...
 
+    def get_subjects(self, subject_ids: list[str]) -> list[Subject]: ...
+
+    def list_subjects(
+        self,
+        incident_id: str,
+        subject_type: SubjectType,
+        limit: int,
+        after: NamePosition | None = None,
+    ) -> list[Subject]: ...
+
+    def find_subject_ids_by_token(self, incident_id: str, prefix: str) -> list[str]: ...
 
     def ensure_source(self, source: Source) -> Source: ...
 

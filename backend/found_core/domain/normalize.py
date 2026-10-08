@@ -53,3 +53,12 @@ def detect_mentions[T: Named](
             hits.append((position, source))
     hits.sort(key=lambda hit: hit[0])
     return [source for _, source in hits[:MAX_MENTIONS]]
+
+
+def excerpt(text: str, limit: int = 160) -> str:
+    """Whitespace-collapsed text cut on a word boundary, marked with "..." when cut."""
+    flat = _SPACES.sub(" ", text).strip()
+    if len(flat) <= limit:
+        return flat
+    cut = flat[:limit].rsplit(" ", 1)[0] or flat[:limit]
+    return f"{cut.rstrip()}..."

@@ -15,6 +15,7 @@ from found_core.domain.models import (
 )
 from found_core.ports.repository import (
     IdempotencyConflict,
+    NamePosition,
     PublishPlan,
     SequenceConflict,
 )
@@ -267,3 +268,53 @@ def test_service_retries_when_another_writer_takes_the_sequence(repo):
     late = service.publish(cmd(org=HOSPITAL, ref="CH-1", subject=person(subject_id))).claim
     assert late.seq == 3
     assert [c.seq for c in repo.list_subject_claims(subject_id)] == [1, 2, 3]
+
+
+def publish_people(service, *names):
+    ids = {}
+    for i, name in enumerate(names):
+        new = {"type": "PERSON", "new": {"name": name}}
+        ids[name] = service.publish(cmd(ref=f"P-{i}", subject=new)).claim.subject_id
+    return ids
+
+
+def test_list_subjects_pages_by_name(service, repo):
+    ids = publish_people(service, "Ravi Kumar", "Maya Rawat", "Asha Devi")
+    service.publish(
+        cmd(
+            ref="S-1",
+            subject={"type": "SHELTER", "new": {"name": "Aaa Camp"}},
+            claim_type="SHELTER_OPEN",
+        )
+    )
+    first = repo.list_subjects("inc_1", "PERSON", 2)
+    assert [s.display_name for s in first] == ["Asha Devi", "Maya Rawat"]
+    after = NamePosition(name_norm=first[-1].name_norm, subject_id=first[-1].id)
+    rest = repo.list_subjects("inc_1", "PERSON", 2, after)
+    assert [s.id for s in rest] == [ids["Ravi Kumar"]]
+    assert repo.list_subjects("inc_2", "PERSON", 10) == []
+
+
+def test_find_subject_ids_by_token_prefix(service, repo):
+    ids = publish_people(service, "Maya Rawat", "Mohan Rawat", "Ravi Kumar")
+    assert repo.find_subject_ids_by_token("inc_1", "raw") == sorted(
+        [ids["Maya Rawat"], ids["Mohan Rawat"]]
+    )
+    assert repo.find_subject_ids_by_token("inc_1", "ra") == sorted(ids.values())
+    assert repo.find_subject_ids_by_token("inc_1", "zz") == []
+    assert repo.find_subject_ids_by_token("inc_2", "raw") == []
+
+
+def test_get_subjects_keeps_order_and_skips_unknown(service, repo):
+    ids = publish_people(service, "Maya Rawat", "Ravi Kumar")
+    wanted = [ids["Ravi Kumar"], "per_missing", ids["Maya Rawat"], ids["Ravi Kumar"]]
+    got = repo.get_subjects(wanted)
+    assert [s.display_name for s in got] == ["Ravi Kumar", "Maya Rawat"]
+    assert repo.get_subjects([]) == []
+
+
+def test_get_subjects_batches_past_the_key_limit(service, repo):
+    ids = publish_people(
+        service, *[f"Person {chr(97 + i // 26)}{chr(97 + i % 26)}" for i in range(105)]
+    )
+    assert len(repo.get_subjects(list(ids.values()))) == 105

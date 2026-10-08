@@ -42,13 +42,13 @@ def status_claims(claims: Sequence[Claim], subject_type: SubjectType) -> list[Cl
     return [c for c in claims if c.claim_type in types]
 
 
-def _report_order(claim: Claim) -> tuple[bool, datetime, int]:
+def report_order(claim: Claim) -> tuple[bool, datetime, int]:
     # Dated claims rank above undated ones; ties break on arrival order.
     return (claim.reported_at is not None, claim.reported_at or _EARLIEST, claim.seq)
 
 
 def latest_by_report_time(claims: Sequence[Claim]) -> Claim:
-    return max(claims, key=_report_order)
+    return max(claims, key=report_order)
 
 
 def classify(incoming: Claim, priors: Sequence[Claim]) -> Relation:
@@ -127,6 +127,7 @@ def alert_message(kind: str, subject_name: str, source_name: str, claim: Claim) 
 class CitedSummary:
     label: str
     cited_claim_id: str | None
+    basis: str
     conflicts: list[str] = field(default_factory=list)
     needs_review: bool = False
 
@@ -136,12 +137,14 @@ def summarize(claims: Sequence[Claim], subject_type: SubjectType) -> CitedSummar
     ordered = sorted(claims, key=lambda c: c.seq)
     statuses = status_claims(ordered, subject_type)
     if not statuses:
-        return CitedSummary(label="No status reports", cited_claim_id=None)
+        return CitedSummary(
+            label="No status reports", cited_claim_id=None, basis="No status reports yet"
+        )
     latest = latest_by_report_time(statuses)
     latest_per_source: dict[str, Claim] = {}
     for claim in statuses:
         current = latest_per_source.get(claim.source_id)
-        if current is None or _report_order(claim) > _report_order(current):
+        if current is None or report_order(claim) > report_order(current):
             latest_per_source[claim.source_id] = claim
     conflicts = [
         c.id
@@ -154,9 +157,30 @@ def summarize(claims: Sequence[Claim], subject_type: SubjectType) -> CitedSummar
         for i, c in enumerate(ordered)
     )
     status = PLAIN_STATUS.get(latest.claim_type, latest.claim_type.lower())
+    basis = (
+        "Latest dated status report"
+        if latest.reported_at is not None
+        else "Latest status report, reported time unknown"
+    )
     return CitedSummary(
         label=f"Reported {status}",
         cited_claim_id=latest.id,
+        basis=basis,
         conflicts=conflicts,
         needs_review=needs_review,
     )
+
+
+def relations(claims: Sequence[Claim]) -> dict[str, Relation]:
+    """Relation of every claim to the claims about the same subject that arrived before it."""
+    ordered = sorted(claims, key=lambda c: c.seq)
+    return {c.id: classify(c, ordered[:i]) for i, c in enumerate(ordered)}
+
+
+# Reported ages are estimates, so an age filter matches within this many years.
+AGE_TOLERANCE = 2
+
+
+def age_matches(age: int | None, wanted: int) -> bool:
+    """People with no recorded age are kept: hiding a possible match costs more than noise."""
+    return age is None or abs(age - wanted) <= AGE_TOLERANCE

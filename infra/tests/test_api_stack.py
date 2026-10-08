@@ -62,6 +62,38 @@ def test_reports_route_requires_jwt_and_health_is_open():
     assert health.get("AuthorizationType", "NONE") == "NONE"
 
 
+def test_signed_in_routes_require_jwt():
+    found = routes(template())
+    for key in (
+        "GET /v1/incidents/{incident_id}/people",
+        "GET /v1/people/{person_id}",
+        "GET /v1/people/{person_id}/timeline",
+    ):
+        assert found[key]["AuthorizationType"] == "JWT"
+
+
+def test_cursor_secret_is_generated_and_readable_by_function():
+    t = template()
+    t.has_resource_properties(
+        "AWS::SecretsManager::Secret",
+        {"GenerateSecretString": {"PasswordLength": 64, "ExcludePunctuation": True}},
+    )
+    t.has_resource_properties(
+        "AWS::Lambda::Function",
+        {
+            "Environment": {
+                "Variables": Match.object_like({"CURSOR_SECRET_ARN": {"Ref": Match.any_value()}})
+            }
+        },
+    )
+    statements = [
+        s
+        for p in t.find_resources("AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+    ]
+    assert any("secretsmanager:GetSecretValue" in s["Action"] for s in statements)
+
+
 def test_jwt_authorizer_checks_cognito_issuer_and_client_audience():
     t = template()
     authorizer = next(iter(t.find_resources("AWS::ApiGatewayV2::Authorizer").values()))

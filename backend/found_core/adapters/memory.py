@@ -6,6 +6,7 @@ which mirrors a DynamoDB transaction.
 
 import threading
 
+from found_core.domain.enums import SubjectType
 from found_core.domain.models import (
     Alert,
     Claim,
@@ -17,6 +18,7 @@ from found_core.domain.models import (
 )
 from found_core.ports.repository import (
     IdempotencyConflict,
+    NamePosition,
     PublishPlan,
     SequenceConflict,
 )
@@ -52,6 +54,38 @@ class InMemoryFoundRepository:
 
     def get_subject(self, subject_id: str) -> Subject | None:
         return self.subjects.get(subject_id)
+
+    def get_subjects(self, subject_ids: list[str]) -> list[Subject]:
+        return [self.subjects[s] for s in dict.fromkeys(subject_ids) if s in self.subjects]
+
+    def list_subjects(
+        self,
+        incident_id: str,
+        subject_type: SubjectType,
+        limit: int,
+        after: NamePosition | None = None,
+    ) -> list[Subject]:
+        start = (after.name_norm, after.subject_id) if after else None
+        found = sorted(
+            (
+                s
+                for s in self.subjects.values()
+                if s.incident_id == incident_id
+                and s.subject_type == subject_type
+                and (start is None or (s.name_norm, s.id) > start)
+            ),
+            key=lambda s: (s.name_norm, s.id),
+        )
+        return found[:limit]
+
+    def find_subject_ids_by_token(self, incident_id: str, prefix: str) -> list[str]:
+        return sorted(
+            sid
+            for token, ids in self.name_tokens.items()
+            if token.startswith(prefix)
+            for sid in ids
+            if self.subjects[sid].incident_id == incident_id
+        )
 
     def ensure_source(self, source: Source) -> Source:
         with self._lock:

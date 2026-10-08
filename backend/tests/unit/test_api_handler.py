@@ -6,8 +6,10 @@ import pytest
 
 from found_core import container
 from found_core.adapters.memory import InMemoryFoundRepository
+from found_core.domain.cursor import CursorCodec
 from found_core.domain.models import Organization
 from found_core.services.ingest import IngestService
+from found_core.services.people import PeopleService
 from found_core.services.reports import ReportService
 from handlers import api
 
@@ -81,6 +83,8 @@ def repo(monkeypatch):
     )
     service = ReportService(r, IngestService(r, clock=FixedClock(), sleep=lambda _: None))
     monkeypatch.setattr(container, "report_service", lambda: service)
+    people = PeopleService(r, CursorCodec(b"k" * 32))
+    monkeypatch.setattr(container, "people_service", lambda: people)
     return r
 
 
@@ -172,3 +176,127 @@ def test_unexpected_error_is_500_without_details(repo, monkeypatch):
     assert status == 500
     assert body["error"]["code"] == "INTERNAL"
     assert "secret" not in json.dumps(body)
+
+
+REVIEWER_CLAIMS = {"sub": "rev_1", "cognito:groups": "[reviewer]"}
+
+
+def get(path, query=None, claims=REVIEWER_CLAIMS):
+    return call(event("GET", path, claims=claims, query=query))
+
+
+@pytest.fixture
+def maya(repo):
+    _, body, _ = publish()
+    pid = body["claim"]["subject_id"]
+    publish(
+        {
+            **BODY,
+            "subject": {"type": "PERSON", "id": pid},
+            "claim_type": "FOUND_SAFE",
+            "original_text": "Maya Rawat admitted to ward 3. " + "Stable condition. " * 20,
+            "external_reference": "CH-2",
+            "reported_at": "2026-10-03T07:40:00+05:30",
+        }
+    )
+    return pid
+
+
+def test_people_list_and_search(maya):
+    status, body, headers = get("/v1/incidents/inc_1/people", {"q": "rawat", "age": "25"})
+    assert status == 200
+    assert body == {"people": [{"id": maya, "name": "Maya Rawat", "age": 24}], "next_cursor": None}
+    assert headers["x-request-id"] == "req-abc"
+
+
+def test_people_list_pages(maya, repo):
+    publish(
+        {
+            **BODY,
+            "subject": {"type": "PERSON", "new": {"name": "Asha Devi"}},
+            "external_reference": "CH-3",
+        }
+    )
+    _, first, _ = get("/v1/incidents/inc_1/people", {"limit": "1"})
+    assert [p["name"] for p in first["people"]] == ["Asha Devi"]
+    _, second, _ = get("/v1/incidents/inc_1/people", {"limit": "1", "cursor": first["next_cursor"]})
+    assert [p["name"] for p in second["people"]] == ["Maya Rawat"]
+    assert second["next_cursor"] is None
+
+
+def test_people_bad_limit_is_400(repo):
+    status, body, _ = get("/v1/incidents/inc_1/people", {"limit": "500"})
+    assert status == 400 and body["error"]["code"] == "BAD_REQUEST"
+
+
+def test_people_unknown_incident_is_404(repo):
+    status, _, _ = get("/v1/incidents/inc_x/people")
+    assert status == 404
+
+
+def test_people_requires_sign_in(repo):
+    status, _, _ = get("/v1/incidents/inc_1/people", claims=None)
+    assert status == 401
+
+
+def test_person_profile(maya):
+    status, body, _ = get(f"/v1/people/{maya}")
+    assert status == 200
+    assert body["person"] == {
+        "id": maya,
+        "name": "Maya Rawat",
+        "age": 24,
+        "incident_id": "inc_1",
+        "notes": None,
+        "report_count": 2,
+    }
+    assert body["summary"]["label"] == "Reported found safe"
+    assert body["summary"]["conflicts"] == []
+    assert body["identity"] == []
+
+
+def test_timeline_matches_design_shape(maya):
+    status, body, _ = get(f"/v1/people/{maya}/timeline")
+    assert status == 200
+    assert body["person"] == {"id": maya, "name": "Maya Rawat", "age": 24}
+    summary = body["summary"]
+    assert summary["basis"] == "Latest dated status report"
+    assert summary["cited_claim_id"] == body["entries"][1]["claim_id"]
+    assert summary["needs_review"] is False
+    first, second = body["entries"]
+    assert first["relation"] == "FIRST" and second["relation"] == "UPDATE"
+    assert second["source"] == "Central Hospital Demo"
+    assert second["reported_at"] == "2026-10-03T02:10:00Z"
+    assert second["excerpt"].endswith("...") and len(second["excerpt"]) <= 163
+    assert "original_text" not in second
+    assert body["next_cursor"] is None
+
+
+def test_timeline_desc_with_cursor(maya):
+    _, first, _ = get(f"/v1/people/{maya}/timeline", {"order": "desc", "limit": "1"})
+    assert first["entries"][0]["claim_type"] == "FOUND_SAFE"
+    _, second, _ = get(
+        f"/v1/people/{maya}/timeline",
+        {"order": "desc", "limit": "1", "cursor": first["next_cursor"]},
+    )
+    assert second["entries"][0]["claim_type"] == "MISSING"
+    assert second["next_cursor"] is None
+
+
+def test_tampered_cursor_is_400(maya):
+    _, first, _ = get(f"/v1/people/{maya}/timeline", {"limit": "1"})
+    status, body, _ = get(
+        f"/v1/people/{maya}/timeline", {"limit": "1", "cursor": first["next_cursor"] + "x"}
+    )
+    assert status == 400 and body["error"]["code"] == "BAD_REQUEST"
+
+
+def test_unknown_person_is_404(repo):
+    status, body, _ = get("/v1/people/per_missing/timeline")
+    assert status == 404 and body["error"]["code"] == "NOT_FOUND"
+
+
+def test_publisher_of_other_incident_is_403(maya, repo):
+    claims = {"sub": "u9", "cognito:groups": "[publisher]", "custom:org_id": "org_other"}
+    status, _, _ = get(f"/v1/people/{maya}", claims=claims)
+    assert status == 403
