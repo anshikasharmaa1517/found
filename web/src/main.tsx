@@ -15,6 +15,7 @@ if (result.ok) {
       <App
         gateway={cognitoGateway(result.config)}
         apiUrl={result.config.apiUrl}
+        defaultIncidentId={result.config.defaultIncidentId}
       />
     </StrictMode>,
   );

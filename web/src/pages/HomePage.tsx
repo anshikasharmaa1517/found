@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useApi } from "../api/context";
 import { useUser } from "../auth/context";
 import { displayName, ROLE_LABELS, type Role } from "../auth/user";
+import { isIncidentId, rememberedIncident } from "../incident";
 
 const ROLE_TASKS: Record<Role, string> = {
   publisher: "Publish structured reports as your organization.",
@@ -13,9 +15,11 @@ const ROLE_TASKS: Record<Role, string> = {
 
 type Health = "checking" | "up" | "down";
 
-export function HomePage() {
+export function HomePage({ defaultIncidentId }: { defaultIncidentId?: string }) {
   const user = useUser();
   const api = useApi();
+  const navigate = useNavigate();
+  const [incidentError, setIncidentError] = useState<string | null>(null);
   const [health, setHealth] = useState<Health>("checking");
 
   useEffect(() => {
@@ -29,6 +33,16 @@ export function HomePage() {
     };
   }, [api]);
 
+  function openIncident(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const id = String(new FormData(event.currentTarget).get("incident") ?? "").trim();
+    if (!isIncidentId(id)) {
+      setIncidentError("Enter an incident id, for example inc_01J9X0.");
+      return;
+    }
+    navigate(`/incidents/${encodeURIComponent(id)}/people`);
+  }
+
   return (
     <section className="page">
       <h1>Welcome, {displayName(user)}</h1>
@@ -40,6 +54,23 @@ export function HomePage() {
         ))}
       </ul>
       {user.orgId && <p className="muted">Organization: {user.orgId}</p>}
+      <form className="search" onSubmit={openIncident}>
+        <label>
+          Incident
+          <input
+            name="incident"
+            defaultValue={rememberedIncident(defaultIncidentId) ?? ""}
+            aria-invalid={incidentError ? "true" : undefined}
+            required
+          />
+        </label>
+        <button type="submit">Open people</button>
+      </form>
+      {incidentError && (
+        <p className="error" role="alert">
+          {incidentError}
+        </p>
+      )}
       <p className="status" role="status">
         Service:{" "}
         {health === "checking" ? "checking" : health === "up" ? "available" : "not reachable"}

@@ -20,8 +20,14 @@ describe("readConfig", () => {
         userPoolClientId: "client",
         apiUrl: "https://api.example.org",
         wsUrl: "wss://ws.example.org/prod",
+        defaultIncidentId: undefined,
       },
     });
+  });
+
+  it("reads the optional default incident", () => {
+    const result = readConfig({ ...FULL, VITE_DEFAULT_INCIDENT_ID: " inc_demo " });
+    expect(result.ok && result.config.defaultIncidentId).toBe("inc_demo");
   });
 
   it("lists every missing or blank setting", () => {

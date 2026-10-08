@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useMatch, useNavigate } from "react-router-dom";
 
 import { useAuth, useUser } from "../auth/context";
 import { displayName, mainRole, ROLE_LABELS } from "../auth/user";
+import { rememberedIncident } from "../incident";
 
 export function AppShell() {
   const user = useUser();
@@ -10,6 +11,9 @@ export function AppShell() {
   const navigate = useNavigate();
   const [leaving, setLeaving] = useState(false);
   const role = mainRole(user);
+  // The incident in the URL wins; elsewhere, the one opened last.
+  const inUrl = useMatch("/incidents/:incidentId/*")?.params.incidentId;
+  const incidentId = inUrl ?? rememberedIncident();
 
   async function onSignOut() {
     setLeaving(true);
@@ -30,6 +34,9 @@ export function AppShell() {
           <NavLink to="/" end>
             Home
           </NavLink>
+          {incidentId && (
+            <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/people`}>People</NavLink>
+          )}
         </nav>
         <div className="account">
           <span className="who">

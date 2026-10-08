@@ -6,9 +6,11 @@ export interface AppConfig {
   userPoolClientId: string;
   apiUrl: string;
   wsUrl: string;
+  /** Optional: the incident offered first on the home page. */
+  defaultIncidentId?: string;
 }
 
-const KEYS: Record<keyof AppConfig, string> = {
+const KEYS: Record<Exclude<keyof AppConfig, "defaultIncidentId">, string> = {
   region: "VITE_REGION",
   userPoolId: "VITE_USER_POOL_ID",
   userPoolClientId: "VITE_USER_POOL_CLIENT_ID",
@@ -28,5 +30,13 @@ export function readConfig(env: Record<string, string | undefined>): ConfigResul
   }
   if (missing.length > 0) return { ok: false, missing };
   const config = values as AppConfig;
-  return { ok: true, config: { ...config, apiUrl: config.apiUrl.replace(/\/+$/, "") } };
+  const defaultIncidentId = env.VITE_DEFAULT_INCIDENT_ID?.trim() || undefined;
+  return {
+    ok: true,
+    config: {
+      ...config,
+      apiUrl: config.apiUrl.replace(/\/+$/, ""),
+      defaultIncidentId,
+    },
+  };
 }

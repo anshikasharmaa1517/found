@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-import type { ApiClient } from "../api/client";
+import { ApiError, type ApiClient } from "../api/client";
 import { ApiContext } from "../api/context";
 import { AppRoutes } from "../App";
 import { AuthProvider } from "../auth/AuthProvider";
@@ -56,6 +56,33 @@ export function fakeApi(health: "ok" | "down" = "ok"): ApiClient {
     post: async <T,>() => ({}) as T,
     del: async () => undefined,
   };
+}
+
+export type Query = Record<string, string | number | undefined>;
+export interface Call {
+  path: string;
+  query: Query;
+}
+
+/**
+ * Answers requests by path and records every call. A handler may throw, for example an
+ * ApiError, to stand in for an error response.
+ */
+export function routedApi(
+  routes: Record<string, (query: Query) => unknown>,
+) {
+  const calls: Call[] = [];
+  const api: ApiClient = {
+    get: async <T,>(path: string, query: Query = {}) => {
+      calls.push({ path, query });
+      const handler = routes[path];
+      if (!handler) throw new ApiError(404, "NOT_FOUND", "Not found.");
+      return handler(query) as T;
+    },
+    post: async <T,>() => ({}) as T,
+    del: async () => undefined,
+  };
+  return { api, calls };
 }
 
 export function renderApp(

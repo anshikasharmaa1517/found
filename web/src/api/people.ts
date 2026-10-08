@@ -1,0 +1,68 @@
+/** People and timeline endpoints (design Sections 7.3 and 7.4). */
+
+import type { ApiClient } from "./client";
+
+export interface PersonRow {
+  id: string;
+  name: string;
+  age: number | null;
+}
+
+export interface PeoplePage {
+  people: PersonRow[];
+  next_cursor: string | null;
+}
+
+export type Relation = "FIRST" | "UPDATE" | "HISTORICAL" | "NEEDS_REVIEW" | "NOT_STATUS";
+
+export interface Conflict {
+  claim_id: string;
+  claim_type: string;
+  source: string;
+}
+
+export interface Summary {
+  label: string;
+  basis: string;
+  cited_claim_id: string | null;
+  conflicts: Conflict[];
+  needs_review: boolean;
+}
+
+export interface TimelineEntry {
+  claim_id: string;
+  seq: number;
+  claim_type: string;
+  value: string | null;
+  source_id: string;
+  source: string;
+  reported_at: string | null;
+  relation: Relation;
+  excerpt: string;
+}
+
+export interface Timeline {
+  person: PersonRow;
+  summary: Summary;
+  identity: unknown[];
+  entries: TimelineEntry[];
+  next_cursor: string | null;
+}
+
+export type Order = "asc" | "desc";
+
+export function listPeople(
+  api: ApiClient,
+  incidentId: string,
+  params: { q?: string; age?: string; cursor?: string; limit?: number } = {},
+): Promise<PeoplePage> {
+  return api.get<PeoplePage>(`/v1/incidents/${encodeURIComponent(incidentId)}/people`, params);
+}
+
+export function getTimeline(
+  api: ApiClient,
+  personId: string,
+  params: { order?: Order; cursor?: string; limit?: number } = {},
+): Promise<Timeline> {
+  return api.get<Timeline>(`/v1/people/${encodeURIComponent(personId)}/timeline`, params);
+}
