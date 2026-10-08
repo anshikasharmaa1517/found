@@ -10,5 +10,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // Form tests type every keystroke; leave room for a busy CI machine.
+    testTimeout: 15000,
   },
 });

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { useApi } from "../api/context";
@@ -5,8 +6,10 @@ import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
 import { getTimeline, type Order, type Summary, type TimelineEntry } from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { FollowPanel } from "../components/FollowPanel";
 import { rememberedIncident } from "../incident";
 import { claimTypeLabel, formatTime, relationLabel } from "../labels";
+import { useLiveMessage, useLiveReconnect } from "../live/context";
 import { useLoad } from "../useLoad";
 import { usePager } from "../usePager";
 
@@ -100,11 +103,24 @@ export function PersonPage() {
   const incidentId = rememberedIncident();
   const user = useUser();
 
-  const [first, retry] = useLoad(key, () => getTimeline(api, personId, { order }));
-  const pager = usePager(key, first.status === "ready" ? first.data.next_cursor : null, async (cursor) => {
+  const [first, retry, refresh] = useLoad(key, () => getTimeline(api, personId, { order }));
+  const [version, setVersion] = useState(0);
+  const pager = usePager(`${key}|${version}`, first.status === "ready" ? first.data.next_cursor : null, async (cursor) => {
     const page = await getTimeline(api, personId, { order, cursor });
     return { items: page.entries, next: page.next_cursor };
   });
+
+  // A new report about this person, or a dropped connection, means the page may be behind.
+  function reload() {
+    refresh();
+    setVersion((v) => v + 1);
+  }
+  useLiveMessage((m) => {
+    if ((m.type === "claim.created" || m.type === "alert.created") && m.subject_id === personId) {
+      reload();
+    }
+  });
+  useLiveReconnect(reload);
 
   if (first.status === "loading") return <p className="page-status">Loading timeline</p>;
   if (first.status === "error") {
@@ -139,6 +155,8 @@ export function PersonPage() {
       )}
 
       <SummaryCard summary={summary} />
+
+      {hasRole(user, "family") && <FollowPanel personId={person.id} personName={person.name} />}
 
       <div className="timeline-head">
         <h2>Timeline</h2>

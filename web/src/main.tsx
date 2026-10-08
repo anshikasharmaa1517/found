@@ -19,6 +19,7 @@ if (result.ok) {
         gateway={cognitoGateway(result.config)}
         apiUrl={result.config.apiUrl}
         defaultIncidentId={result.config.defaultIncidentId}
+        wsUrl={config.wsUrl}
         mapStyleUrl={
           config.mapApiKey ? mapStyleUrl(config.region, config.mapApiKey, dark) : undefined
         }

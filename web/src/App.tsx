@@ -8,6 +8,8 @@ import { useAuth } from "./auth/context";
 import type { AuthGateway } from "./auth/gateway";
 import { RequireAuth } from "./auth/RequireAuth";
 import { AppShell } from "./components/AppShell";
+import type { SocketLike } from "./live/client";
+import { AlertsPage } from "./pages/AlertsPage";
 import { HomePage } from "./pages/HomePage";
 import { MapPage } from "./pages/MapPage";
 import { PeoplePage } from "./pages/PeoplePage";
@@ -35,16 +37,24 @@ function WithApi({ apiUrl, children }: { apiUrl: string; children: ReactNode }) 
 export interface AppSettings {
   defaultIncidentId?: string;
   mapStyleUrl?: string;
+  wsUrl?: string;
+  /** Tests pass a fake socket. */
+  createSocket?: (url: string) => SocketLike;
 }
 
-export function AppRoutes({ defaultIncidentId, mapStyleUrl }: AppSettings = {}) {
+export function AppRoutes({
+  defaultIncidentId,
+  mapStyleUrl,
+  wsUrl,
+  createSocket,
+}: AppSettings = {}) {
   return (
     <Routes>
       <Route path="/sign-in" element={<SignInPage />} />
       <Route
         element={
           <RequireAuth>
-            <AppShell />
+            <AppShell wsUrl={wsUrl} createSocket={createSocket} />
           </RequireAuth>
         }
       >
@@ -60,6 +70,14 @@ export function AppRoutes({ defaultIncidentId, mapStyleUrl }: AppSettings = {}) 
             </RequireAuth>
           }
         />
+        <Route
+          path="alerts"
+          element={
+            <RequireAuth roles={["family"]}>
+              <AlertsPage />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
@@ -71,6 +89,7 @@ export function App({
   apiUrl,
   defaultIncidentId,
   mapStyleUrl,
+  wsUrl,
 }: AppSettings & {
   gateway: AuthGateway;
   apiUrl: string;
@@ -79,7 +98,11 @@ export function App({
     <AuthProvider gateway={gateway}>
       <WithApi apiUrl={apiUrl}>
         <BrowserRouter>
-          <AppRoutes defaultIncidentId={defaultIncidentId} mapStyleUrl={mapStyleUrl} />
+          <AppRoutes
+            defaultIncidentId={defaultIncidentId}
+            mapStyleUrl={mapStyleUrl}
+            wsUrl={wsUrl}
+          />
         </BrowserRouter>
       </WithApi>
     </AuthProvider>

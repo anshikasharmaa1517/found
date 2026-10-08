@@ -16,11 +16,14 @@ function asApiError(err: unknown): ApiError {
 /**
  * Runs `load` when `key` changes and ignores answers that arrive after a newer request,
  * so fast typing or navigation never shows stale results.
+ *
+ * Returns the state, `retry` (shows loading again) and `refresh` (keeps what is on screen
+ * until the new answer arrives, for live updates).
  */
 export function useLoad<T>(
   key: string,
   load: () => Promise<T>,
-): [Load<T>, () => void] {
+): [Load<T>, () => void, () => void] {
   const [state, setState] = useState<{ key: string; load: Load<T> }>({
     key,
     load: { status: "loading" },
@@ -45,7 +48,9 @@ export function useLoad<T>(
     setAttempt((n) => n + 1);
   }, []);
 
-  return [state.key === key ? state.load : { status: "loading" }, retry];
+  const refresh = useCallback(() => setAttempt((n) => n + 1), []);
+
+  return [state.key === key ? state.load : { status: "loading" }, retry, refresh];
 }
 
 export { asApiError };
