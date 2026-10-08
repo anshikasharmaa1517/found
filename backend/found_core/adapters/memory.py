@@ -10,6 +10,7 @@ from found_core.domain.models import (
     Alert,
     Claim,
     IdemMarker,
+    Organization,
     Source,
     Subject,
     Subscription,
@@ -25,6 +26,7 @@ class InMemoryFoundRepository:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self.incidents: set[str] = set()
+        self.organizations: dict[tuple[str, str], Organization] = {}
         self.sources: dict[str, Source] = {}
         self.subjects: dict[str, Subject] = {}
         self.claims: dict[str, Claim] = {}
@@ -38,6 +40,12 @@ class InMemoryFoundRepository:
 
     def incident_exists(self, incident_id: str) -> bool:
         return incident_id in self.incidents
+
+    def add_organization(self, org: Organization) -> None:
+        self.organizations[(org.incident_id, org.id)] = org
+
+    def get_organization(self, incident_id: str, org_id: str) -> Organization | None:
+        return self.organizations.get((incident_id, org_id))
 
     def get_idempotency(self, org_id: str, external_reference: str) -> IdemMarker | None:
         return self.markers.get((org_id, external_reference))

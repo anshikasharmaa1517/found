@@ -14,6 +14,7 @@ from found_core.domain.models import (
     Alert,
     Claim,
     IdemMarker,
+    Organization,
     Source,
     Subject,
     Subscription,
@@ -37,6 +38,10 @@ _TX_MARKER, _TX_SUBJECT, _TX_CLAIM, _TX_SOURCE = 0, 1, 2, 3
 
 def incident_key(incident_id: str) -> dict[str, str]:
     return {"PK": f"INC#{incident_id}", "SK": "META"}
+
+
+def organization_key(incident_id: str, org_id: str) -> dict[str, str]:
+    return {"PK": f"INC#{incident_id}", "SK": f"ORG#{org_id}"}
 
 
 def source_key(incident_id: str, source_id: str) -> dict[str, str]:
@@ -79,6 +84,15 @@ def _plain(value: Any) -> Any:
 
 def _fields(item: dict[str, Any]) -> dict[str, Any]:
     return {k: _plain(v) for k, v in item.items() if k not in _META_ATTRS}
+
+
+def organization_item(org: Organization) -> dict[str, Any]:
+    return {
+        **organization_key(org.incident_id, org.id),
+        "entity_type": "ORGANIZATION",
+        "schema_version": SCHEMA_VERSION,
+        **_attrs(org),
+    }
 
 
 def source_item(source: Source) -> dict[str, Any]:
@@ -191,6 +205,10 @@ class DynamoFoundRepository:
     def incident_exists(self, incident_id: str) -> bool:
         resp = self._table.get_item(Key=incident_key(incident_id), ProjectionExpression="PK")
         return "Item" in resp
+
+    def get_organization(self, incident_id: str, org_id: str) -> Organization | None:
+        item = self._get(organization_key(incident_id, org_id))
+        return Organization.model_validate(_fields(item)) if item else None
 
     def get_idempotency(self, org_id: str, external_reference: str) -> IdemMarker | None:
         item = self._get(marker_key(org_id, external_reference))

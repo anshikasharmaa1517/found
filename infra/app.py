@@ -5,6 +5,7 @@ import os
 import aws_cdk as cdk
 
 from config import REGION, load
+from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
 from stacks.data_stack import DataStack
 
@@ -13,8 +14,17 @@ def build(app: cdk.App) -> None:
     cfg = load(app.node.try_get_context("env") or "dev", app.node.try_get_context("envs") or {})
     env = cdk.Environment(account=os.environ.get("CDK_DEFAULT_ACCOUNT"), region=REGION)
 
-    DataStack(app, f"Found-{cfg.name}-Data", cfg=cfg, env=env)
-    AuthStack(app, f"Found-{cfg.name}-Auth", cfg=cfg, env=env)
+    data = DataStack(app, f"Found-{cfg.name}-Data", cfg=cfg, env=env)
+    auth = AuthStack(app, f"Found-{cfg.name}-Auth", cfg=cfg, env=env)
+    ApiStack(
+        app,
+        f"Found-{cfg.name}-Api",
+        cfg=cfg,
+        table=data.table,
+        user_pool=auth.user_pool,
+        web_client=auth.web_client,
+        env=env,
+    )
 
     cdk.Tags.of(app).add("project", "found")
     cdk.Tags.of(app).add("env", cfg.name)

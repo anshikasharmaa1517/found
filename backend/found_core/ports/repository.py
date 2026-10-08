@@ -6,6 +6,7 @@ from typing import Protocol
 from found_core.domain.models import (
     Claim,
     IdemMarker,
+    Organization,
     Source,
     Subject,
 )
@@ -34,6 +35,7 @@ class PublishPlan:
 class FoundRepository(Protocol):
     def incident_exists(self, incident_id: str) -> bool: ...
 
+    def get_organization(self, incident_id: str, org_id: str) -> Organization | None: ...
 
     def get_idempotency(self, org_id: str, external_reference: str) -> IdemMarker | None: ...
 

@@ -11,6 +11,16 @@ class FoundError(Exception):
         self.details = details
 
 
+class BadRequest(FoundError):
+    code = "BAD_REQUEST"
+    http_status = 400
+
+
+class Unauthenticated(FoundError):
+    code = "UNAUTHENTICATED"
+    http_status = 401
+
+
 class ValidationFailed(FoundError):
     code = "VALIDATION_FAILED"
     http_status = 422

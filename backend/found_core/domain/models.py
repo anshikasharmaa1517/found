@@ -19,6 +19,16 @@ class _Entity(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
+class Organization(_Entity):
+    """An organization registered for one incident. The publisher's token carries its id."""
+
+    id: str
+    incident_id: str
+    name: str
+    name_norm: str
+    org_type: SourceType
+
+
 class Source(_Entity):
     id: str
     incident_id: str

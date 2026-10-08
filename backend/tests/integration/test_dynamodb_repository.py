@@ -3,11 +3,13 @@ from datetime import UTC, datetime
 import pytest
 from boto3.dynamodb.conditions import Key
 
+from found_core.adapters.dynamodb import organization_item
 from found_core.domain.commands import PublishCommand
 from found_core.domain.errors import ReferenceConflict
 from found_core.domain.models import (
     Claim,
     IdemMarker,
+    Organization,
     Source,
     Subject,
 )
@@ -114,6 +116,20 @@ def service(repo):
 def test_incident_exists(repo):
     assert repo.incident_exists("inc_1")
     assert not repo.incident_exists("inc_missing")
+
+
+def test_get_organization_is_scoped_to_incident(repo, table):
+    org = Organization(
+        id="org_h",
+        incident_id="inc_1",
+        name="Central Hospital Demo",
+        name_norm="central hospital demo",
+        org_type="HOSPITAL",
+    )
+    table.put_item(Item=organization_item(org))
+    assert repo.get_organization("inc_1", "org_h") == org
+    assert repo.get_organization("inc_2", "org_h") is None
+    assert repo.get_organization("inc_1", "org_other") is None
 
 
 def test_ensure_source_is_put_if_absent(repo):
