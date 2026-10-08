@@ -98,3 +98,37 @@ STATUS_TYPES: dict[SubjectType, frozenset[str]] = {
 
 SENSITIVE_CLAIM_TYPES: frozenset[str] = frozenset({"DECEASED"})
 HIGH_SEVERITY_CLAIM_TYPES: frozenset[str] = frozenset({"DECEASED", "INJURED"})
+
+
+class InvestigationStatus(StrEnum):
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+    FAILED = "FAILED"
+
+
+class InvestigationMode(StrEnum):
+    """How a result was produced. CACHED is only ever a response label, never stored."""
+
+    LIVE = "LIVE"
+    CACHED = "CACHED"
+    REPLAYED = "REPLAYED"
+
+
+class Attribution(StrEnum):
+    DIRECT = "DIRECT"
+    RELAY = "RELAY"
+    UNCLEAR = "UNCLEAR"
+
+
+class Comparison(StrEnum):
+    SUPPORTS = "SUPPORTS"
+    DIFFERS = "DIFFERS"
+    UNCLEAR = "UNCLEAR"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+
+
+class FindingReview(StrEnum):
+    ACCEPTED = "ACCEPTED"
+    DISPUTED = "DISPUTED"

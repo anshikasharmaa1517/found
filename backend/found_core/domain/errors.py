@@ -59,3 +59,8 @@ class BudgetLimit(FoundError):
 class ServiceUnavailable(FoundError):
     code = "DEPENDENCY_UNAVAILABLE"
     http_status = 503
+
+
+class LiveUnavailable(FoundError):
+    code = "LIVE_UNAVAILABLE"
+    http_status = 503

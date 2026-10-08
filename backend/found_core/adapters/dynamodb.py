@@ -4,25 +4,30 @@ Publish is one TransactWriteItems call (design Section 9.5). Cancellation reason
 read per item to tell an idempotency conflict from a sequence conflict.
 """
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
-from found_core.domain.enums import SubjectType
+from found_core.domain.enums import InvestigationStatus, SubjectType
+from found_core.domain.investigation import CACHEABLE_STATUSES
 from found_core.domain.models import (
     Alert,
     Claim,
     Connection,
     IdemMarker,
+    Investigation,
     Location,
     Organization,
     ReviewItem,
+    Settings,
     Source,
     Subject,
     Subscription,
 )
+from found_core.ports.budget import BudgetUsage
 from found_core.ports.repository import (
     IdempotencyConflict,
     NamePosition,
@@ -42,6 +47,9 @@ _ALERT_POSITION_KEYS = frozenset({"PK", "SK", "GSI1PK", "GSI1SK"})
 # BatchGetItem accepts at most this many keys per call.
 _BATCH_GET_MAX = 100
 _BATCH_GET_ATTEMPTS = 5
+
+# Attempts to take a run lock when its holder vanishes between the put and the read.
+_LOCK_ATTEMPTS = 3
 
 # Positions of the conditional items in the publish transaction.
 _TX_MARKER, _TX_SUBJECT, _TX_CLAIM, _TX_SOURCE = 0, 1, 2, 3
@@ -97,6 +105,21 @@ def review_item_key(incident_id: str, review_id: str) -> dict[str, str]:
 
 def marker_key(org_id: str, external_reference: str) -> dict[str, str]:
     return {"PK": f"IDEM#{org_id}#{external_reference}", "SK": "META"}
+
+
+def investigation_key(investigation_id: str) -> dict[str, str]:
+    return {"PK": f"INV#{investigation_id}", "SK": "META"}
+
+
+def run_lock_key(claim_id: str) -> dict[str, str]:
+    return {"PK": f"LOCK#INV#{claim_id}", "SK": "META"}
+
+
+SETTINGS_KEY = {"PK": "SETTINGS", "SK": "META"}
+
+
+def budget_key(period: str) -> dict[str, str]:
+    return {"PK": f"BUDGET#{period}", "SK": "META"}
 
 
 def _attrs(model: Any) -> dict[str, Any]:
@@ -244,6 +267,28 @@ def connection_item(connection: Connection) -> dict[str, Any]:
     if connection.incident_id:
         item["GSI3PK"] = f"WSINC#{connection.incident_id}"
         item["GSI3SK"] = f"CONN#{connection.id}"
+    return item
+
+
+def investigation_item(investigation: Investigation) -> dict[str, Any]:
+    attrs = _attrs(investigation)
+    queued = f"{attrs['queued_at']}#{investigation.id}"
+    item = {
+        **investigation_key(investigation.id),
+        "GSI1PK": f"INC#{investigation.incident_id}#INV",
+        "GSI1SK": queued,
+        "GSI2PK": f"CLMINV#{investigation.claim_id}",
+        "GSI2SK": queued,
+        "entity_type": "INVESTIGATION",
+        "schema_version": SCHEMA_VERSION,
+        **attrs,
+    }
+    # Only a cacheable result joins the fingerprint index, so failures are never reused.
+    if investigation.status in CACHEABLE_STATUSES:
+        if investigation.finished_at is None:
+            raise ValueError("a cacheable result needs finished_at")
+        item["GSI3PK"] = f"FP#{investigation.fingerprint}"
+        item["GSI3SK"] = attrs["finished_at"]
     return item
 
 
@@ -581,6 +626,127 @@ class DynamoFoundRepository:
         item = self._get(review_item_key(incident_id, review_id))
         return ReviewItem.model_validate(_fields(item)) if item else None
 
+    def latest_source_claim_id(self, source_id: str) -> str | None:
+        resp = self._table.query(
+            IndexName="GSI2",
+            KeyConditionExpression=Key("GSI2PK").eq(f"SRC#{source_id}"),
+            ScanIndexForward=False,
+            Limit=1,
+        )
+        items = resp.get("Items", [])
+        return str(items[0]["id"]) if items else None
+
+    def get_settings(self) -> Settings:
+        item = self._get(SETTINGS_KEY)
+        return Settings.model_validate(_fields(item)) if item else Settings()
+
+    def put_investigation(self, investigation: Investigation) -> None:
+        if not self._put_if_absent(investigation_item(investigation)):
+            raise ValueError("investigation id already exists")
+
+    def get_investigation(self, investigation_id: str) -> Investigation | None:
+        item = self._get(investigation_key(investigation_id))
+        return Investigation.model_validate(_fields(item)) if item else None
+
+    def update_investigation_if(
+        self,
+        investigation_id: str,
+        expected_status: InvestigationStatus,
+        changes: dict[str, Any],
+    ) -> Investigation | None:
+        current = self.get_investigation(investigation_id)
+        if current is None or current.status != expected_status:
+            return None
+        updated = Investigation.model_validate({**current.model_dump(), **changes})
+        if updated.id != investigation_id:
+            raise ValueError("an update cannot change the id")
+        new_item = investigation_item(updated)
+        # Only the named fields are written, so counters bumped meanwhile are kept.
+        fields = [f for f in changes if f != "id"]
+        fields += [k for k in ("GSI3PK", "GSI3SK") if k in new_item]
+        names: dict[str, str] = {"#status": "status"}
+        values: dict[str, Any] = {":expected": str(expected_status)}
+        sets: list[str] = []
+        removes: list[str] = []
+        for n, field in enumerate(dict.fromkeys(fields)):
+            names[f"#f{n}"] = field
+            if field in new_item:
+                values[f":v{n}"] = new_item[field]
+                sets.append(f"#f{n} = :v{n}")
+            else:
+                removes.append(f"#f{n}")
+        if not sets and not removes:
+            return current
+        parts = []
+        if sets:
+            parts.append("SET " + ", ".join(sets))
+        if removes:
+            parts.append("REMOVE " + ", ".join(removes))
+        try:
+            resp = self._table.update_item(
+                Key=investigation_key(investigation_id),
+                UpdateExpression=" ".join(parts),
+                ConditionExpression="attribute_exists(PK) AND #status = :expected",
+                ExpressionAttributeNames=names,
+                ExpressionAttributeValues=values,
+                ReturnValues="ALL_NEW",
+            )
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return None
+        return Investigation.model_validate(_fields(resp["Attributes"]))
+
+    def find_cached_investigation(self, fingerprint: str) -> Investigation | None:
+        resp = self._table.query(
+            IndexName="GSI3",
+            KeyConditionExpression=Key("GSI3PK").eq(f"FP#{fingerprint}"),
+            ScanIndexForward=False,
+            Limit=1,
+        )
+        items = resp.get("Items", [])
+        return Investigation.model_validate(_fields(items[0])) if items else None
+
+    def acquire_run_lock(
+        self, claim_id: str, investigation_id: str, now: datetime, expires_at: datetime
+    ) -> str:
+        item = {
+            **run_lock_key(claim_id),
+            "entity_type": "RUN_LOCK",
+            "schema_version": SCHEMA_VERSION,
+            "claim_id": claim_id,
+            "investigation_id": investigation_id,
+            "ttl": int(expires_at.timestamp()),
+        }
+        for _ in range(_LOCK_ATTEMPTS):
+            try:
+                # TTL deletion lags, so an expired lock is taken over, not waited for.
+                self._table.put_item(
+                    Item=item,
+                    ConditionExpression="attribute_not_exists(PK) OR #ttl <= :now",
+                    ExpressionAttributeNames={"#ttl": "ttl"},
+                    ExpressionAttributeValues={":now": int(now.timestamp())},
+                )
+                return investigation_id
+            except ClientError as err:
+                if _error_code(err) != "ConditionalCheckFailedException":
+                    raise
+            held = self._get(run_lock_key(claim_id))
+            if held is not None:
+                return str(held["investigation_id"])
+        raise RuntimeError("run lock changed hands repeatedly")
+
+    def release_run_lock(self, claim_id: str, investigation_id: str) -> None:
+        try:
+            self._table.delete_item(
+                Key=run_lock_key(claim_id),
+                ConditionExpression="investigation_id = :inv",
+                ExpressionAttributeValues={":inv": investigation_id},
+            )
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+
     def _put_if_absent(self, item: dict[str, Any]) -> bool:
         try:
             self._table.put_item(Item=item, ConditionExpression="attribute_not_exists(PK)")
@@ -625,3 +791,65 @@ class DynamoFoundRepository:
         if failed(_TX_SOURCE):
             raise ValueError("source must exist before publish") from err
         raise err
+
+
+class DynamoBudgetLedger:
+    """Implements `BudgetLedger` with conditional atomic counters on `BUDGET#{period}`."""
+
+    def __init__(self, table: Any) -> None:
+        self._table = table
+
+    def _bump(self, period: str, counter: str, cap_attr: str, cap: int) -> bool:
+        try:
+            self._table.update_item(
+                Key=budget_key(period),
+                UpdateExpression=(
+                    "ADD #counter :one SET #et = :et, #sv = :sv, #period = :period, #cap = :cap"
+                ),
+                ConditionExpression="attribute_not_exists(#counter) OR #counter < :cap",
+                ExpressionAttributeNames={
+                    "#counter": counter,
+                    "#cap": cap_attr,
+                    "#et": "entity_type",
+                    "#sv": "schema_version",
+                    "#period": "period",
+                },
+                ExpressionAttributeValues={
+                    ":one": 1,
+                    ":cap": cap,
+                    ":et": "BUDGET",
+                    ":sv": SCHEMA_VERSION,
+                    ":period": period,
+                },
+            )
+            return True
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return False
+
+    def reserve_run(self, period: str, cap: int) -> bool:
+        return self._bump(period, "runs", "run_cap", cap)
+
+    def count_model_call(self, period: str, cap: int) -> bool:
+        return self._bump(period, "model_calls", "model_call_cap", cap)
+
+    def add_tokens(self, period: str, input_tokens: int, output_tokens: int) -> None:
+        self._table.update_item(
+            Key=budget_key(period),
+            UpdateExpression="ADD input_tokens :i, output_tokens :o SET #period = :period",
+            ExpressionAttributeNames={"#period": "period"},
+            ExpressionAttributeValues={":i": input_tokens, ":o": output_tokens, ":period": period},
+        )
+
+    def usage(self, period: str) -> BudgetUsage:
+        item = self._table.get_item(Key=budget_key(period), ConsistentRead=True).get("Item")
+        if not item:
+            return BudgetUsage(period)
+        return BudgetUsage(
+            period=period,
+            runs=int(item.get("runs", 0)),
+            model_calls=int(item.get("model_calls", 0)),
+            input_tokens=int(item.get("input_tokens", 0)),
+            output_tokens=int(item.get("output_tokens", 0)),
+        )

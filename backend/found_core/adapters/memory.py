@@ -5,20 +5,27 @@ which mirrors a DynamoDB transaction.
 """
 
 import threading
+from dataclasses import replace
+from datetime import datetime
+from typing import Any
 
-from found_core.domain.enums import SubjectType
+from found_core.domain.enums import InvestigationStatus, SubjectType
+from found_core.domain.investigation import CACHEABLE_STATUSES
 from found_core.domain.models import (
     Alert,
     Claim,
     Connection,
     IdemMarker,
+    Investigation,
     Location,
     Organization,
     ReviewItem,
+    Settings,
     Source,
     Subject,
     Subscription,
 )
+from found_core.ports.budget import BudgetUsage
 from found_core.ports.repository import (
     IdempotencyConflict,
     NamePosition,
@@ -42,6 +49,9 @@ class InMemoryFoundRepository:
         self.review_items: dict[str, ReviewItem] = {}
         self.connections: dict[str, Connection] = {}
         self.locations: dict[str, Location] = {}
+        self.settings = Settings()
+        self.investigations: dict[str, Investigation] = {}
+        self.run_locks: dict[str, tuple[str, datetime]] = {}
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
@@ -228,3 +238,98 @@ class InMemoryFoundRepository:
     def get_review_item(self, incident_id: str, review_id: str) -> ReviewItem | None:
         item = self.review_items.get(review_id)
         return item if item and item.incident_id == incident_id else None
+
+    def latest_source_claim_id(self, source_id: str) -> str | None:
+        # Same order as the source feed index: reported time as stored, then claim id.
+        def key(claim: Claim) -> str:
+            reported = claim.model_dump(mode="json")["reported_at"] or "0"
+            return f"{reported}#{claim.id}"
+
+        found = [c for c in self.claims.values() if c.source_id == source_id]
+        return max(found, key=key).id if found else None
+
+    def get_settings(self) -> Settings:
+        return self.settings
+
+    def put_investigation(self, investigation: Investigation) -> None:
+        with self._lock:
+            if investigation.id in self.investigations:
+                raise ValueError("investigation id already exists")
+            self.investigations[investigation.id] = investigation
+
+    def get_investigation(self, investigation_id: str) -> Investigation | None:
+        return self.investigations.get(investigation_id)
+
+    def update_investigation_if(
+        self,
+        investigation_id: str,
+        expected_status: InvestigationStatus,
+        changes: dict[str, Any],
+    ) -> Investigation | None:
+        with self._lock:
+            current = self.investigations.get(investigation_id)
+            if current is None or current.status != expected_status:
+                return None
+            updated = Investigation.model_validate({**current.model_dump(), **changes})
+            if updated.id != investigation_id:
+                raise ValueError("an update cannot change the id")
+            if updated.status in CACHEABLE_STATUSES and updated.finished_at is None:
+                raise ValueError("a cacheable result needs finished_at")
+            self.investigations[investigation_id] = updated
+            return updated
+
+    def find_cached_investigation(self, fingerprint: str) -> Investigation | None:
+        found = [
+            i
+            for i in self.investigations.values()
+            if i.fingerprint == fingerprint and i.status in CACHEABLE_STATUSES
+        ]
+        return max(found, key=lambda i: i.finished_at or i.queued_at) if found else None
+
+    def acquire_run_lock(
+        self, claim_id: str, investigation_id: str, now: datetime, expires_at: datetime
+    ) -> str:
+        with self._lock:
+            held = self.run_locks.get(claim_id)
+            if held is not None and held[1] > now:
+                return held[0]
+            self.run_locks[claim_id] = (investigation_id, expires_at)
+            return investigation_id
+
+    def release_run_lock(self, claim_id: str, investigation_id: str) -> None:
+        with self._lock:
+            held = self.run_locks.get(claim_id)
+            if held is not None and held[0] == investigation_id:
+                del self.run_locks[claim_id]
+
+
+class InMemoryBudgetLedger:
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.periods: dict[str, BudgetUsage] = {}
+
+    def _bump(self, period: str, field: str, cap: int) -> bool:
+        with self._lock:
+            usage = self.periods.get(period, BudgetUsage(period))
+            if getattr(usage, field) >= cap:
+                return False
+            self.periods[period] = replace(usage, **{field: getattr(usage, field) + 1})
+            return True
+
+    def reserve_run(self, period: str, cap: int) -> bool:
+        return self._bump(period, "runs", cap)
+
+    def count_model_call(self, period: str, cap: int) -> bool:
+        return self._bump(period, "model_calls", cap)
+
+    def add_tokens(self, period: str, input_tokens: int, output_tokens: int) -> None:
+        with self._lock:
+            usage = self.periods.get(period, BudgetUsage(period))
+            self.periods[period] = replace(
+                usage,
+                input_tokens=usage.input_tokens + input_tokens,
+                output_tokens=usage.output_tokens + output_tokens,
+            )
+
+    def usage(self, period: str) -> BudgetUsage:
+        return self.periods.get(period, BudgetUsage(period))

@@ -2,11 +2,16 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from found_core.domain.enums import (
+    Attribution,
+    Comparison,
     DeliveryStatus,
     ExtractionMethod,
+    FindingReview,
+    InvestigationMode,
+    InvestigationStatus,
     Relation,
     ReviewItemType,
     ReviewStatus,
@@ -141,6 +146,60 @@ class Connection(_Entity):
     incident_id: str | None = None
     connected_at: datetime
     expires_at: datetime
+
+
+class Citation(_Entity):
+    claim_id: str
+    excerpt: str
+
+
+class Investigation(_Entity):
+    """One provenance run on one claim. Only code moves it between statuses."""
+
+    id: str
+    incident_id: str
+    claim_id: str
+    fingerprint: str
+    mode: InvestigationMode
+    status: InvestigationStatus
+    model_id: str
+    prompt_version: str
+    agent_version: str
+    attribution: Attribution | None = None
+    referenced_source_id: str | None = None
+    comparison: Comparison | None = None
+    summary: str | None = None
+    citations: tuple[Citation, ...] = ()
+    outcome_reasons: tuple[str, ...] = ()
+    tool_calls: int = 0
+    model_calls: int = 0
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    usage_source: str | None = None
+    failure_reason: str | None = None
+    review_status: FindingReview | None = None
+    reviewed_by: str | None = None
+    review_note: str | None = None
+    reviewed_at: datetime | None = None
+    created_by: str
+    queued_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+    @field_validator("mode")
+    @classmethod
+    def _stored_mode(cls, mode: InvestigationMode) -> InvestigationMode:
+        if mode == InvestigationMode.CACHED:
+            raise ValueError("CACHED labels a response; a stored run is LIVE or REPLAYED")
+        return mode
+
+
+class Settings(_Entity):
+    """Admin switches. Caps left unset fall back to the deployed configuration."""
+
+    live_enabled: bool = False
+    run_cap: int | None = None
+    model_call_cap: int | None = None
 
 
 class IdemMarker(_Entity):

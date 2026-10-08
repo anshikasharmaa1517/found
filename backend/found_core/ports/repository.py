@@ -1,17 +1,20 @@
 """Persistence port used by the services. Adapters implement it for DynamoDB and memory."""
 
 from dataclasses import dataclass
-from typing import Protocol
+from datetime import datetime
+from typing import Any, Protocol
 
-from found_core.domain.enums import SubjectType
+from found_core.domain.enums import InvestigationStatus, SubjectType
 from found_core.domain.models import (
     Alert,
     Claim,
     Connection,
     IdemMarker,
+    Investigation,
     Location,
     Organization,
     ReviewItem,
+    Settings,
     Source,
     Subject,
     Subscription,
@@ -124,3 +127,42 @@ class FoundRepository(Protocol):
     def list_incident_claims(self, incident_id: str) -> list[Claim]: ...
 
     def get_review_item(self, incident_id: str, review_id: str) -> ReviewItem | None: ...
+
+    def latest_source_claim_id(self, source_id: str) -> str | None:
+        """The claim at the top of the source's feed (latest reported time), if any."""
+        ...
+
+    def get_settings(self) -> Settings: ...
+
+    def put_investigation(self, investigation: Investigation) -> None:
+        """Store a new investigation. Raises ValueError if the id is taken."""
+        ...
+
+    def get_investigation(self, investigation_id: str) -> Investigation | None: ...
+
+    def update_investigation_if(
+        self,
+        investigation_id: str,
+        expected_status: InvestigationStatus,
+        changes: dict[str, Any],
+    ) -> Investigation | None:
+        """Apply `changes` only while the status is `expected_status`.
+
+        Returns the updated investigation, or None if it is gone or its status moved.
+        Fields not named in `changes` are left as stored, so concurrent counters survive.
+        """
+        ...
+
+    def find_cached_investigation(self, fingerprint: str) -> Investigation | None:
+        """The newest COMPLETED or NEEDS_REVIEW run with this fingerprint."""
+        ...
+
+    def acquire_run_lock(
+        self, claim_id: str, investigation_id: str, now: datetime, expires_at: datetime
+    ) -> str:
+        """Take the claim's run lock unless an unexpired one exists. Returns the holder."""
+        ...
+
+    def release_run_lock(self, claim_id: str, investigation_id: str) -> None:
+        """Drop the lock if `investigation_id` still holds it."""
+        ...
