@@ -1,0 +1,8 @@
+{
+  "id": "inc_demo",
+  "name": "Kesari Valley flood (fictional demo)",
+  "is_demo": true,
+  "started_at": "2026-10-02T18:30:00+05:30",
+  "version": "demo-v1",
+  "seed": 20261002
+}

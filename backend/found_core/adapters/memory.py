@@ -22,6 +22,7 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    Incident,
     Investigation,
     InvestigationStep,
     Location,
@@ -45,6 +46,7 @@ class InMemoryFoundRepository:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self.incidents: set[str] = set()
+        self.incident_records: dict[str, Incident] = {}
         self.organizations: dict[tuple[str, str], Organization] = {}
         self.sources: dict[str, Source] = {}
         self.subjects: dict[str, Subject] = {}
@@ -63,6 +65,18 @@ class InMemoryFoundRepository:
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
+
+    def get_incident(self, incident_id: str) -> Incident | None:
+        if incident_id not in self.incidents:
+            return None
+        return self.incident_records.get(incident_id) or Incident(id=incident_id, name=incident_id)
+
+    def put_incident(self, incident: Incident) -> None:
+        self.incidents.add(incident.id)
+        self.incident_records[incident.id] = incident
+
+    def put_organization(self, org: Organization) -> None:
+        self.add_organization(org)
 
     def incident_exists(self, incident_id: str) -> bool:
         return incident_id in self.incidents

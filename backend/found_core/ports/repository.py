@@ -16,6 +16,7 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    Incident,
     Investigation,
     InvestigationStep,
     Location,
@@ -58,6 +59,12 @@ class PublishPlan:
 
 class FoundRepository(Protocol):
     def incident_exists(self, incident_id: str) -> bool: ...
+
+    def get_incident(self, incident_id: str) -> Incident | None: ...
+
+    def put_incident(self, incident: Incident) -> None: ...
+
+    def put_organization(self, org: Organization) -> None: ...
 
     def get_organization(self, incident_id: str, org_id: str) -> Organization | None: ...
 

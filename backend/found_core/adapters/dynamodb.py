@@ -24,6 +24,7 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    Incident,
     Investigation,
     InvestigationStep,
     Location,
@@ -149,6 +150,19 @@ def _plain(value: Any) -> Any:
 
 def _fields(item: dict[str, Any]) -> dict[str, Any]:
     return {k: _plain(v) for k, v in item.items() if k not in _META_ATTRS}
+
+
+def incident_item(incident: Incident) -> dict[str, Any]:
+    attrs = _attrs(incident)
+    return {
+        **incident_key(incident.id),
+        "GSI1PK": "LIST#INCIDENT",
+        "GSI1SK": f"{attrs.get('started_at', '0')}#{incident.id}",
+        "entity_type": "INCIDENT",
+        "schema_version": SCHEMA_VERSION,
+        "incident_id": incident.id,
+        **attrs,
+    }
 
 
 def organization_item(org: Organization) -> dict[str, Any]:
@@ -360,6 +374,21 @@ class DynamoFoundRepository:
     def incident_exists(self, incident_id: str) -> bool:
         resp = self._table.get_item(Key=incident_key(incident_id), ProjectionExpression="PK")
         return "Item" in resp
+
+    def get_incident(self, incident_id: str) -> Incident | None:
+        item = self._get(incident_key(incident_id))
+        if item is None:
+            return None
+        fields = {k: v for k, v in _fields(item).items() if k != "incident_id"}
+        fields.setdefault("id", incident_id)
+        fields.setdefault("name", incident_id)
+        return Incident.model_validate(fields)
+
+    def put_incident(self, incident: Incident) -> None:
+        self._table.put_item(Item=incident_item(incident))
+
+    def put_organization(self, org: Organization) -> None:
+        self._table.put_item(Item=organization_item(org))
 
     def get_organization(self, incident_id: str, org_id: str) -> Organization | None:
         item = self._get(organization_key(incident_id, org_id))

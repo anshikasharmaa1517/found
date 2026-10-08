@@ -27,6 +27,15 @@ class _Entity(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
+class Incident(_Entity):
+    """A disaster incident. Only a demo incident may be reset."""
+
+    id: str
+    name: str
+    is_demo: bool = False
+    started_at: datetime | None = None
+
+
 class Organization(_Entity):
     """An organization registered for one incident. The publisher's token carries its id."""
 

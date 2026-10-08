@@ -1,0 +1,32 @@
+[
+  {
+    "id": "org_police",
+    "name": "District Police Demo",
+    "org_type": "POLICE"
+  },
+  {
+    "id": "org_hospital",
+    "name": "Central Hospital Demo",
+    "org_type": "HOSPITAL"
+  },
+  {
+    "id": "org_clinic",
+    "name": "Hill Clinic Demo",
+    "org_type": "HOSPITAL"
+  },
+  {
+    "id": "org_ngo",
+    "name": "Flood Relief Demo",
+    "org_type": "NGO"
+  },
+  {
+    "id": "org_shelter",
+    "name": "Riverside Shelter Demo",
+    "org_type": "SHELTER_OPERATOR"
+  },
+  {
+    "id": "org_volunteers",
+    "name": "Valley Volunteers Demo",
+    "org_type": "COMMUNITY"
+  }
+]

@@ -506,3 +506,23 @@ def test_get_review_item_is_scoped_to_incident(repo):
     assert repo.get_review_item("inc_1", "rev_9") == item
     assert repo.get_review_item("inc_2", "rev_9") is None
     assert repo.get_review_item("inc_1", "rev_x") is None
+
+
+def test_incident_and_organization_round_trip(repo):
+    from found_core.domain.models import Incident
+
+    assert repo.get_incident("inc_1").id == "inc_1"
+    demo = Incident(
+        id="inc_demo",
+        name="Demo",
+        is_demo=True,
+        started_at=datetime(2026, 10, 2, 13, 0, tzinfo=UTC),
+    )
+    repo.put_incident(demo)
+    assert repo.get_incident("inc_demo") == demo and repo.incident_exists("inc_demo")
+    assert repo.get_incident("inc_x") is None
+    org = Organization(
+        id="org_h", incident_id="inc_demo", name="H", name_norm="h", org_type="HOSPITAL"
+    )
+    repo.put_organization(org)
+    assert repo.get_organization("inc_demo", "org_h") == org
