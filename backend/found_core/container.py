@@ -8,6 +8,7 @@ from found_core.ports.repository import FoundRepository
 from found_core.services.ingest import IngestService
 from found_core.services.people import PeopleService
 from found_core.services.reports import ReportService
+from found_core.services.subscriptions import SubscriptionService
 from found_core.services.watch import WatchService
 
 
@@ -44,3 +45,8 @@ def people_service() -> PeopleService:
 @cache
 def watch_service() -> WatchService:
     return WatchService(repository())
+
+
+@cache
+def subscription_service() -> SubscriptionService:
+    return SubscriptionService(repository(), cursor_codec())

@@ -35,6 +35,8 @@ _KEY_ATTRS = frozenset(
 )
 _META_ATTRS = _KEY_ATTRS | {"entity_type", "schema_version", "ttl"}
 
+_ALERT_POSITION_KEYS = frozenset({"PK", "SK", "GSI1PK", "GSI1SK"})
+
 # BatchGetItem accepts at most this many keys per call.
 _BATCH_GET_MAX = 100
 _BATCH_GET_ATTEMPTS = 5
@@ -171,17 +173,23 @@ def subscription_item(subscription: Subscription) -> dict[str, Any]:
     }
 
 
-def alert_item(alert: Alert) -> dict[str, Any]:
-    attrs = _attrs(alert)
+def _alert_index_keys(alert: Alert) -> dict[str, str]:
+    created = alert.model_dump(mode="json")["created_at"]
     return {
         **alert_key(alert.subscription_id, alert.claim_id),
         "GSI1PK": f"USER#{alert.user_id}",
-        "GSI1SK": f"ALR#{attrs['created_at']}#{alert.id}",
+        "GSI1SK": f"ALR#{created}#{alert.id}",
+    }
+
+
+def alert_item(alert: Alert) -> dict[str, Any]:
+    return {
+        **_alert_index_keys(alert),
         "GSI3PK": f"ALERT#{alert.id}",
         "GSI3SK": "META",
         "entity_type": "ALERT",
         "schema_version": SCHEMA_VERSION,
-        **attrs,
+        **_attrs(alert),
     }
 
 
@@ -420,6 +428,49 @@ class DynamoFoundRepository:
 
     def put_review_item_if_absent(self, item: ReviewItem) -> bool:
         return self._put_if_absent(review_item_item(item))
+
+    def get_subscription(self, subject_id: str, subscription_id: str) -> Subscription | None:
+        item = self._get(subscription_key(subject_id, subscription_id))
+        return Subscription.model_validate(_fields(item)) if item else None
+
+    def save_subscription(self, subscription: Subscription) -> None:
+        self._table.put_item(Item=subscription_item(subscription))
+
+    def list_user_subscriptions(self, user_id: str) -> list[Subscription]:
+        items = self._query(
+            IndexName="GSI1",
+            KeyConditionExpression=Key("GSI1PK").eq(f"USER#{user_id}")
+            & Key("GSI1SK").begins_with("SUB#"),
+        )
+        return [Subscription.model_validate(_fields(i)) for i in items]
+
+    def list_user_alerts(
+        self, user_id: str, limit: int, after: dict[str, str] | None = None
+    ) -> tuple[list[Alert], dict[str, str] | None]:
+        pk = f"USER#{user_id}"
+        kwargs: dict[str, Any] = {
+            "IndexName": "GSI1",
+            "KeyConditionExpression": Key("GSI1PK").eq(pk) & Key("GSI1SK").begins_with("ALR#"),
+            "ScanIndexForward": False,
+            "Limit": limit + 1,
+        }
+        if after is not None:
+            if set(after) != _ALERT_POSITION_KEYS or after["GSI1PK"] != pk:
+                raise ValueError("position does not belong to this user")
+            kwargs["ExclusiveStartKey"] = after
+        alerts: list[Alert] = []
+        while len(alerts) <= limit:
+            resp = self._table.query(**kwargs)
+            alerts += [Alert.model_validate(_fields(i)) for i in resp.get("Items", [])]
+            last = resp.get("LastEvaluatedKey")
+            if not last:
+                break
+            kwargs["ExclusiveStartKey"] = last
+            kwargs["Limit"] = limit + 1 - len(alerts)
+        if len(alerts) <= limit:
+            return alerts, None
+        page = alerts[:limit]
+        return page, _alert_index_keys(page[-1])
 
     def _put_if_absent(self, item: dict[str, Any]) -> bool:
         try:

@@ -33,3 +33,9 @@ def review_item_id(item_type: str, ref_id: str) -> str:
     """Deterministic, so a retried writer finds the item it already created."""
     digest = hashlib.sha256(f"{item_type}|{ref_id}".encode()).hexdigest()
     return f"rev_{digest[:16]}"
+
+
+def subscription_id(subject_id: str, user_id: str) -> str:
+    """Deterministic, so one user has at most one subscription per subject."""
+    digest = hashlib.sha256(f"{subject_id}|{user_id}".encode()).hexdigest()
+    return f"sub_{digest[:16]}"

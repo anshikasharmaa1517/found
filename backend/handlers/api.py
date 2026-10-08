@@ -11,7 +11,7 @@ from aws_lambda_powertools.logging import correlation_paths
 from found_core import container
 from found_core.domain.auth import Caller
 from found_core.domain.errors import BadRequest, FoundError
-from found_core.domain.models import Claim, Subject
+from found_core.domain.models import Alert, Claim, Subject, Subscription
 from found_core.domain.normalize import excerpt
 from found_core.services.people import PersonProfile, TimelineEntry
 
@@ -38,7 +38,9 @@ def _caller() -> Caller:
     return Caller.from_claims(claims)
 
 
-def _body() -> dict[str, Any]:
+def _body(optional: bool = False) -> dict[str, Any]:
+    if optional and not app.current_event.body:
+        return {}
     try:
         body = json.loads(app.current_event.body or "")
     except (TypeError, ValueError):
@@ -113,6 +115,36 @@ def entry_view(profile: PersonProfile, entry: TimelineEntry) -> dict[str, Any]:
     }
 
 
+def subscription_view(sub: Subscription) -> dict[str, Any]:
+    data = sub.model_dump(mode="json")
+    return {
+        "id": sub.id,
+        "person_id": sub.subject_id,
+        "channel_inapp": True,
+        "channel_sms": sub.channel_sms,
+        "channel_email": sub.channel_email,
+        "phone_e164": sub.phone_e164,
+        "email": sub.email,
+        "active": sub.active,
+        "created_at": data["created_at"],
+    }
+
+
+def alert_view(alert: Alert) -> dict[str, Any]:
+    data = alert.model_dump(mode="json")
+    return {
+        "id": alert.id,
+        "incident_id": alert.incident_id,
+        "person_id": alert.subject_id,
+        "claim_id": alert.claim_id,
+        "relation": data["relation"],
+        "severity": data["severity"],
+        "message": alert.message,
+        "delivery_status": data["delivery_status"],
+        "created_at": data["created_at"],
+    }
+
+
 @app.get("/v1/health")
 def health() -> Response:
     return _json(HTTPStatus.OK, {"status": "ok"})
@@ -183,6 +215,40 @@ def get_timeline(person_id: str) -> Response:
             "entries": [entry_view(profile, e) for e in timeline.entries],
             "next_cursor": timeline.next_cursor,
         },
+    )
+
+
+@app.post("/v1/people/<person_id>/subscriptions")
+def follow_person(person_id: str) -> Response:
+    caller = _caller()
+    body = _body(optional=True)
+    result = container.subscription_service().follow(caller, person_id, body)
+    status = HTTPStatus.CREATED if result.created else HTTPStatus.OK
+    return _json(status, {"subscription": subscription_view(result.subscription)})
+
+
+@app.delete("/v1/subscriptions/<subscription_id>")
+def unfollow(subscription_id: str) -> Response:
+    container.subscription_service().unfollow(_caller(), subscription_id)
+    return Response(
+        status_code=HTTPStatus.NO_CONTENT, body="", headers={"x-request-id": _request_id()}
+    )
+
+
+@app.get("/v1/me/subscriptions")
+def my_subscriptions() -> Response:
+    subs = container.subscription_service().my_subscriptions(_caller())
+    return _json(HTTPStatus.OK, {"subscriptions": [subscription_view(s) for s in subs]})
+
+
+@app.get("/v1/me/alerts")
+def my_alerts() -> Response:
+    page = container.subscription_service().alert_feed(
+        _caller(), limit=_query("limit"), cursor=_query("cursor")
+    )
+    return _json(
+        HTTPStatus.OK,
+        {"alerts": [alert_view(a) for a in page.alerts], "next_cursor": page.next_cursor},
     )
 
 

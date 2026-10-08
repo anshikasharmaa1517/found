@@ -20,6 +20,10 @@ SIGNED_IN_ROUTES = (
     ("GET", "/v1/incidents/{incident_id}/people"),
     ("GET", "/v1/people/{person_id}"),
     ("GET", "/v1/people/{person_id}/timeline"),
+    ("POST", "/v1/people/{person_id}/subscriptions"),
+    ("DELETE", "/v1/subscriptions/{subscription_id}"),
+    ("GET", "/v1/me/subscriptions"),
+    ("GET", "/v1/me/alerts"),
 )
 DEFAULT_THROTTLE = {"ThrottlingRateLimit": 20, "ThrottlingBurstLimit": 40}
 ROUTE_THROTTLES = {REPORTS_ROUTE: {"ThrottlingRateLimit": 10, "ThrottlingBurstLimit": 20}}
@@ -86,6 +90,7 @@ class ApiStack(cdk.Stack):
                 allow_methods=[
                     apigw.CorsHttpMethod.GET,
                     apigw.CorsHttpMethod.POST,
+                    apigw.CorsHttpMethod.DELETE,
                     apigw.CorsHttpMethod.OPTIONS,
                 ],
                 expose_headers=["x-request-id"],

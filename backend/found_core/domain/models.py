@@ -83,7 +83,10 @@ class Subscription(_Entity):
     channel_inapp: bool = True
     channel_sms: bool = False
     channel_email: bool = False
+    phone_e164: str | None = None
+    email: str | None = None
     active: bool = True
+    created_at: datetime | None = None
 
 
 class Alert(_Entity):

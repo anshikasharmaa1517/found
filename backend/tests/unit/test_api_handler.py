@@ -7,10 +7,11 @@ import pytest
 from found_core import container
 from found_core.adapters.memory import InMemoryFoundRepository
 from found_core.domain.cursor import CursorCodec
-from found_core.domain.models import Organization
+from found_core.domain.models import Alert, Organization
 from found_core.services.ingest import IngestService
 from found_core.services.people import PeopleService
 from found_core.services.reports import ReportService
+from found_core.services.subscriptions import SubscriptionService
 from handlers import api
 
 
@@ -85,6 +86,8 @@ def repo(monkeypatch):
     monkeypatch.setattr(container, "report_service", lambda: service)
     people = PeopleService(r, CursorCodec(b"k" * 32))
     monkeypatch.setattr(container, "people_service", lambda: people)
+    subs = SubscriptionService(r, CursorCodec(b"k" * 32), clock=FixedClock())
+    monkeypatch.setattr(container, "subscription_service", lambda: subs)
     return r
 
 
@@ -300,3 +303,88 @@ def test_publisher_of_other_incident_is_403(maya, repo):
     claims = {"sub": "u9", "cognito:groups": "[publisher]", "custom:org_id": "org_other"}
     status, _, _ = get(f"/v1/people/{maya}", claims=claims)
     assert status == 403
+
+
+FAMILY_CLAIMS = {"sub": "fam_1", "cognito:groups": "[family]"}
+
+
+def test_follow_unfollow_and_list(maya):
+    path = f"/v1/people/{maya}/subscriptions"
+    body = {"channel_sms": True, "phone_e164": "+919876543210"}
+    status, created, _ = call(event("POST", path, body, FAMILY_CLAIMS))
+    assert status == 201
+    sub = created["subscription"]
+    assert sub["person_id"] == maya and sub["channel_inapp"] is True
+    assert sub["channel_sms"] is True and sub["created_at"] == "2026-10-05T10:15:00Z"
+
+    status, again, _ = call(event("POST", path, {}, FAMILY_CLAIMS))
+    assert status == 200 and again["subscription"]["id"] == sub["id"]
+
+    _, mine, _ = get("/v1/me/subscriptions", claims=FAMILY_CLAIMS)
+    assert [s["id"] for s in mine["subscriptions"]] == [sub["id"]]
+
+    resp = api.handler(
+        event("DELETE", f"/v1/subscriptions/{sub['id']}", claims=FAMILY_CLAIMS), Context()
+    )
+    assert resp["statusCode"] == 204 and not resp.get("body")
+    _, mine, _ = get("/v1/me/subscriptions", claims=FAMILY_CLAIMS)
+    assert mine["subscriptions"] == []
+
+
+def test_follow_with_sms_but_no_phone_is_422(maya):
+    status, body, _ = call(
+        event("POST", f"/v1/people/{maya}/subscriptions", {"channel_sms": True}, FAMILY_CLAIMS)
+    )
+    assert status == 422 and body["error"]["code"] == "VALIDATION_FAILED"
+
+
+def test_follow_requires_family(maya):
+    status, _, _ = call(event("POST", f"/v1/people/{maya}/subscriptions", {}, REVIEWER_CLAIMS))
+    assert status == 403
+
+
+def test_unfollow_unknown_is_404(repo):
+    status, _, _ = call(event("DELETE", "/v1/subscriptions/sub_x", claims=FAMILY_CLAIMS))
+    assert status == 404
+
+
+def test_alert_feed_view(repo):
+    repo.put_alert_if_absent(
+        Alert(
+            id="alr_1",
+            incident_id="inc_1",
+            subject_id="per_1",
+            subscription_id="sub_1",
+            claim_id="clm_1",
+            user_id="fam_1",
+            relation="FIRST",
+            severity="high",
+            message="A sensitive report was received.",
+            delivery_status="HELD",
+            held_reason="SENSITIVE_STATUS",
+            created_at=datetime(2026, 10, 5, 10, 15, tzinfo=UTC),
+        )
+    )
+    status, body, _ = get("/v1/me/alerts", claims=FAMILY_CLAIMS)
+    assert status == 200
+    assert body == {
+        "alerts": [
+            {
+                "id": "alr_1",
+                "incident_id": "inc_1",
+                "person_id": "per_1",
+                "claim_id": "clm_1",
+                "relation": "FIRST",
+                "severity": "high",
+                "message": "A sensitive report was received.",
+                "delivery_status": "HELD",
+                "created_at": "2026-10-05T10:15:00Z",
+            }
+        ],
+        "next_cursor": None,
+    }
+
+
+def test_alert_feed_bad_cursor_is_400(repo):
+    status, body, _ = get("/v1/me/alerts", {"cursor": "abc.def"}, claims=FAMILY_CLAIMS)
+    assert status == 400 and body["error"]["code"] == "BAD_REQUEST"

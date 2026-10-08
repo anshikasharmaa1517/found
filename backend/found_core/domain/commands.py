@@ -10,6 +10,8 @@ from found_core.domain.enums import CLAIM_TYPES, ExtractionMethod, SourceType, S
 from found_core.domain.errors import ValidationFailed
 
 REFERENCE_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+E164_PATTERN = re.compile(r"^\+[1-9][0-9]{7,14}$")
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def parse_reported_at(raw: str | None) -> datetime | None:
@@ -104,3 +106,37 @@ class PublishCommand(BaseModel):
                 for err in exc.errors(include_url=False)
             ]
             raise ValidationFailed("Report is invalid.", errors=errors) from exc
+
+
+class FollowCommand(BaseModel):
+    """Channels for following one person. In-app delivery is always on."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    channel_sms: bool = False
+    channel_email: bool = False
+    phone_e164: str | None = Field(default=None, max_length=16)
+    email: str | None = Field(default=None, max_length=254)
+
+    @model_validator(mode="after")
+    def _check(self) -> "FollowCommand":
+        if self.phone_e164 is not None and not E164_PATTERN.match(self.phone_e164):
+            raise ValueError("phone_e164 must look like +919876543210")
+        if self.email is not None and not EMAIL_PATTERN.match(self.email):
+            raise ValueError("email is not a valid address")
+        if self.channel_sms and self.phone_e164 is None:
+            raise ValueError("SMS alerts need phone_e164")
+        if self.channel_email and self.email is None:
+            raise ValueError("email alerts need email")
+        return self
+
+    @classmethod
+    def parse(cls, data: dict[str, Any]) -> "FollowCommand":
+        try:
+            return cls.model_validate(data)
+        except ValidationError as exc:
+            errors = [
+                {"field": ".".join(str(p) for p in err["loc"]), "message": err["msg"]}
+                for err in exc.errors(include_url=False)
+            ]
+            raise ValidationFailed("Subscription is invalid.", errors=errors) from exc

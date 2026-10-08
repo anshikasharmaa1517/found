@@ -152,3 +152,34 @@ class InMemoryFoundRepository:
                 return False
             self.review_items[item.id] = item
             return True
+
+    def get_subscription(self, subject_id: str, subscription_id: str) -> Subscription | None:
+        sub = self.subscriptions.get(subscription_id)
+        return sub if sub and sub.subject_id == subject_id else None
+
+    def save_subscription(self, subscription: Subscription) -> None:
+        self.subscriptions[subscription.id] = subscription
+
+    def list_user_subscriptions(self, user_id: str) -> list[Subscription]:
+        found = [s for s in self.subscriptions.values() if s.user_id == user_id]
+        return sorted(found, key=lambda s: s.id)
+
+    def list_user_alerts(
+        self, user_id: str, limit: int, after: dict[str, str] | None = None
+    ) -> tuple[list[Alert], dict[str, str] | None]:
+        def key(alert: Alert) -> tuple[str, str]:
+            return (alert.created_at.isoformat(), alert.id)
+
+        found = sorted(
+            (a for a in self.alerts.values() if a.user_id == user_id), key=key, reverse=True
+        )
+        if after is not None:
+            if set(after) != {"c", "i"}:
+                raise ValueError("position does not belong to this listing")
+            start = (after["c"], after["i"])
+            found = [a for a in found if key(a) < start]
+        page = found[:limit]
+        if len(found) <= limit:
+            return page, None
+        last = page[-1]
+        return page, {"c": last.created_at.isoformat(), "i": last.id}

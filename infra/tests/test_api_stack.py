@@ -67,8 +67,18 @@ def test_signed_in_routes_require_jwt():
         "GET /v1/incidents/{incident_id}/people",
         "GET /v1/people/{person_id}",
         "GET /v1/people/{person_id}/timeline",
+        "POST /v1/people/{person_id}/subscriptions",
+        "DELETE /v1/subscriptions/{subscription_id}",
+        "GET /v1/me/subscriptions",
+        "GET /v1/me/alerts",
     ):
         assert found[key]["AuthorizationType"] == "JWT"
+
+
+def test_cors_allows_delete_for_unfollow():
+    t = template()
+    api = next(iter(t.find_resources("AWS::ApiGatewayV2::Api").values()))
+    assert "DELETE" in api["Properties"]["CorsConfiguration"]["AllowMethods"]
 
 
 def test_cursor_secret_is_generated_and_readable_by_function():

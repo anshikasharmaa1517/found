@@ -386,3 +386,45 @@ def test_review_item_is_stored_once_and_queued_by_priority(repo, table):
     assert stored["entity_type"] == "REVIEW_ITEM" and stored["status"] == "OPEN"
     assert stored["GSI2PK"] == "REVQ#inc_1#OPEN"
     assert stored["GSI2SK"] == "2#2026-10-05T10:15:00Z#rev_1"
+
+
+def test_subscription_save_overwrites_and_lists_by_user(repo):
+    sub = Subscription(id="sub_1", subject_id="per_1", user_id="u1")
+    repo.save_subscription(sub)
+    updated = sub.model_copy(update={"channel_email": True, "email": "a@example.org"})
+    repo.save_subscription(updated)
+    repo.save_subscription(Subscription(id="sub_2", subject_id="per_2", user_id="u2"))
+    assert repo.get_subscription("per_1", "sub_1") == updated
+    assert repo.get_subscription("per_2", "sub_1") is None
+    assert repo.list_user_subscriptions("u1") == [updated]
+
+
+def test_user_alerts_are_newest_first_with_exact_pages(repo):
+    from datetime import timedelta
+
+    base = datetime(2026, 10, 5, tzinfo=UTC)
+    for n in range(5):
+        repo.put_alert_if_absent(
+            alert(alert_id=f"alr_{n}", subscription_id=f"sub_{n}").model_copy(
+                update={"created_at": base + timedelta(minutes=n)}
+            )
+        )
+    repo.put_alert_if_absent(
+        alert(alert_id="alr_other", subscription_id="sub_x").model_copy(update={"user_id": "u2"})
+    )
+    page, after = repo.list_user_alerts("u1", 2)
+    assert [a.id for a in page] == ["alr_4", "alr_3"]
+    page, after = repo.list_user_alerts("u1", 2, after)
+    assert [a.id for a in page] == ["alr_2", "alr_1"]
+    page, after = repo.list_user_alerts("u1", 2, after)
+    assert [a.id for a in page] == ["alr_0"] and after is None
+    page, after = repo.list_user_alerts("u1", 5)
+    assert len(page) == 5 and after is None
+
+
+def test_user_alerts_reject_another_users_position(repo):
+    for n in range(3):
+        repo.put_alert_if_absent(alert(alert_id=f"alr_{n}", subscription_id=f"sub_{n}"))
+    _, after = repo.list_user_alerts("u1", 1)
+    with pytest.raises(ValueError):
+        repo.list_user_alerts("u2", 1, after)
