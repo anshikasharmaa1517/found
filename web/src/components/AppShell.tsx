@@ -57,6 +57,9 @@ function Shell({ incidentId }: { incidentId: string | null }) {
           {incidentId && hasRole(user, "publisher") && (
             <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/report`}>Report</NavLink>
           )}
+          {incidentId && hasRole(user, "reviewer", "admin") && (
+            <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/review`}>Review</NavLink>
+          )}
           {family && (
             <NavLink to="/alerts" aria-label={unread ? `Alerts, ${unread} new` : "Alerts"}>
               Alerts{unread > 0 && <span className="count">{unread}</span>}

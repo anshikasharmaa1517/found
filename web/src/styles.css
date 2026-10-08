@@ -686,3 +686,55 @@ td {
   color: var(--accent);
   border-color: var(--accent);
 }
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.chip {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.review-list {
+  list-style: none;
+  padding: 0;
+}
+
+.review-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+
+.review-item.priority-1 {
+  border-left: 4px solid var(--warn);
+}
+
+.decision {
+  margin-top: 0.75rem;
+}
+
+.decision .actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+button.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}

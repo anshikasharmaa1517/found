@@ -66,7 +66,7 @@ export interface Investigation {
     duration_ms: number | null;
   };
   steps: Step[];
-  review: null;
+  review: { decision: "ACCEPTED" | "DISPUTED"; by: string; note: string | null; at: string } | null;
 }
 
 export const RUNNING_STATUSES: ReadonlySet<InvestigationStatus> = new Set(["QUEUED", "RUNNING"]);

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { useApi } from "../api/context";
+import { reviewFinding } from "../api/review";
 import {
   getInvestigation,
   RUNNING_STATUSES,
@@ -19,7 +21,7 @@ import {
   REASON_LABELS,
 } from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
-import { useLoad } from "../useLoad";
+import { asApiError, useLoad } from "../useLoad";
 
 const KIND_LABELS: Record<string, string> = {
   MODEL: "Model",
@@ -97,6 +99,75 @@ function Steps({ steps }: { steps: Step[] }) {
   );
 }
 
+function FindingReview({
+  investigation,
+  onDone,
+}: {
+  investigation: Investigation;
+  onDone: () => void;
+}) {
+  const api = useApi();
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { review } = investigation;
+
+  if (review) {
+    return (
+      <p className="status" role="status">
+        {review.decision === "ACCEPTED" ? "Accepted" : "Disputed"} by {review.by},{" "}
+        {formatTime(review.at)}
+        {review.note && `: ${review.note}`}
+      </p>
+    );
+  }
+  if (!investigation.finding || RUNNING_STATUSES.has(investigation.status)) return null;
+
+  async function decide(decision: "ACCEPTED" | "DISPUTED") {
+    setBusy(true);
+    setError(null);
+    try {
+      await reviewFinding(api, investigation.id, decision, note);
+      onDone();
+    } catch (err) {
+      const code = asApiError(err).code;
+      setError(
+        code === "VERSION_CONFLICT"
+          ? "Another reviewer already reviewed this finding."
+          : "The review could not be saved. Try again.",
+      );
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="decision" aria-labelledby="review-title">
+      <h2 id="review-title">Your review</h2>
+      <label htmlFor="review-note">Note (optional)</label>
+      <textarea
+        id="review-note"
+        rows={2}
+        maxLength={500}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+      <div className="actions">
+        <button type="button" onClick={() => decide("ACCEPTED")} disabled={busy}>
+          Accept finding
+        </button>
+        <button type="button" className="secondary" onClick={() => decide("DISPUTED")} disabled={busy}>
+          Dispute finding
+        </button>
+      </div>
+      {error && (
+        <p className="field-error" role="alert">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function InvestigationPage() {
   const investigationId = useParams().investigationId ?? "";
   const [params] = useSearchParams();
@@ -152,6 +223,7 @@ export function InvestigationPage() {
       )}
 
       <Finding investigation={inv} />
+      <FindingReview investigation={inv} onDone={refresh} />
 
       <h2>Steps</h2>
       <Steps steps={inv.steps} />

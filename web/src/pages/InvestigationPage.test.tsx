@@ -1,4 +1,5 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { Investigation } from "../api/investigations";
@@ -169,5 +170,40 @@ describe("InvestigationPage", () => {
   it("says when the investigation does not exist", async () => {
     renderApp(as(), "/investigations/inv_x", routedApi({}).api);
     expect(await screen.findByText("This investigation was not found.")).toBeInTheDocument();
+  });
+
+  it("lets a reviewer accept a finding with a note", async () => {
+    let current = investigation();
+    const { api, sent } = routedApi(
+      { [PATH]: () => current },
+      {
+        "/v1/investigations/inv_1/review": () => {
+          current = investigation({
+            review: { decision: "ACCEPTED", by: "u1", note: "Matches ward records.", at: "2026-10-05T11:00:00Z" },
+          });
+          return current;
+        },
+      },
+    );
+    renderApp(as(), "/investigations/inv_1", api);
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText("Note (optional)"), "Matches ward records.");
+    await user.click(screen.getByRole("button", { name: "Accept finding" }));
+    expect(await screen.findByText(/Accepted by u1/)).toBeInTheDocument();
+    expect(sent).toEqual([
+      {
+        path: "/v1/investigations/inv_1/review",
+        body: { decision: "ACCEPTED", note: "Matches ward records." },
+      },
+    ]);
+    expect(screen.queryByRole("button", { name: "Dispute finding" })).not.toBeInTheDocument();
+  });
+
+  it("offers no review while running or without a finding", async () => {
+    const running = investigation({ status: "RUNNING", finding: null, outcome_reasons: [] });
+    const { api } = routedApi({ [PATH]: () => running });
+    renderApp(as(), "/investigations/inv_1", api);
+    await screen.findByText(/Status: Running/);
+    expect(screen.queryByRole("button", { name: "Accept finding" })).not.toBeInTheDocument();
   });
 });

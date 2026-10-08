@@ -16,6 +16,7 @@ import { MapPage } from "./pages/MapPage";
 import { PeoplePage } from "./pages/PeoplePage";
 import { PersonPage } from "./pages/PersonPage";
 import { ReportPage } from "./pages/ReportPage";
+import { ReviewPage } from "./pages/ReviewPage";
 import { SignInPage } from "./pages/SignInPage";
 
 function NotFound() {
@@ -68,6 +69,14 @@ export function AppRoutes({
           element={
             <RequireAuth roles={["publisher"]}>
               <ReportPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="incidents/:incidentId/review"
+          element={
+            <RequireAuth roles={["reviewer", "admin"]}>
+              <ReviewPage />
             </RequireAuth>
           }
         />
