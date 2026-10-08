@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from found_core.adapters.cognito_jwt import CognitoTokenVerifier
 from found_core.domain.cursor import CursorCodec
+from found_core.domain.investigation import InvestigationConfig
 from found_core.ports.repository import FoundRepository
 from found_core.services.ingest import IngestService
 from found_core.services.map import MapService
@@ -14,6 +15,7 @@ from found_core.services.realtime import ConnectionService, PushService
 from found_core.services.reports import ReportService
 from found_core.services.subscriptions import SubscriptionService
 from found_core.services.watch import WatchService
+from found_core.tools.service import AgentToolService
 
 if TYPE_CHECKING:
     from found_core.adapters.apigw_connections import ApiGatewayConnections
@@ -89,3 +91,22 @@ def token_verifier() -> CognitoTokenVerifier:
 @cache
 def map_service() -> MapService:
     return MapService(repository())
+
+
+@cache
+def investigation_config() -> InvestigationConfig:
+    defaults = InvestigationConfig(model_id="")
+    env = os.environ
+    return InvestigationConfig(
+        model_id=env["MODEL_ID"],
+        prompt_version=env.get("PROMPT_VERSION", defaults.prompt_version),
+        agent_version=env.get("AGENT_VERSION", defaults.agent_version),
+        max_tool_calls=int(env.get("MAX_TOOL_CALLS", defaults.max_tool_calls)),
+        run_cap=int(env.get("RUN_CAP", defaults.run_cap)),
+        model_call_cap=int(env.get("MODEL_CALL_CAP", defaults.model_call_cap)),
+    )
+
+
+@cache
+def agent_tool_service() -> AgentToolService:
+    return AgentToolService(repository(), investigation_config())

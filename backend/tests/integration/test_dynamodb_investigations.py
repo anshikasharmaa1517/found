@@ -188,3 +188,48 @@ def test_budget_counts_up_to_the_cap_and_never_past_it(ledger):
     assert (usage.runs, usage.model_calls) == (2, 1)
     assert (usage.input_tokens, usage.output_tokens) == (700, 50)
     assert ledger.usage("2026-12").runs == 0
+
+
+def test_tool_calls_count_only_while_running_and_under_the_cap(repo):
+    repo.put_investigation(investigation("inv_1", S.QUEUED))
+    assert repo.count_tool_call("inv_1", 2) is None
+    repo.update_investigation_if("inv_1", S.QUEUED, {"status": S.RUNNING})
+    assert repo.count_tool_call("inv_1", 2) == 1
+    assert repo.count_tool_call("inv_1", 2) == 2
+    assert repo.count_tool_call("inv_1", 2) is None
+    assert repo.count_tool_call("inv_x", 2) is None
+    assert repo.get_investigation("inv_1").tool_calls == 2
+
+
+def test_list_source_claims_newest_first_with_subject_filter(repo):
+    service = IngestService(repo, clock=FixedClock(), sleep=lambda _: None)
+    hospital = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
+
+    def publish(ref, hour, subject):
+        return service.publish(
+            PublishCommand.parse(
+                {
+                    "incident_id": "inc_1",
+                    **hospital,
+                    "actor": "pub",
+                    "subject": subject,
+                    "claim_type": "FOUND_SAFE",
+                    "original_text": f"Report {ref}.",
+                    "external_reference": ref,
+                    "reported_at": f"2026-10-05T0{hour}:00:00Z",
+                }
+            )
+        ).claim
+
+    maya = publish("R1", 1, {"type": "PERSON", "new": {"name": "Maya"}})
+    ravi = publish("R2", 2, {"type": "PERSON", "new": {"name": "Ravi"}})
+    maya_later = publish("R3", 3, {"type": "PERSON", "id": maya.subject_id})
+    source = maya.source_id
+    assert [c.id for c in repo.list_source_claims(source, 10)] == [maya_later.id, ravi.id, maya.id]
+    assert [c.id for c in repo.list_source_claims(source, 2)] == [maya_later.id, ravi.id]
+    only_maya = repo.list_source_claims(source, 10, subject_id=maya.subject_id)
+    assert [c.id for c in only_maya] == [maya_later.id, maya.id]
+    # The filter runs after the page limit, so the reader keeps paging to fill it.
+    assert [c.id for c in repo.list_source_claims(source, 1, subject_id=ravi.subject_id)] == [
+        ravi.id
+    ]

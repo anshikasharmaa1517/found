@@ -8,7 +8,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 from found_core.domain.enums import InvestigationStatus, SubjectType
@@ -625,6 +625,49 @@ class DynamoFoundRepository:
     def get_review_item(self, incident_id: str, review_id: str) -> ReviewItem | None:
         item = self._get(review_item_key(incident_id, review_id))
         return ReviewItem.model_validate(_fields(item)) if item else None
+
+    def list_source_claims(
+        self, source_id: str, limit: int, subject_id: str | None = None
+    ) -> list[Claim]:
+        kwargs: dict[str, Any] = {
+            "IndexName": "GSI2",
+            "KeyConditionExpression": Key("GSI2PK").eq(f"SRC#{source_id}"),
+            "ScanIndexForward": False,
+            "Limit": limit,
+        }
+        if subject_id is not None:
+            kwargs["FilterExpression"] = Attr("subject_id").eq(subject_id)
+        claims: list[Claim] = []
+        while len(claims) < limit:
+            resp = self._table.query(**kwargs)
+            claims += [Claim.model_validate(_fields(i)) for i in resp.get("Items", [])]
+            last = resp.get("LastEvaluatedKey")
+            if not last:
+                break
+            kwargs["ExclusiveStartKey"] = last
+        return claims[:limit]
+
+    def count_tool_call(self, investigation_id: str, cap: int) -> int | None:
+        try:
+            resp = self._table.update_item(
+                Key=investigation_key(investigation_id),
+                UpdateExpression="ADD tool_calls :one",
+                ConditionExpression=(
+                    "attribute_exists(PK) AND #status = :running AND tool_calls < :cap"
+                ),
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues={
+                    ":one": 1,
+                    ":running": str(InvestigationStatus.RUNNING),
+                    ":cap": cap,
+                },
+                ReturnValues="UPDATED_NEW",
+            )
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return None
+        return int(resp["Attributes"]["tool_calls"])
 
     def latest_source_claim_id(self, source_id: str) -> str | None:
         resp = self._table.query(

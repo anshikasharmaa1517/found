@@ -239,14 +239,34 @@ class InMemoryFoundRepository:
         item = self.review_items.get(review_id)
         return item if item and item.incident_id == incident_id else None
 
-    def latest_source_claim_id(self, source_id: str) -> str | None:
-        # Same order as the source feed index: reported time as stored, then claim id.
-        def key(claim: Claim) -> str:
-            reported = claim.model_dump(mode="json")["reported_at"] or "0"
-            return f"{reported}#{claim.id}"
+    def list_source_claims(
+        self, source_id: str, limit: int, subject_id: str | None = None
+    ) -> list[Claim]:
+        found = [
+            c
+            for c in self.claims.values()
+            if c.source_id == source_id and (subject_id is None or c.subject_id == subject_id)
+        ]
+        return sorted(found, key=_feed_key, reverse=True)[:limit]
 
-        found = [c for c in self.claims.values() if c.source_id == source_id]
-        return max(found, key=key).id if found else None
+    def count_tool_call(self, investigation_id: str, cap: int) -> int | None:
+        with self._lock:
+            current = self.investigations.get(investigation_id)
+            if (
+                current is None
+                or current.status != InvestigationStatus.RUNNING
+                or current.tool_calls >= cap
+            ):
+                return None
+            count = current.tool_calls + 1
+            self.investigations[investigation_id] = current.model_copy(
+                update={"tool_calls": count}
+            )
+            return count
+
+    def latest_source_claim_id(self, source_id: str) -> str | None:
+        found = self.list_source_claims(source_id, 1)
+        return found[0].id if found else None
 
     def get_settings(self) -> Settings:
         return self.settings
@@ -301,6 +321,12 @@ class InMemoryFoundRepository:
             held = self.run_locks.get(claim_id)
             if held is not None and held[0] == investigation_id:
                 del self.run_locks[claim_id]
+
+
+def _feed_key(claim: Claim) -> str:
+    """Same order as the source feed index: reported time as stored, then claim id."""
+    reported = claim.model_dump(mode="json")["reported_at"] or "0"
+    return f"{reported}#{claim.id}"
 
 
 class InMemoryBudgetLedger:

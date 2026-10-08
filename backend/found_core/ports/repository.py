@@ -128,6 +128,16 @@ class FoundRepository(Protocol):
 
     def get_review_item(self, incident_id: str, review_id: str) -> ReviewItem | None: ...
 
+    def list_source_claims(
+        self, source_id: str, limit: int, subject_id: str | None = None
+    ) -> list[Claim]:
+        """The source's claims, latest reported first, optionally about one subject."""
+        ...
+
+    def count_tool_call(self, investigation_id: str, cap: int) -> int | None:
+        """Add one tool call while the run is RUNNING and under `cap`. Returns the count."""
+        ...
+
     def latest_source_claim_id(self, source_id: str) -> str | None:
         """The claim at the top of the source's feed (latest reported time), if any."""
         ...
