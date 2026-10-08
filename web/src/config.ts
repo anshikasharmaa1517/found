@@ -8,9 +8,11 @@ export interface AppConfig {
   wsUrl: string;
   /** Optional: the incident offered first on the home page. */
   defaultIncidentId?: string;
+  /** Optional: Amazon Location key for the basemap. Without it the map lists places. */
+  mapApiKey?: string;
 }
 
-const KEYS: Record<Exclude<keyof AppConfig, "defaultIncidentId">, string> = {
+const KEYS: Record<Exclude<keyof AppConfig, "defaultIncidentId" | "mapApiKey">, string> = {
   region: "VITE_REGION",
   userPoolId: "VITE_USER_POOL_ID",
   userPoolClientId: "VITE_USER_POOL_CLIENT_ID",
@@ -31,12 +33,14 @@ export function readConfig(env: Record<string, string | undefined>): ConfigResul
   if (missing.length > 0) return { ok: false, missing };
   const config = values as AppConfig;
   const defaultIncidentId = env.VITE_DEFAULT_INCIDENT_ID?.trim() || undefined;
+  const mapApiKey = env.VITE_MAP_API_KEY?.trim() || undefined;
   return {
     ok: true,
     config: {
       ...config,
       apiUrl: config.apiUrl.replace(/\/+$/, ""),
       defaultIncidentId,
+      mapApiKey,
     },
   };
 }

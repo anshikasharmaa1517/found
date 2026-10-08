@@ -21,6 +21,7 @@ describe("readConfig", () => {
         apiUrl: "https://api.example.org",
         wsUrl: "wss://ws.example.org/prod",
         defaultIncidentId: undefined,
+        mapApiKey: undefined,
       },
     });
   });
@@ -28,6 +29,11 @@ describe("readConfig", () => {
   it("reads the optional default incident", () => {
     const result = readConfig({ ...FULL, VITE_DEFAULT_INCIDENT_ID: " inc_demo " });
     expect(result.ok && result.config.defaultIncidentId).toBe("inc_demo");
+  });
+
+  it("reads the optional map key", () => {
+    const result = readConfig({ ...FULL, VITE_MAP_API_KEY: "v1.public.abc" });
+    expect(result.ok && result.config.mapApiKey).toBe("v1.public.abc");
   });
 
   it("lists every missing or blank setting", () => {

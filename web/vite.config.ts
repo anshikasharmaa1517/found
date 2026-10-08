@@ -4,6 +4,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   server: { port: 5173, strictPort: true },
+  // MapLibre alone is about 1 MB and loads only on the map page; the main bundle stays small.
+  build: { chunkSizeWarningLimit: 1100 },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],

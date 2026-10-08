@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 
 import { ApiError, type ApiClient } from "../api/client";
 import { ApiContext } from "../api/context";
-import { AppRoutes } from "../App";
+import { AppRoutes, type AppSettings } from "../App";
 import { AuthProvider } from "../auth/AuthProvider";
 import type { AuthGateway, SignInStep } from "../auth/gateway";
 import { userFromClaims, type User } from "../auth/user";
@@ -101,12 +101,13 @@ export function renderApp(
   gateway: AuthGateway,
   path = "/",
   api: ApiClient = fakeApi(),
+  settings: AppSettings = {},
 ) {
   return render(
     <AuthProvider gateway={gateway}>
       <ApiContext.Provider value={api}>
         <MemoryRouter initialEntries={[path]}>
-          <AppRoutes />
+          <AppRoutes {...settings} />
         </MemoryRouter>
       </ApiContext.Provider>
     </AuthProvider>,

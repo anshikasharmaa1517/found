@@ -37,6 +37,9 @@ export function AppShell() {
           {incidentId && (
             <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/people`}>People</NavLink>
           )}
+          {incidentId && (
+            <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/map`}>Map</NavLink>
+          )}
           {incidentId && hasRole(user, "publisher") && (
             <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/report`}>Report</NavLink>
           )}

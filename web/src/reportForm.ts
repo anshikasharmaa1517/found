@@ -21,6 +21,7 @@ export const LIMITS = {
   value: 500,
   text: 4000,
   reference: 64,
+  place: 120,
 } as const;
 const REFERENCE = /^[A-Za-z0-9._-]{1,64}$/;
 const LOCAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -38,6 +39,10 @@ export interface ReportValues {
   /** `YYYY-MM-DDTHH:MM` from a datetime-local input, in the browser's time zone. */
   reportedAt: string;
   timeUnknown: boolean;
+  /** Optional place as reported; coordinates are optional but come as a pair. */
+  placeName: string;
+  lat: string;
+  lon: string;
 }
 
 export type FieldErrors = Partial<Record<keyof ReportValues | "form", string>>;
@@ -60,6 +65,29 @@ export function formatOffset(minutes: number): string {
 /** `2026-10-03T07:40` and +330 become `2026-10-03T07:40:00+05:30`; the offset is kept. */
 export function toOffsetIso(local: string, offsetMinutes: number): string {
   return `${local}:00${formatOffset(offsetMinutes)}`;
+}
+
+function coordinate(raw: string, limit: number): number | null {
+  if (!raw.trim()) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && Math.abs(value) <= limit ? value : Number.NaN;
+}
+
+function placeErrors(values: ReportValues): FieldErrors {
+  const errors: FieldErrors = {};
+  const name = values.placeName.trim();
+  const lat = coordinate(values.lat, 90);
+  const lon = coordinate(values.lon, 180);
+  if (name.length > LIMITS.place) errors.placeName = `Use at most ${LIMITS.place} characters.`;
+  if (Number.isNaN(lat)) errors.lat = "Latitude must be a number from -90 to 90.";
+  if (Number.isNaN(lon)) errors.lon = "Longitude must be a number from -180 to 180.";
+  if (!errors.lat && !errors.lon && (lat === null) !== (lon === null)) {
+    errors[lat === null ? "lat" : "lon"] = "Give both latitude and longitude, or neither.";
+  }
+  if (!name && (lat !== null || lon !== null)) {
+    errors.placeName = "Name the place the coordinates belong to.";
+  }
+  return errors;
 }
 
 export function validate(values: ReportValues): FieldErrors {
@@ -87,6 +115,7 @@ export function validate(values: ReportValues): FieldErrors {
   if (!REFERENCE.test(values.reference.trim())) {
     errors.reference = "Use 1 to 64 letters, digits, dots, dashes or underscores.";
   }
+  Object.assign(errors, placeErrors(values));
   if (!values.timeUnknown && !LOCAL_TIME.test(values.reportedAt)) {
     errors.reportedAt = "Enter when this happened, or tick that the time is unknown.";
   }
@@ -115,6 +144,14 @@ export function buildBody(
     external_reference: values.reference.trim(),
   };
   if (value) body.value = value;
+  const place = values.placeName.trim();
+  if (place) {
+    body.location = { name: place };
+    if (values.lat.trim() && values.lon.trim()) {
+      body.location.lat = Number(values.lat);
+      body.location.lon = Number(values.lon);
+    }
+  }
   // An unknown time is sent as missing, never guessed; the watcher flags it for review.
   if (!values.timeUnknown) body.reported_at = toOffsetIso(values.reportedAt, offsetFor(values.reportedAt));
   return body;
@@ -130,6 +167,10 @@ const API_FIELDS: Record<string, keyof ReportValues> = {
   original_text: "originalText",
   external_reference: "reference",
   reported_at: "reportedAt",
+  location: "placeName",
+  "location.name": "placeName",
+  "location.lat": "lat",
+  "location.lon": "lon",
 };
 
 /** Places the API's field errors next to the matching inputs; the rest go on top. */

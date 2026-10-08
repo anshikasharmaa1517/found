@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "aws-amplify": "^6.22.1",
+    "maplibre-gl": "^6.13.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4"

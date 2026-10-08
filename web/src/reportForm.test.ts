@@ -21,6 +21,9 @@ const NEW_PERSON: ReportValues = {
   reference: "UKPD-FIR-0091",
   reportedAt: "2026-10-02T21:10",
   timeUnknown: false,
+  placeName: "",
+  lat: "",
+  lon: "",
 };
 
 const IST = () => 330;
@@ -110,3 +113,32 @@ describe("errorsFromApi", () => {
     expect(errorsFromApi({})).toEqual({});
   });
 });
+
+describe("place", () => {
+  it("sends a named place with its coordinates", () => {
+    const body = buildBody({ ...NEW_PERSON, placeName: " Old Bridge ", lat: "30.7268", lon: "78.4354" }, IST);
+    expect(body.location).toEqual({ name: "Old Bridge", lat: 30.7268, lon: 78.4354 });
+  });
+
+  it("sends a name alone and nothing when empty", () => {
+    expect(buildBody({ ...NEW_PERSON, placeName: "Upper Village" }, IST).location).toEqual({
+      name: "Upper Village",
+    });
+    expect("location" in buildBody(NEW_PERSON, IST)).toBe(false);
+  });
+
+  it("checks coordinates come as a valid pair with a name", () => {
+    expect(validate({ ...NEW_PERSON, placeName: "X", lat: "30.7" }).lon).toMatch(/both/);
+    expect(validate({ ...NEW_PERSON, placeName: "X", lat: "91", lon: "1" }).lat).toMatch(/-90 to 90/);
+    expect(validate({ ...NEW_PERSON, placeName: "X", lat: "1", lon: "abc" }).lon).toMatch(/-180/);
+    expect(validate({ ...NEW_PERSON, lat: "30.7", lon: "78.4" }).placeName).toMatch(/Name the place/);
+    expect(validate({ ...NEW_PERSON, placeName: "X", lat: "-30.7", lon: "-78.4" })).toEqual({});
+  });
+
+  it("maps the API's location errors to the place fields", () => {
+    expect(
+      errorsFromApi({ errors: [{ field: "location.lat", message: "Too big." }] }),
+    ).toEqual({ lat: "Too big." });
+  });
+});
+

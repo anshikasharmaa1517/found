@@ -32,6 +32,9 @@ const EMPTY: ReportValues = {
   reference: "",
   reportedAt: "",
   timeUnknown: false,
+  placeName: "",
+  lat: "",
+  lon: "",
 };
 
 function Field({
@@ -357,6 +360,51 @@ export function ReportPage() {
               />
             )}
           </Field>
+        </fieldset>
+
+        <fieldset>
+          <legend>Where (optional)</legend>
+          <p className="hint">
+            The place as the report names it. It is shown on the map as reported, not verified.
+          </p>
+          <Field label="Place name" error={errors.placeName}>
+            {(f) => (
+              <input
+                id={f.id}
+                value={values.placeName}
+                onChange={(e) => set("placeName", e.target.value)}
+                maxLength={LIMITS.place}
+                aria-describedby={f.describedBy}
+                aria-invalid={f.invalid}
+              />
+            )}
+          </Field>
+          <div className="pair">
+            <Field label="Latitude" error={errors.lat}>
+              {(f) => (
+                <input
+                  id={f.id}
+                  inputMode="decimal"
+                  value={values.lat}
+                  onChange={(e) => set("lat", e.target.value)}
+                  aria-describedby={f.describedBy}
+                  aria-invalid={f.invalid}
+                />
+              )}
+            </Field>
+            <Field label="Longitude" error={errors.lon}>
+              {(f) => (
+                <input
+                  id={f.id}
+                  inputMode="decimal"
+                  value={values.lon}
+                  onChange={(e) => set("lon", e.target.value)}
+                  aria-describedby={f.describedBy}
+                  aria-invalid={f.invalid}
+                />
+              )}
+            </Field>
+          </div>
         </fieldset>
 
         <button type="submit" disabled={busy}>

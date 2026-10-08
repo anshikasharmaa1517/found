@@ -13,6 +13,7 @@ export interface ReportBody {
   original_text: string;
   external_reference: string;
   reported_at?: string;
+  location?: { name: string; lat?: number; lon?: number };
 }
 
 export interface PublishedClaim {
