@@ -632,3 +632,57 @@ td {
 .follow label.inline {
   margin-bottom: 0.75rem;
 }
+
+.trace {
+  margin-top: 0.5rem;
+}
+
+.finding,
+.steps li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.facts dt {
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.citations {
+  list-style: none;
+  padding: 0;
+}
+
+.steps {
+  padding-left: 1.5rem;
+}
+
+.steps li {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+}
+
+.step-guard,
+.step-error {
+  border-color: var(--warn);
+}
+
+.tag-mode-live,
+.tag-mode-cached,
+.tag-mode-replayed {
+  color: var(--accent);
+  border-color: var(--accent);
+}

@@ -7,6 +7,7 @@ import { hasRole } from "../auth/user";
 import { getTimeline, type Order, type Summary, type TimelineEntry } from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FollowPanel } from "../components/FollowPanel";
+import { TraceButton } from "../components/TraceButton";
 import { rememberedIncident } from "../incident";
 import { claimTypeLabel, formatTime, relationLabel } from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
@@ -56,7 +57,15 @@ function SummaryCard({ summary }: { summary: Summary }) {
   );
 }
 
-function Entries({ entries, citedId }: { entries: TimelineEntry[]; citedId: string | null }) {
+function Entries({
+  entries,
+  citedId,
+  canTrace,
+}: {
+  entries: TimelineEntry[];
+  citedId: string | null;
+  canTrace: boolean;
+}) {
   return (
     <>
       {entries.map((entry) =>
@@ -87,6 +96,7 @@ function Entries({ entries, citedId }: { entries: TimelineEntry[]; citedId: stri
           </p>
           {entry.value && <p>{entry.value}</p>}
           <blockquote>{entry.excerpt}</blockquote>
+          {canTrace && <TraceButton claimId={entry.claim_id} />}
         </li>
         ),
       )}
@@ -132,6 +142,7 @@ export function PersonPage() {
   }
 
   const { person, summary, entries } = first.data;
+  const canTrace = hasRole(user, "reviewer", "admin");
   return (
     <section className="page">
       {incidentId && (
@@ -177,8 +188,8 @@ export function PersonPage() {
         <p className="muted">No reports yet.</p>
       ) : (
         <ol className="timeline">
-          <Entries entries={entries} citedId={summary.cited_claim_id} />
-          <Entries entries={pager.items} citedId={summary.cited_claim_id} />
+          <Entries entries={entries} citedId={summary.cited_claim_id} canTrace={canTrace} />
+          <Entries entries={pager.items} citedId={summary.cited_claim_id} canTrace={canTrace} />
         </ol>
       )}
       {pager.error && <ErrorNotice error={pager.error} onRetry={pager.loadMore} />}

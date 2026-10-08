@@ -65,6 +65,15 @@ describe("parseMessage", () => {
     expect(parseMessage("not json")).toBeNull();
     expect(parseMessage(42)).toBeNull();
   });
+
+  it("accepts investigation steps and status changes", () => {
+    for (const type of ["investigation.step", "investigation.updated"]) {
+      expect(parseMessage(JSON.stringify({ type, investigation_id: "inv_1" }))).toMatchObject({
+        type,
+        investigation_id: "inv_1",
+      });
+    }
+  });
 });
 
 describe("LiveClient", () => {

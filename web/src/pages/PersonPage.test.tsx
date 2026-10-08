@@ -1,7 +1,8 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
+import { ApiError } from "../api/client";
 import type { Timeline, VisibleEntry } from "../api/people";
 import { userFromClaims } from "../auth/user";
 import { FakeGateway, REVIEWER, renderApp, routedApi, type Query } from "../test/fakes";
@@ -194,5 +195,67 @@ describe("person page", () => {
     expect(within(hidden).getByText("Used for summary")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "A sensitive report" })).toHaveAttribute("href", "#entry-clm_9");
   });
-});
 
+  it("lets reviewers trace where a report came from", async () => {
+    const started = { investigation_id: "inv_7", mode: "LIVE", status: "QUEUED" };
+    const { api, sent } = routedApi(
+      {
+        [PATH]: () => timeline(),
+        "/v1/investigations/inv_7": () => {
+          throw new ApiError(404, "NOT_FOUND", "Not found.");
+        },
+      },
+      { "/v1/claims/clm_2/investigations": () => started },
+    );
+    renderApp(signedIn(), "/people/per_1", api);
+    const hospital = (await screen.findByText("Admitted, stable condition")).closest("li")!;
+    await userEvent.setup().click(
+      within(hospital).getByRole("button", { name: "Trace where this came from" }),
+    );
+    expect(await screen.findByText("This investigation was not found.")).toBeInTheDocument();
+    expect(sent).toEqual([{ path: "/v1/claims/clm_2/investigations", body: {} }]);
+  });
+
+  it("opens the run already in progress, and explains refusals", async () => {
+    let answer: () => unknown = () => {
+      throw new ApiError(409, "IN_PROGRESS", "Running.", { investigation_id: "inv_3" });
+    };
+    const { api, calls } = routedApi(
+      {
+        [PATH]: () => timeline(),
+        "/v1/investigations/inv_3": () => {
+          throw new ApiError(404, "NOT_FOUND", "Not found.");
+        },
+      },
+      { "/v1/claims/clm_1/investigations": () => answer() },
+    );
+    renderApp(signedIn(), "/people/per_1", api);
+    const user = userEvent.setup();
+    const police = (await screen.findByText("Family reports Maya Rawat missing.")).closest("li")!;
+    await user.click(within(police).getByRole("button", { name: "Trace where this came from" }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.path === "/v1/investigations/inv_3")).toBe(true),
+    );
+
+    answer = () => {
+      throw new ApiError(503, "LIVE_UNAVAILABLE", "Off.");
+    };
+    renderApp(signedIn(), "/people/per_1", api);
+    const again = (await screen.findAllByText("Family reports Maya Rawat missing."))
+      .at(-1)!
+      .closest("li")!;
+    await user.click(within(again).getByRole("button", { name: "Trace where this came from" }));
+    expect(
+      await within(again).findByText("Live investigations are switched off right now."),
+    ).toBeInTheDocument();
+  });
+
+  it("does not offer tracing to publishers", async () => {
+    const { api } = routedApi({ [PATH]: () => timeline() });
+    const publisher = new FakeGateway();
+    publisher.user = userFromClaims({ sub: "p", name: "Desk", "cognito:groups": ["publisher"] });
+    renderApp(publisher, "/people/per_1", api);
+    await screen.findByRole("heading", { name: "Maya Rawat" });
+    expect(screen.queryByRole("button", { name: /Trace where/ })).not.toBeInTheDocument();
+  });
+});

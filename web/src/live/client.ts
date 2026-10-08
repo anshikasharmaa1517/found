@@ -10,6 +10,22 @@ export type LiveMessage =
   | { type: "claim.created"; incident_id: string; claim_id: string; subject_id: string; at: string }
   | { type: "alert.created"; alert_id: string; subject_id: string; severity: string; message: string }
   | { type: "review.created"; incident_id: string; review_id: string; item_type: string }
+  | {
+      type: "investigation.step";
+      incident_id: string;
+      investigation_id: string;
+      seq: number;
+      kind: string;
+      tool: string | null;
+      summary: string | null;
+    }
+  | {
+      type: "investigation.updated";
+      incident_id: string;
+      investigation_id: string;
+      claim_id: string;
+      status: string;
+    }
   | { type: "subscribed"; incident_id: string }
   | { type: "error"; error: { code: string; message: string } };
 
@@ -36,7 +52,15 @@ export interface LiveClientOptions {
   schedule?: (run: () => void, ms: number) => () => void;
 }
 
-const KNOWN = new Set(["claim.created", "alert.created", "review.created", "subscribed", "error"]);
+const KNOWN = new Set([
+  "claim.created",
+  "alert.created",
+  "review.created",
+  "investigation.step",
+  "investigation.updated",
+  "subscribed",
+  "error",
+]);
 
 export function parseMessage(data: unknown): LiveMessage | null {
   if (typeof data !== "string") return null;
