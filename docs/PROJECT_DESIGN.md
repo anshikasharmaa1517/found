@@ -465,7 +465,7 @@ Step by step:
    7. Runs a `TransactWriteItems`: idempotency marker (must not exist), subject META `claim_seq = k+1` (condition `claim_seq = k`), the claim item with `seq = k+1`, mention items, and an activity entry.
    8. On cancellation, reads the idempotency marker. Same hash: returns the existing claim with `replayed: true`. Different hash: `409`. Sequence conflict: retries from step 6 (max 5, jittered backoff).
    9. Returns `201` with the claim.
-4. **DynamoDB Stream** emits INSERT records. The **Pipe** filters `eventName = INSERT` and forwards to the **bus** with `detail-type = "found.ddb.insert"`.
+4. **DynamoDB Stream** emits INSERT records. The **Pipe** filters the records consumers need (Section 12.2) and forwards them to the **bus** with `source = "found.ddb"` and `detail-type = "found.ddb.change"`.
 5. A **rule** matching `entity_type = CLAIM` invokes **watcher**:
    1. Strongly consistent query of all claims for the subject with `seq < n`.
    2. Computes the relation (Section 9.6) and whether an alert is needed.
@@ -666,7 +666,7 @@ Deployment unit: Lambda functions and one agent runtime. Logical unit: modules i
 | Database | Reads subject claims and subscriptions (consistent); conditional puts |
 | Events produced | ALERT, REVIEW_ITEM inserts |
 | Events consumed | CLAIM insert |
-| Failure scenarios | Retries by EventBridge (up to 24 h, 5 attempts configured), then DLQ; duplicate delivery is a no-op |
+| Failure scenarios | EventBridge retries delivery 5 times and Lambda retries a failed run twice, both within 1 hour (Section 10.4), then `watcher-dlq`; duplicate delivery is a no-op |
 
 ## 6.3 Resolve module (`found_core.resolve`, Lambda `resolver`)
 
@@ -886,6 +886,14 @@ Response `200`:
 
 The summary is computed by the same deterministic function as the watcher and always cites the claim it is based on.
 
+Sensitive claims (`DECEASED`) are shown in full only to reviewers and admins until a reviewer releases them (the claim's `held_alert` review item is `DONE`). For every other role the API itself replaces the entry with a notice and leaves out the type, text, detail and source:
+
+```json
+{ "claim_id": "clm_01JA0Q2", "seq": 3, "reported_at": "2026-10-04T05:00:00Z", "withheld": true, "notice": "A sensitive report was received. A coordinator will contact you." }
+```
+
+A summary based on such a claim still cites it, with `label` "Sensitive report received". A withheld conflict is listed as `{ "claim_id", "withheld": true, "notice" }`. Every visible entry and conflict carries `"withheld": false`.
+
 ### POST /v1/claims/{claim_id}/investigations
 
 - **Auth**: group `reviewer`.
@@ -985,9 +993,12 @@ Response `200`:
   ],
   "located_reports": 1356,
   "unlocated_reports": 2244,
-  "caveat": "Locations are as reported and unverified. Counts are reports, not unique people."
+  "caveat": "Locations are as reported and unverified. Counts are reports, not unique people.",
+  "updated_at": "2026-10-05T10:15:00Z"
 }
 ```
+
+Counts are cached per Lambda environment for 30 seconds (Section 11); `updated_at` says when they were computed. `DECEASED` and other types fall under `OTHER`, so the map never shows a death count for a place.
 
 ## 7.4 Endpoint catalog
 
@@ -1007,6 +1018,7 @@ Response `200`:
 | POST | `/v1/people/{pid}/subscriptions` | family | Follow a person |
 | DELETE | `/v1/subscriptions/{sub_id}` | family (owner) | Unfollow |
 | GET | `/v1/me/alerts` | family | Alert feed |
+| GET | `/v1/me/subscriptions` | family | People the caller follows (active subscriptions) |
 | POST | `/v1/alerts/{alr_id}/release` | reviewer | Release a held alert (for example, `DECEASED`) for delivery |
 | GET | `/v1/incidents/{iid}/review-queue` | reviewer | Items by `type` (`conflict`, `identity`, `intake`, `finding`) and `status` |
 | POST | `/v1/identity-proposals/{pair_key}/decision` | reviewer | Confirm or reject |
@@ -1715,7 +1727,8 @@ def needs_alert(incoming, priors, relation, st) -> AlertDecision:
 
 Delivery policy (applied when the alert is created):
 
-- `DECEASED`: `delivery_status = HELD`, `held_reason = "SENSITIVE_STATUS"`, and a `held_alert` review item. In-app alert text says "A sensitive report was received. A coordinator will contact you." until released.
+- `DECEASED`: `delivery_status = HELD`, `held_reason = "SENSITIVE_STATUS"`. In-app alert text says "A sensitive report was received. A coordinator will contact you." until released.
+- Every `DECEASED` claim gets one `held_alert` review item, with or without followers. Releasing it releases all held alerts for that claim and shows the claim in full to every role (Section 7.3).
 - Subscription with no SMS or email channel: `NOT_REQUIRED`.
 - Otherwise: `PENDING`.
 
@@ -2073,21 +2086,23 @@ At large scale (Section 13): CloudFront in front of read-only, public incident s
 | `found-main` stream | DynamoDB Stream | All table writes | `found-ddb-pipe` | n/a |
 | `found-ddb-pipe` | EventBridge Pipe | Stream | Bus `found-events` | `pipe-dlq` |
 | `found-events` | Custom event bus | Pipe | Rules below | per target |
-| Rule `claim-inserted` | Rule | | `watcher`, `ws_push` | `watcher-dlq`, `ws-dlq` |
-| Rule `person-inserted` | Rule | | `resolver` | `resolver-dlq` |
-| Rule `alert-inserted` | Rule | | `notifier`, `ws_push` | `notifier-dlq`, `ws-dlq` |
-| Rule `investigation-changed` | Rule (STEP inserts, INVESTIGATION modifies) | | `ws_push` | `ws-dlq` |
-| Rule `review-inserted` | Rule | | `ws_push` | `ws-dlq` |
+| Rule `claim-inserted` | Rule | | `watcher` | `watcher-dlq` |
+| Rules `push-claim`, `push-alert`, `push-review` | Rules (CLAIM, ALERT, REVIEW_ITEM inserts) | | `ws_push` | `wspush-dlq` |
+| Rule `person-inserted` | Rule (`entity_type = SUBJECT` and `subject_type = PERSON`) | | `resolver` | `resolver-dlq` |
+| Rule `alert-inserted` | Rule | | `notifier` | `notifier-dlq` |
+| Rule `investigation-changed` | Rule (STEP inserts, INVESTIGATION modifies) | | `ws_push` | `wspush-dlq` |
 | Rule `intake-object-created` | Rule on default bus (S3) | S3 | `IntakeWorkflow` | Step Functions catch |
 | Rule `media-object-created` | Rule on default bus (S3) | S3 | `media_register` Lambda [Optional] | `media-dlq` |
 | `investigation-queue` | SQS standard | `api` | `investigation_runner` | `investigation-dlq` |
+
+Each consumer has its own rule and dead-letter queue, so one failing consumer never delays another. Subjects are stored with `entity_type = SUBJECT` and a `subject_type`, so rules for people also match `subject_type = PERSON`.
 
 Pipe filter (only what consumers need, to keep cost and noise down):
 
 ```json
 {
   "Filters": [
-    { "Pattern": "{\"eventName\":[\"INSERT\"],\"dynamodb\":{\"NewImage\":{\"entity_type\":{\"S\":[\"CLAIM\",\"PERSON\",\"ALERT\",\"INVESTIGATION_STEP\",\"REVIEW_ITEM\"]}}}}" },
+    { "Pattern": "{\"eventName\":[\"INSERT\"],\"dynamodb\":{\"NewImage\":{\"entity_type\":{\"S\":[\"CLAIM\",\"SUBJECT\",\"ALERT\",\"INVESTIGATION_STEP\",\"REVIEW_ITEM\"]}}}}" },
     { "Pattern": "{\"eventName\":[\"MODIFY\"],\"dynamodb\":{\"NewImage\":{\"entity_type\":{\"S\":[\"INVESTIGATION\"]}}}}" }
   ]
 }
@@ -2140,8 +2155,12 @@ found/
 │   └── stacks/
 │       ├── data_stack.py       DynamoDB table, S3 bucket
 │       ├── auth_stack.py       Cognito user pool, groups
-│       ├── events_stack.py     Pipe, event bus, rules, DLQs, SQS
-│       ├── api_stack.py        HTTP API, WebSocket API, Lambdas
+│       ├── events_stack.py     Pipe, event bus, watcher rule and DLQ, SQS
+│       ├── api_stack.py        HTTP API, `api` Lambda, cursor signing secret
+│       ├── realtime_stack.py   WebSocket API, `ws`, `ws_authorizer`, `ws_push` and its rules
+│       ├── maps_stack.py       Amazon Location API key for basemap tiles
+│       ├── consumer.py         shared: Lambda on bus rules with retries and DLQ
+│       ├── lambda_code.py      shared: backend package bundled for Lambda
 │       ├── agent_stack.py      AgentCore Runtime, Gateway, Memory, Guardrail
 │       ├── intake_stack.py     Step Functions IntakeWorkflow
 │       └── observability_stack.py  dashboards, alarms, budget
@@ -2218,7 +2237,7 @@ Work split for two people: one owns `found_core` + backend handlers + infra; the
 | Backend deploy | GitHub Actions on push to `main`: run tests, then `cdk deploy --all` using an OIDC role (no long-lived AWS keys) |
 | Web deploy | Amplify Hosting connected to the repo, builds `web/` on push |
 | Agent deploy | Agent code packaged and deployed to AgentCore Runtime from CI. Use CDK if the CloudFormation resources for AgentCore cover our needs; otherwise the AgentCore starter toolkit CLI in the deploy job (decide in Phase 4) |
-| Secrets | None needed. All AWS access uses IAM roles. The Location Service map key is restricted to the app's domain |
+| Secrets | One: the HMAC key that signs pagination cursors, generated in Secrets Manager by the API stack. All AWS access uses IAM roles. The Location Service map key is restricted to the app's origins |
 | Config | `cdk.context.json` per environment: model ID, caps, `live_enabled`, alarm email |
 | Schema changes | DynamoDB is schemaless; every item has `schema_version`. Backfills are scripts in `data/` |
 | Rollback | Redeploy the previous commit. Amplify supports instant rollback of the web app |
