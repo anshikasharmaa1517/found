@@ -2,7 +2,7 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import type { Timeline, TimelineEntry } from "../api/people";
+import type { Timeline, VisibleEntry } from "../api/people";
 import { userFromClaims } from "../auth/user";
 import { FakeGateway, REVIEWER, renderApp, routedApi, type Query } from "../test/fakes";
 
@@ -14,8 +14,9 @@ function signedIn() {
   return gateway;
 }
 
-function entry(overrides: Partial<TimelineEntry>): TimelineEntry {
+function entry(overrides: Partial<VisibleEntry>): VisibleEntry {
   return {
+    withheld: false,
     claim_id: "clm_1",
     seq: 1,
     claim_type: "MISSING",
@@ -62,6 +63,7 @@ function timeline(overrides: Partial<Timeline> = {}): Timeline {
           claim_id: "clm_1",
           claim_type: "MISSING",
           source: "District Police Demo",
+          withheld: false,
         },
       ],
       needs_review: false,
@@ -163,6 +165,34 @@ describe("person page", () => {
     await screen.findByRole("heading", { name: "Maya Rawat" });
     expect(screen.queryByRole("link", { name: /Publish a report/ })).not.toBeInTheDocument();
     localStorage.clear();
+  });
+
+  it("shows a neutral notice for a sensitive report it may not see", async () => {
+    const notice = "A sensitive report was received. A coordinator will contact you.";
+    const { api } = routedApi({
+      [PATH]: () =>
+        timeline({
+          summary: {
+            label: "Sensitive report received",
+            basis: "A coordinator will contact you before the details are shown",
+            cited_claim_id: "clm_9",
+            conflicts: [{ claim_id: "clm_9", withheld: true, notice }],
+            needs_review: false,
+          },
+          entries: [
+            POLICE,
+            { claim_id: "clm_9", seq: 2, reported_at: "2026-10-03T02:10:00Z", withheld: true, notice },
+          ],
+        }),
+    });
+    renderApp(signedIn(), "/people/per_1", api);
+    expect(await screen.findByRole("heading", { name: "Sensitive report received" })).toBeInTheDocument();
+    const items = screen.getAllByRole("listitem");
+    const hidden = items.find((li) => li.id === "entry-clm_9")!;
+    expect(within(hidden).getByText("Sensitive report")).toBeInTheDocument();
+    expect(within(hidden).getByText(notice)).toBeInTheDocument();
+    expect(within(hidden).getByText("Used for summary")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "A sensitive report" })).toHaveAttribute("href", "#entry-clm_9");
   });
 });
 

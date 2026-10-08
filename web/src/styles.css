@@ -531,3 +531,7 @@ td {
 td {
   text-align: right;
 }
+
+.entry.withheld {
+  border-style: dashed;
+}

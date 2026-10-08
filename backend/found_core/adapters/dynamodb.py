@@ -577,6 +577,10 @@ class DynamoFoundRepository:
         )
         return [Connection.model_validate(_fields(i)) for i in items]
 
+    def get_review_item(self, incident_id: str, review_id: str) -> ReviewItem | None:
+        item = self._get(review_item_key(incident_id, review_id))
+        return ReviewItem.model_validate(_fields(item)) if item else None
+
     def _put_if_absent(self, item: dict[str, Any]) -> bool:
         try:
             self._table.put_item(Item=item, ConditionExpression="attribute_not_exists(PK)")

@@ -39,7 +39,7 @@ function SummaryCard({ summary }: { summary: Summary }) {
             {summary.conflicts.map((c) => (
               <li key={c.claim_id}>
                 <a href={`#${anchor(c.claim_id)}`}>
-                  {c.source}: {claimTypeLabel(c.claim_type)}
+                  {c.withheld ? "A sensitive report" : `${c.source}: ${claimTypeLabel(c.claim_type)}`}
                 </a>
               </li>
             ))}
@@ -56,7 +56,17 @@ function SummaryCard({ summary }: { summary: Summary }) {
 function Entries({ entries, citedId }: { entries: TimelineEntry[]; citedId: string | null }) {
   return (
     <>
-      {entries.map((entry) => (
+      {entries.map((entry) =>
+        entry.withheld ? (
+          <li key={entry.claim_id} id={anchor(entry.claim_id)} className="entry withheld">
+            <div className="entry-head">
+              <strong>Sensitive report</strong>
+              {entry.claim_id === citedId && <span className="tag tag-cited">Used for summary</span>}
+            </div>
+            <p className="muted">{formatTime(entry.reported_at)}</p>
+            <p>{entry.notice}</p>
+          </li>
+        ) : (
         <li
           key={entry.claim_id}
           id={anchor(entry.claim_id)}
@@ -75,7 +85,8 @@ function Entries({ entries, citedId }: { entries: TimelineEntry[]; citedId: stri
           {entry.value && <p>{entry.value}</p>}
           <blockquote>{entry.excerpt}</blockquote>
         </li>
-      ))}
+        ),
+      )}
     </>
   );
 }

@@ -13,6 +13,7 @@ from found_core.domain.auth import Caller
 from found_core.domain.errors import BadRequest, FoundError
 from found_core.domain.models import Alert, Claim, Subject, Subscription
 from found_core.domain.normalize import excerpt
+from found_core.domain.visibility import SENSITIVE_NOTICE
 from found_core.services.people import PersonProfile, TimelineEntry
 
 logger = Logger(service="api")
@@ -90,10 +91,13 @@ def summary_view(profile: PersonProfile) -> dict[str, Any]:
         "basis": summary.basis,
         "cited_claim_id": summary.cited_claim_id,
         "conflicts": [
-            {
+            {"claim_id": c.id, "withheld": True, "notice": SENSITIVE_NOTICE}
+            if c.id in profile.withheld
+            else {
                 "claim_id": c.id,
                 "claim_type": c.claim_type,
                 "source": _source_name(profile, c.source_id),
+                "withheld": False,
             }
             for c in profile.conflicts
         ],
@@ -103,6 +107,15 @@ def summary_view(profile: PersonProfile) -> dict[str, Any]:
 
 def entry_view(profile: PersonProfile, entry: TimelineEntry) -> dict[str, Any]:
     claim = entry.claim
+    reported_at = claim.model_dump(mode="json")["reported_at"]
+    if entry.withheld:
+        return {
+            "claim_id": claim.id,
+            "seq": claim.seq,
+            "reported_at": reported_at,
+            "withheld": True,
+            "notice": SENSITIVE_NOTICE,
+        }
     return {
         "claim_id": claim.id,
         "seq": claim.seq,
@@ -110,9 +123,10 @@ def entry_view(profile: PersonProfile, entry: TimelineEntry) -> dict[str, Any]:
         "value": claim.value,
         "source_id": claim.source_id,
         "source": _source_name(profile, claim.source_id),
-        "reported_at": claim.model_dump(mode="json")["reported_at"],
+        "reported_at": reported_at,
         "relation": entry.relation.value,
         "excerpt": excerpt(claim.original_text),
+        "withheld": False,
     }
 
 

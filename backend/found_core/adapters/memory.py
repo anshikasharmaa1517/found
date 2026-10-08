@@ -224,3 +224,7 @@ class InMemoryFoundRepository:
     def list_incident_claims(self, incident_id: str) -> list[Claim]:
         found = [c for c in self.claims.values() if c.incident_id == incident_id]
         return sorted(found, key=lambda c: (c.ingested_at, c.id))
+
+    def get_review_item(self, incident_id: str, review_id: str) -> ReviewItem | None:
+        item = self.review_items.get(review_id)
+        return item if item and item.incident_id == incident_id else None

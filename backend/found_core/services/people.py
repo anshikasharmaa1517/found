@@ -9,11 +9,13 @@ from dataclasses import dataclass
 
 from found_core.domain.auth import Caller
 from found_core.domain.cursor import CursorCodec, parse_limit
-from found_core.domain.enums import Relation, SubjectType
+from found_core.domain.enums import Relation, ReviewItemType, ReviewStatus, SubjectType
 from found_core.domain.errors import BadRequest, NotFound
+from found_core.domain.ids import review_item_id
 from found_core.domain.models import Claim, Source, Subject
 from found_core.domain.normalize import name_tokens
 from found_core.domain.rules import CitedSummary, age_matches, relations, report_order, summarize
+from found_core.domain.visibility import is_sensitive, masked_summary, sees_sensitive, withheld_ids
 from found_core.ports.repository import FoundRepository, NamePosition
 from found_core.services.access import ensure_can_read
 
@@ -33,12 +35,15 @@ class PersonProfile:
     conflicts: list[Claim]
     sources: dict[str, Source]
     claim_count: int
+    # Claims this caller sees only as a neutral notice (product rule 8).
+    withheld: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
 class TimelineEntry:
     claim: Claim
     relation: Relation
+    withheld: bool = False
 
 
 @dataclass(frozen=True)
@@ -111,7 +116,7 @@ class PeopleService:
 
     def profile(self, caller: Caller, person_id: str) -> PersonProfile:
         person, claims = self._person_with_claims(caller, person_id)
-        return self._profile(person, claims)
+        return self._profile(person, claims, caller)
 
     def timeline(
         self,
@@ -141,9 +146,15 @@ class PeopleService:
         next_cursor = None
         if start + page_size < len(ordered):
             next_cursor = self._cursors.encode(scope, {"s": page[-1].seq})
+        profile = self._profile(person, claims, caller)
         return Timeline(
-            profile=self._profile(person, claims),
-            entries=[TimelineEntry(claim=c, relation=relation_of[c.id]) for c in page],
+            profile=profile,
+            entries=[
+                TimelineEntry(
+                    claim=c, relation=relation_of[c.id], withheld=c.id in profile.withheld
+                )
+                for c in page
+            ],
             next_cursor=next_cursor,
         )
 
@@ -154,16 +165,33 @@ class PeopleService:
         ensure_can_read(self._repo, caller, person.incident_id)
         return person, self._repo.list_subject_claims(person_id)
 
-    def _profile(self, person: Subject, claims: Sequence[Claim]) -> PersonProfile:
+    def _profile(self, person: Subject, claims: Sequence[Claim], caller: Caller) -> PersonProfile:
+        withheld = withheld_ids(claims, caller, self._released(person, claims, caller))
         summary = summarize(claims, person.subject_type)
         by_id = {c.id: c for c in claims}
         return PersonProfile(
             person=person,
-            summary=summary,
+            summary=masked_summary(summary, withheld),
+            withheld=withheld,
             conflicts=[by_id[cid] for cid in summary.conflicts],
             sources={s.id: s for s in self._repo.list_sources(person.incident_id)},
             claim_count=len(claims),
         )
+
+    def _released(self, person: Subject, claims: Sequence[Claim], caller: Caller) -> set[str]:
+        """Sensitive claims a reviewer has released: their held-alert review item is done."""
+        if sees_sensitive(caller):
+            return set()
+        released: set[str] = set()
+        for claim in claims:
+            if not is_sensitive(claim):
+                continue
+            item = self._repo.get_review_item(
+                person.incident_id, review_item_id(ReviewItemType.HELD_ALERT, claim.id)
+            )
+            if item is not None and item.status == ReviewStatus.DONE:
+                released.add(claim.id)
+        return released
 
     def _name_position(self, scope: str, cursor: str | None) -> NamePosition | None:
         if not cursor:

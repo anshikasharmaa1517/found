@@ -8,6 +8,7 @@ late delivery does nothing new, and a retry after a crash completes the missing 
 from dataclasses import dataclass, field
 
 from found_core.domain.enums import (
+    SENSITIVE_CLAIM_TYPES,
     DeliveryStatus,
     Relation,
     ReviewItemType,
@@ -60,7 +61,10 @@ class WatchService:
             reviews.append(ReviewItemType.CONFLICT)
 
         created, held = self._alert_followers(incoming, relation, decision)
-        if held and self._open_review(incoming, ReviewItemType.HELD_ALERT):
+        # A sensitive report always waits for a reviewer, with or without followers:
+        # releasing it frees its alerts and shows it in full to everyone.
+        sensitive = incoming.claim_type in SENSITIVE_CLAIM_TYPES
+        if (held or sensitive) and self._open_review(incoming, ReviewItemType.HELD_ALERT):
             reviews.append(ReviewItemType.HELD_ALERT)
 
         return WatchResult(

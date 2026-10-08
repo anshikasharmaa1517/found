@@ -491,3 +491,18 @@ def test_list_incident_claims_reads_every_claim_of_the_incident(service, repo):
     assert {c.id for c in found} == {first.id, second.id}
     assert next(c for c in found if c.id == second.id).location_id == second.location_id
     assert repo.list_incident_claims("inc_2") == []
+
+
+def test_get_review_item_is_scoped_to_incident(repo):
+    item = ReviewItem(
+        id="rev_9",
+        incident_id="inc_1",
+        item_type="held_alert",
+        ref_id="clm_9",
+        priority=1,
+        created_at=datetime(2026, 10, 5, 10, 15, tzinfo=UTC),
+    )
+    repo.put_review_item_if_absent(item)
+    assert repo.get_review_item("inc_1", "rev_9") == item
+    assert repo.get_review_item("inc_2", "rev_9") is None
+    assert repo.get_review_item("inc_1", "rev_x") is None

@@ -15,11 +15,16 @@ export interface PeoplePage {
 
 export type Relation = "FIRST" | "UPDATE" | "HISTORICAL" | "NEEDS_REVIEW" | "NOT_STATUS";
 
-export interface Conflict {
+/** A sensitive report this account may not see yet arrives as a notice only. */
+export interface WithheldClaim {
   claim_id: string;
-  claim_type: string;
-  source: string;
+  withheld: true;
+  notice: string;
 }
+
+export type Conflict =
+  | { claim_id: string; claim_type: string; source: string; withheld: false }
+  | WithheldClaim;
 
 export interface Summary {
   label: string;
@@ -29,7 +34,8 @@ export interface Summary {
   needs_review: boolean;
 }
 
-export interface TimelineEntry {
+export interface VisibleEntry {
+  withheld: false;
   claim_id: string;
   seq: number;
   claim_type: string;
@@ -40,6 +46,10 @@ export interface TimelineEntry {
   relation: Relation;
   excerpt: string;
 }
+
+export type TimelineEntry =
+  | VisibleEntry
+  | (WithheldClaim & { seq: number; reported_at: string | null });
 
 export interface Timeline {
   person: PersonRow;
