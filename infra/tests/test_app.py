@@ -28,6 +28,7 @@ def test_app_synthesizes_each_environment(tmp_path, env_name):
         f"Found-{env_name}-Events.template.json",
         f"Found-{env_name}-Auth.template.json",
         f"Found-{env_name}-Api.template.json",
+        f"Found-{env_name}-Realtime.template.json",
     }
 
 

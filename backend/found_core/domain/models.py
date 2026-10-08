@@ -119,6 +119,18 @@ class ReviewItem(_Entity):
     created_at: datetime
 
 
+class Connection(_Entity):
+    """An open WebSocket. Roles are copied from the verified token at connect time."""
+
+    id: str
+    user_id: str
+    groups: tuple[str, ...] = ()
+    org_id: str | None = None
+    incident_id: str | None = None
+    connected_at: datetime
+    expires_at: datetime
+
+
 class IdemMarker(_Entity):
     org_id: str
     external_reference: str

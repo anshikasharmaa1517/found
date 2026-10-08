@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from found_core.domain.enums import SubjectType
+from found_core.domain.enums import ReviewItemType, Severity, SubjectType
 
 EVENT_SOURCE = "found.ddb"
 EVENT_DETAIL_TYPE = "found.ddb.change"
@@ -41,8 +41,32 @@ class SubjectCreated(_Event):
     subject_type: SubjectType
 
 
-DomainEvent = ClaimCreated | SubjectCreated
-EVENT_MODELS: tuple[type[_Event], ...] = (ClaimCreated, SubjectCreated)
+class AlertCreated(_Event):
+    type: Literal["alert.created"] = "alert.created"
+    alert_id: str
+    user_id: str
+    subject_id: str
+    claim_id: str
+    severity: Severity
+    message: str
+
+
+class ReviewCreated(_Event):
+    type: Literal["review.created"] = "review.created"
+    review_id: str
+    item_type: ReviewItemType
+    ref_id: str
+    subject_id: str | None = None
+    priority: int
+
+
+DomainEvent = ClaimCreated | SubjectCreated | AlertCreated | ReviewCreated
+EVENT_MODELS: tuple[type[_Event], ...] = (
+    ClaimCreated,
+    SubjectCreated,
+    AlertCreated,
+    ReviewCreated,
+)
 
 
 class NotADomainEvent(ValueError):
@@ -107,6 +131,29 @@ def from_stream(record: dict[str, Any]) -> DomainEvent | None:
                 seq=image["seq"],
                 source_id=image["source_id"],
                 occurred_at=image["ingested_at"],
+            )
+        case "ALERT":
+            return AlertCreated(
+                event_id=event_id,
+                incident_id=image["incident_id"],
+                alert_id=image["id"],
+                user_id=image["user_id"],
+                subject_id=image["subject_id"],
+                claim_id=image["claim_id"],
+                severity=image["severity"],
+                message=image["message"],
+                occurred_at=image["created_at"],
+            )
+        case "REVIEW_ITEM":
+            return ReviewCreated(
+                event_id=event_id,
+                incident_id=image["incident_id"],
+                review_id=image["id"],
+                item_type=image["item_type"],
+                ref_id=image["ref_id"],
+                subject_id=image.get("subject_id"),
+                priority=image["priority"],
+                occurred_at=image["created_at"],
             )
         case "SUBJECT":
             return SubjectCreated(

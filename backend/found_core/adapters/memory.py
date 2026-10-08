@@ -10,6 +10,7 @@ from found_core.domain.enums import SubjectType
 from found_core.domain.models import (
     Alert,
     Claim,
+    Connection,
     IdemMarker,
     Organization,
     ReviewItem,
@@ -38,6 +39,7 @@ class InMemoryFoundRepository:
         self.subscriptions: dict[str, Subscription] = {}
         self.alerts: dict[tuple[str, str], Alert] = {}
         self.review_items: dict[str, ReviewItem] = {}
+        self.connections: dict[str, Connection] = {}
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
@@ -183,3 +185,29 @@ class InMemoryFoundRepository:
             return page, None
         last = page[-1]
         return page, {"c": last.created_at.isoformat(), "i": last.id}
+
+    def put_connection(self, connection: Connection) -> None:
+        self.connections[connection.id] = connection
+
+    def get_connection(self, connection_id: str) -> Connection | None:
+        return self.connections.get(connection_id)
+
+    def delete_connection(self, connection_id: str) -> None:
+        self.connections.pop(connection_id, None)
+
+    def set_connection_incident(self, connection_id: str, incident_id: str) -> bool:
+        with self._lock:
+            current = self.connections.get(connection_id)
+            if current is None:
+                return False
+            self.connections[connection_id] = current.model_copy(
+                update={"incident_id": incident_id}
+            )
+            return True
+
+    def list_incident_connections(self, incident_id: str) -> list[Connection]:
+        return [c for c in self.connections.values() if c.incident_id == incident_id]
+
+    def list_user_connections(self, user_id: str) -> list[Connection]:
+        found = [c for c in self.connections.values() if c.user_id == user_id]
+        return sorted(found, key=lambda c: (c.connected_at, c.id))

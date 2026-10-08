@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "ReviewItemType": {
+      "enum": [
+        "conflict",
+        "identity",
+        "intake",
+        "finding",
+        "held_alert"
+      ],
+      "title": "ReviewItemType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "incident_id": {
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "type": {
+      "const": "review.created",
+      "default": "review.created",
+      "title": "Type",
+      "type": "string"
+    },
+    "review_id": {
+      "title": "Review Id",
+      "type": "string"
+    },
+    "item_type": {
+      "$ref": "#/$defs/ReviewItemType"
+    },
+    "ref_id": {
+      "title": "Ref Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subject Id"
+    },
+    "priority": {
+      "title": "Priority",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "event_id",
+    "incident_id",
+    "occurred_at",
+    "review_id",
+    "item_type",
+    "ref_id",
+    "priority"
+  ],
+  "title": "ReviewCreated",
+  "type": "object"
+}

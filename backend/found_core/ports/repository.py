@@ -7,6 +7,7 @@ from found_core.domain.enums import SubjectType
 from found_core.domain.models import (
     Alert,
     Claim,
+    Connection,
     IdemMarker,
     Organization,
     ReviewItem,
@@ -100,3 +101,17 @@ class FoundRepository(Protocol):
     ) -> tuple[list[Alert], dict[str, str] | None]:
         """Newest first. The position is opaque to callers and only valid for this user."""
         ...
+
+    def put_connection(self, connection: Connection) -> None: ...
+
+    def get_connection(self, connection_id: str) -> Connection | None: ...
+
+    def delete_connection(self, connection_id: str) -> None: ...
+
+    def set_connection_incident(self, connection_id: str, incident_id: str) -> bool:
+        """Point the connection at one incident's feed. False if the connection is gone."""
+        ...
+
+    def list_incident_connections(self, incident_id: str) -> list[Connection]: ...
+
+    def list_user_connections(self, user_id: str) -> list[Connection]: ...

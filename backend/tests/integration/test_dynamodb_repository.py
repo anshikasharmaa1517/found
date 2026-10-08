@@ -9,6 +9,7 @@ from found_core.domain.errors import ReferenceConflict
 from found_core.domain.models import (
     Alert,
     Claim,
+    Connection,
     IdemMarker,
     Organization,
     ReviewItem,
@@ -428,3 +429,36 @@ def test_user_alerts_reject_another_users_position(repo):
     _, after = repo.list_user_alerts("u1", 1)
     with pytest.raises(ValueError):
         repo.list_user_alerts("u2", 1, after)
+
+
+def connection(cid, user="u1", minute=0):
+    from datetime import timedelta
+
+    at = datetime(2026, 10, 5, 10, minute, tzinfo=UTC)
+    return Connection(
+        id=cid,
+        user_id=user,
+        groups=("reviewer",),
+        connected_at=at,
+        expires_at=at + timedelta(hours=2),
+    )
+
+
+def test_connections_round_trip_with_ttl_and_lookups(repo, table):
+    repo.put_connection(connection("c1"))
+    repo.put_connection(connection("c2", minute=1))
+    repo.put_connection(connection("c3", user="u2"))
+    item = table.get_item(Key={"PK": "CONN#c1", "SK": "META"})["Item"]
+    assert item["ttl"] == int(connection("c1").expires_at.timestamp())
+    assert "GSI3PK" not in item
+    assert repo.get_connection("c1") == connection("c1")
+    assert [c.id for c in repo.list_user_connections("u1")] == ["c1", "c2"]
+
+    assert repo.set_connection_incident("c1", "inc_1") is True
+    assert repo.get_connection("c1").incident_id == "inc_1"
+    assert [c.id for c in repo.list_incident_connections("inc_1")] == ["c1"]
+    assert repo.set_connection_incident("c_gone", "inc_1") is False
+
+    repo.delete_connection("c1")
+    assert repo.get_connection("c1") is None
+    assert repo.list_incident_connections("inc_1") == []

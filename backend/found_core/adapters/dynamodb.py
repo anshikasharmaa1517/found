@@ -14,6 +14,7 @@ from found_core.domain.enums import SubjectType
 from found_core.domain.models import (
     Alert,
     Claim,
+    Connection,
     IdemMarker,
     Organization,
     ReviewItem,
@@ -75,6 +76,10 @@ def claim_key(subject_id: str, seq: int) -> dict[str, str]:
 
 def subscription_key(subject_id: str, subscription_id: str) -> dict[str, str]:
     return {"PK": f"SUBJ#{subject_id}", "SK": f"SUB#{subscription_id}"}
+
+
+def connection_key(connection_id: str) -> dict[str, str]:
+    return {"PK": f"CONN#{connection_id}", "SK": "META"}
 
 
 def alert_key(subscription_id: str, claim_id: str) -> dict[str, str]:
@@ -203,6 +208,24 @@ def review_item_item(item: ReviewItem) -> dict[str, Any]:
         "schema_version": SCHEMA_VERSION,
         **attrs,
     }
+
+
+def connection_item(connection: Connection) -> dict[str, Any]:
+    attrs = _attrs(connection)
+    item = {
+        **connection_key(connection.id),
+        "GSI1PK": f"USER#{connection.user_id}",
+        "GSI1SK": f"CONN#{attrs['connected_at']}#{connection.id}",
+        "entity_type": "CONNECTION",
+        "schema_version": SCHEMA_VERSION,
+        # DynamoDB TTL removes the item some time after this; readers also check expiry.
+        "ttl": int(connection.expires_at.timestamp()),
+        **attrs,
+    }
+    if connection.incident_id:
+        item["GSI3PK"] = f"WSINC#{connection.incident_id}"
+        item["GSI3SK"] = f"CONN#{connection.id}"
+    return item
 
 
 def mention_item(claim: Claim, mentioned_source_id: str) -> dict[str, Any]:
@@ -471,6 +494,48 @@ class DynamoFoundRepository:
             return alerts, None
         page = alerts[:limit]
         return page, _alert_index_keys(page[-1])
+
+    def put_connection(self, connection: Connection) -> None:
+        self._table.put_item(Item=connection_item(connection))
+
+    def get_connection(self, connection_id: str) -> Connection | None:
+        item = self._get(connection_key(connection_id))
+        return Connection.model_validate(_fields(item)) if item else None
+
+    def delete_connection(self, connection_id: str) -> None:
+        self._table.delete_item(Key=connection_key(connection_id))
+
+    def set_connection_incident(self, connection_id: str, incident_id: str) -> bool:
+        try:
+            self._table.update_item(
+                Key=connection_key(connection_id),
+                UpdateExpression="SET incident_id = :iid, GSI3PK = :pk, GSI3SK = :sk",
+                ConditionExpression="attribute_exists(PK)",
+                ExpressionAttributeValues={
+                    ":iid": incident_id,
+                    ":pk": f"WSINC#{incident_id}",
+                    ":sk": f"CONN#{connection_id}",
+                },
+            )
+            return True
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return False
+
+    def list_incident_connections(self, incident_id: str) -> list[Connection]:
+        items = self._query(
+            IndexName="GSI3", KeyConditionExpression=Key("GSI3PK").eq(f"WSINC#{incident_id}")
+        )
+        return [Connection.model_validate(_fields(i)) for i in items]
+
+    def list_user_connections(self, user_id: str) -> list[Connection]:
+        items = self._query(
+            IndexName="GSI1",
+            KeyConditionExpression=Key("GSI1PK").eq(f"USER#{user_id}")
+            & Key("GSI1SK").begins_with("CONN#"),
+        )
+        return [Connection.model_validate(_fields(i)) for i in items]
 
     def _put_if_absent(self, item: dict[str, Any]) -> bool:
         try:

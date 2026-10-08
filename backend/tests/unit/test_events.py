@@ -7,14 +7,22 @@ from pathlib import Path
 import pytest
 from boto3.dynamodb.types import TypeSerializer
 
-from found_core.adapters.dynamodb import claim_item, marker_item, subject_item
-from found_core.domain.models import IdemMarker, Subject
+from found_core.adapters.dynamodb import (
+    alert_item,
+    claim_item,
+    marker_item,
+    review_item_item,
+    subject_item,
+)
+from found_core.domain.models import Alert, IdemMarker, ReviewItem, Subject
 from found_core.events import (
     EVENT_DETAIL_TYPE,
     EVENT_MODELS,
     EVENT_SOURCE,
+    AlertCreated,
     ClaimCreated,
     NotADomainEvent,
+    ReviewCreated,
     SubjectCreated,
     from_attribute,
     from_bus_event,
@@ -137,3 +145,49 @@ def test_published_schema_matches_model(model):
         path.write_text(json.dumps(schema, indent=2) + "\n", encoding="utf-8")
     published = json.loads(path.read_text(encoding="utf-8"))
     assert published == schema, f"{path.name} is out of date, see this test's docstring"
+
+
+WHEN = datetime(2026, 10, 5, 10, 15, tzinfo=UTC)
+
+
+def test_alert_insert_becomes_alert_created():
+    alert = Alert(
+        id="alr_1",
+        incident_id="inc_1",
+        subject_id="per_1",
+        subscription_id="sub_1",
+        claim_id="clm_1",
+        user_id="fam_1",
+        relation="UPDATE",
+        severity="high",
+        message="Newer report.",
+        delivery_status="HELD",
+        held_reason="SENSITIVE_STATUS",
+        created_at=WHEN,
+    )
+    assert from_stream(record(alert_item(alert))) == AlertCreated(
+        event_id="evt-1",
+        incident_id="inc_1",
+        alert_id="alr_1",
+        user_id="fam_1",
+        subject_id="per_1",
+        claim_id="clm_1",
+        severity="high",
+        message="Newer report.",
+        occurred_at=WHEN,
+    )
+
+
+def test_review_insert_becomes_review_created():
+    item = ReviewItem(
+        id="rev_1",
+        incident_id="inc_1",
+        item_type="held_alert",
+        ref_id="clm_1",
+        subject_id="per_1",
+        priority=1,
+        created_at=WHEN,
+    )
+    event = from_stream(record(review_item_item(item)))
+    assert isinstance(event, ReviewCreated)
+    assert (event.review_id, event.item_type, event.priority) == ("rev_1", "held_alert", 1)
