@@ -1,0 +1,139 @@
+import json
+import os
+from datetime import UTC, datetime
+from decimal import Decimal
+from pathlib import Path
+
+import pytest
+from boto3.dynamodb.types import TypeSerializer
+
+from found_core.adapters.dynamodb import claim_item, marker_item, subject_item
+from found_core.domain.models import IdemMarker, Subject
+from found_core.events import (
+    EVENT_DETAIL_TYPE,
+    EVENT_MODELS,
+    EVENT_SOURCE,
+    ClaimCreated,
+    NotADomainEvent,
+    SubjectCreated,
+    from_attribute,
+    from_bus_event,
+    from_stream,
+)
+
+from .factories import claim
+
+DOCS = Path(__file__).resolve().parents[3] / "docs" / "events"
+_serializer = TypeSerializer()
+
+
+def record(item, event_name="INSERT"):
+    image = {k: _serializer.serialize(v) for k, v in item.items()}
+    return {
+        "eventID": "evt-1",
+        "eventName": event_name,
+        "dynamodb": {
+            "ApproximateCreationDateTime": 1791195322,
+            "Keys": {"PK": image["PK"], "SK": image["SK"]},
+            "NewImage": image,
+        },
+    }
+
+
+def envelope(detail):
+    return {"source": EVENT_SOURCE, "detail-type": EVENT_DETAIL_TYPE, "detail": detail}
+
+
+SUBJECT = Subject(
+    id="per_1",
+    incident_id="inc_1",
+    subject_type="PERSON",
+    display_name="Maya Rawat",
+    name_norm="maya rawat",
+    age=24,
+    claim_seq=1,
+)
+
+
+def test_claim_insert_becomes_claim_created():
+    event = from_bus_event(envelope(record(claim_item(claim(2, "FOUND_SAFE", None)))))
+    assert event == ClaimCreated(
+        event_id="evt-1",
+        incident_id="inc_1",
+        subject_id="per_1",
+        subject_type="PERSON",
+        claim_id="clm_2",
+        seq=2,
+        source_id="src_police",
+        occurred_at=datetime(2026, 10, 5, tzinfo=UTC),
+    )
+
+
+def test_subject_insert_becomes_subject_created_at_stream_time():
+    event = from_stream(record(subject_item(SUBJECT)))
+    assert isinstance(event, SubjectCreated)
+    assert event.subject_id == "per_1" and event.subject_type == "PERSON"
+    assert event.occurred_at == datetime.fromtimestamp(1791195322, tz=UTC)
+
+
+def test_modify_and_other_entities_are_ignored():
+    assert from_stream(record(subject_item(SUBJECT), event_name="MODIFY")) is None
+    assert from_stream(record(subject_item(SUBJECT), event_name="REMOVE")) is None
+    marker = IdemMarker(org_id="o", external_reference="r", claim_id="c", payload_hash="h")
+    assert from_stream(record(marker_item(marker))) is None
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        {"source": "aws.s3", "detail-type": EVENT_DETAIL_TYPE, "detail": {}},
+        {"source": EVENT_SOURCE, "detail-type": "other", "detail": {}},
+        {"source": EVENT_SOURCE, "detail-type": EVENT_DETAIL_TYPE},
+    ],
+)
+def test_foreign_envelopes_are_rejected(event):
+    with pytest.raises(NotADomainEvent):
+        from_bus_event(event)
+
+
+def test_incomplete_claim_image_fails_loudly():
+    item = claim_item(claim(1, "MISSING", None))
+    del item["source_id"]
+    with pytest.raises(KeyError):
+        from_stream(record(item))
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "text",
+        7,
+        Decimal("1.5"),
+        True,
+        None,
+        [1, "a", [False]],
+        {"m": {"n": 2}},
+        {"a", "b"},
+        {Decimal(1), Decimal(2)},
+    ],
+)
+def test_attribute_conversion_round_trips(value):
+    assert from_attribute(_serializer.serialize(value)) == value
+
+
+@pytest.mark.parametrize("bad", [{}, {"S": "a", "N": "1"}, {"X": "1"}])
+def test_malformed_attributes_are_rejected(bad):
+    with pytest.raises(NotADomainEvent):
+        from_attribute(bad)
+
+
+@pytest.mark.parametrize("model", EVENT_MODELS, ids=lambda m: m.__name__)
+def test_published_schema_matches_model(model):
+    """Set UPDATE_EVENT_SCHEMAS=1 to rewrite docs/events after a deliberate change."""
+    name = model.model_fields["type"].default
+    path = DOCS / f"{name}.schema.json"
+    schema = model.model_json_schema()
+    if os.environ.get("UPDATE_EVENT_SCHEMAS") == "1":
+        path.write_text(json.dumps(schema, indent=2) + "\n", encoding="utf-8")
+    published = json.loads(path.read_text(encoding="utf-8"))
+    assert published == schema, f"{path.name} is out of date, see this test's docstring"

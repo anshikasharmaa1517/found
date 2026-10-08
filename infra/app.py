@@ -8,6 +8,7 @@ from config import REGION, load
 from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
 from stacks.data_stack import DataStack
+from stacks.events_stack import EventsStack
 
 
 def build(app: cdk.App) -> None:
@@ -15,6 +16,7 @@ def build(app: cdk.App) -> None:
     env = cdk.Environment(account=os.environ.get("CDK_DEFAULT_ACCOUNT"), region=REGION)
 
     data = DataStack(app, f"Found-{cfg.name}-Data", cfg=cfg, env=env)
+    EventsStack(app, f"Found-{cfg.name}-Events", cfg=cfg, table=data.table, env=env)
     auth = AuthStack(app, f"Found-{cfg.name}-Auth", cfg=cfg, env=env)
     ApiStack(
         app,

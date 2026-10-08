@@ -1,0 +1,60 @@
+{
+  "$defs": {
+    "SubjectType": {
+      "enum": [
+        "PERSON",
+        "PLACE",
+        "INFRASTRUCTURE",
+        "SHELTER",
+        "AID_POINT",
+        "HAZARD"
+      ],
+      "title": "SubjectType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "incident_id": {
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "type": {
+      "const": "subject.created",
+      "default": "subject.created",
+      "title": "Type",
+      "type": "string"
+    },
+    "subject_id": {
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "subject_type": {
+      "$ref": "#/$defs/SubjectType"
+    }
+  },
+  "required": [
+    "event_id",
+    "incident_id",
+    "occurred_at",
+    "subject_id",
+    "subject_type"
+  ],
+  "title": "SubjectCreated",
+  "type": "object"
+}

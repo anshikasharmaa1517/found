@@ -25,6 +25,7 @@ def synth(tmp_path, **context):
 def test_app_synthesizes_each_environment(tmp_path, env_name):
     assert synth(tmp_path, env=env_name) == {
         f"Found-{env_name}-Data.template.json",
+        f"Found-{env_name}-Events.template.json",
         f"Found-{env_name}-Auth.template.json",
         f"Found-{env_name}-Api.template.json",
     }
