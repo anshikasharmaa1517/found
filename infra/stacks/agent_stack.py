@@ -3,7 +3,8 @@
 Design Sections 4.3, 5.2, 9.9 and 12.2. The agent reaches data only through the
 Gateway, which signs nothing itself: the Runtime role signs each call (IAM inbound
 auth), and the Gateway role invokes the tools Lambda. The run queue feeds the runner,
-which is added with the runner itself.
+which invokes the Runtime. At most two runs proceed at once: the queue's event source
+caps concurrency, and no Lambda concurrency is reserved (owner decision 3).
 
 The Bedrock model is a deploy-time parameter (`ModelId`), so choosing one needs no
 code change. It may be a foundation model ID or an inference profile ID.
@@ -18,6 +19,7 @@ from aws_cdk import aws_bedrockagentcore as agentcore
 from aws_cdk import aws_dynamodb as ddb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_lambda_event_sources as sources
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_sqs as sqs
 from constructs import Construct
@@ -29,6 +31,9 @@ from stacks.lambda_code import BACKEND, agent_code, backend_code
 TOOL_SPECS = BACKEND / "found_core" / "tools" / "specs.json"
 GATEWAY_TARGET = "found-tools"
 MAX_TOOL_CALLS = 8
+MAX_CONCURRENT_RUNS = 2
+# Wall clock 120 s plus room to store the last steps and the outcome.
+RUNNER_TIMEOUT = cdk.Duration.seconds(180)
 
 # SQS to runner: two receives, then the dead-letter queue (design Section 10.4).
 RUN_VISIBILITY = cdk.Duration.seconds(300)
@@ -74,7 +79,7 @@ class AgentStack(cdk.Stack):
             description="Bedrock model ID or inference profile ID used by the agent.",
         ).value_as_string
 
-        # Run queue. The runner that consumes it comes with the runner step.
+        # Run queue, consumed by the runner below.
         self.run_dlq = dead_letter_queue(self, "RunDlq", f"{name}-investigation-dlq")
         self.run_queue = sqs.Queue(
             self,
@@ -262,6 +267,50 @@ class AgentStack(cdk.Stack):
         )
         # The Runtime validates its role on create, so the policy must exist first.
         self.runtime.node.add_dependency(runtime_role)
+
+        self.runner = lambda_.Function(
+            self,
+            "RunnerFunction",
+            function_name=f"{name}-investigation-runner",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            architecture=lambda_.Architecture.ARM_64,
+            handler="handlers.investigation_runner.handler",
+            code=backend_code(),
+            memory_size=256,
+            timeout=RUNNER_TIMEOUT,
+            tracing=lambda_.Tracing.ACTIVE,
+            environment={
+                "TABLE_NAME": table.table_name,
+                "MODEL_ID": self.model_id,
+                "RUNTIME_ARN": self.runtime.attr_agent_runtime_arn,
+                "POWERTOOLS_SERVICE_NAME": "investigation_runner",
+                "LOG_LEVEL": "INFO",
+            },
+            log_group=logs.LogGroup(
+                self,
+                "RunnerLogs",
+                retention=logs.RetentionDays.ONE_MONTH,
+                removal_policy=cdk.RemovalPolicy.DESTROY,
+            ),
+        )
+        table.grant_read_write_data(self.runner)
+        self.runner.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["bedrock-agentcore:InvokeAgentRuntime"],
+                resources=[
+                    self.runtime.attr_agent_runtime_arn,
+                    f"{self.runtime.attr_agent_runtime_arn}/*",
+                ],
+            )
+        )
+        self.runner.add_event_source(
+            sources.SqsEventSource(
+                self.run_queue,
+                batch_size=1,
+                max_concurrency=MAX_CONCURRENT_RUNS,
+                report_batch_item_failures=True,
+            )
+        )
 
         cdk.CfnOutput(self, "RuntimeArn", value=self.runtime.attr_agent_runtime_arn)
         cdk.CfnOutput(self, "GatewayUrl", value=self.gateway.attr_gateway_url)

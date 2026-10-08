@@ -132,3 +132,10 @@ class Comparison(StrEnum):
 class FindingReview(StrEnum):
     ACCEPTED = "ACCEPTED"
     DISPUTED = "DISPUTED"
+
+
+class StepKind(StrEnum):
+    MODEL = "MODEL"
+    TOOL = "TOOL"
+    GUARD = "GUARD"
+    ERROR = "ERROR"

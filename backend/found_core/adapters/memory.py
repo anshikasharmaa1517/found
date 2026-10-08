@@ -17,6 +17,7 @@ from found_core.domain.models import (
     Connection,
     IdemMarker,
     Investigation,
+    InvestigationStep,
     Location,
     Organization,
     ReviewItem,
@@ -52,6 +53,7 @@ class InMemoryFoundRepository:
         self.settings = Settings()
         self.investigations: dict[str, Investigation] = {}
         self.run_locks: dict[str, tuple[str, datetime]] = {}
+        self.steps: dict[tuple[str, int], InvestigationStep] = {}
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
@@ -321,6 +323,18 @@ class InMemoryFoundRepository:
             held = self.run_locks.get(claim_id)
             if held is not None and held[0] == investigation_id:
                 del self.run_locks[claim_id]
+
+    def put_investigation_step(self, step: InvestigationStep) -> bool:
+        key = (step.investigation_id, step.seq)
+        with self._lock:
+            if key in self.steps:
+                return False
+            self.steps[key] = step
+            return True
+
+    def list_investigation_steps(self, investigation_id: str) -> list[InvestigationStep]:
+        found = [s for (inv, _), s in self.steps.items() if inv == investigation_id]
+        return sorted(found, key=lambda s: s.seq)
 
 
 def _feed_key(claim: Claim) -> str:

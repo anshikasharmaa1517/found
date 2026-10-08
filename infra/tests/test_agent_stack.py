@@ -142,3 +142,42 @@ def test_gateway_role_can_invoke_the_tools_lambda():
     t = template()
     invoke = [s for s in _statements(t) if "lambda:InvokeFunction" in _actions(s)]
     assert invoke and "ToolsFunction" in json.dumps(invoke)
+
+
+def test_runner_reads_the_queue_two_at_a_time_without_reserved_concurrency():
+    t = template()
+    t.has_resource_properties(
+        "AWS::Lambda::EventSourceMapping",
+        {
+            "BatchSize": 1,
+            "ScalingConfig": {"MaximumConcurrency": 2},
+            "FunctionResponseTypes": ["ReportBatchItemFailures"],
+        },
+    )
+    runner = next(
+        r["Properties"]
+        for r in t.find_resources("AWS::Lambda::Function").values()
+        if r["Properties"].get("FunctionName") == "found-dev-investigation-runner"
+    )
+    assert "ReservedConcurrentExecutions" not in runner
+    assert runner["Handler"] == "handlers.investigation_runner.handler"
+    assert runner["Timeout"] == 180
+    env = runner["Environment"]["Variables"]
+    assert env["MODEL_ID"] == {"Ref": "ModelId"} and "RUNTIME_ARN" in env
+
+
+def test_queue_hides_a_message_longer_than_a_run_takes():
+    props = next(
+        q["Properties"]
+        for q in template().find_resources("AWS::SQS::Queue").values()
+        if q["Properties"].get("QueueName") == "found-dev-investigation-queue"
+    )
+    assert props["VisibilityTimeout"] > 180
+
+
+def test_runner_may_invoke_only_the_agent_runtime():
+    statements = [
+        s for s in _statements(template()) if "bedrock-agentcore:InvokeAgentRuntime" in _actions(s)
+    ]
+    assert len(statements) == 1
+    assert "AgentRuntimeArn" in json.dumps(statements[0]["Resource"])

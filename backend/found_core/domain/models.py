@@ -17,6 +17,7 @@ from found_core.domain.enums import (
     ReviewStatus,
     Severity,
     SourceType,
+    StepKind,
     SubjectType,
 )
 from found_core.domain.normalize import name_tokens
@@ -192,6 +193,27 @@ class Investigation(_Entity):
         if mode == InvestigationMode.CACHED:
             raise ValueError("CACHED labels a response; a stored run is LIVE or REPLAYED")
         return mode
+
+
+STEP_FIELD_MAX = 2048
+
+
+class InvestigationStep(_Entity):
+    """One model call, tool call, guard stop or error of a run, in order."""
+
+    investigation_id: str
+    incident_id: str
+    seq: int = Field(ge=1)
+    kind: StepKind
+    tool_name: str | None = None
+    # Redacted tool input as canonical JSON text, so any value shape can be stored.
+    input_json: str | None = Field(default=None, max_length=STEP_FIELD_MAX)
+    output_summary: str | None = Field(default=None, max_length=STEP_FIELD_MAX)
+    duration_ms: int | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    error_code: str | None = None
+    created_at: datetime
 
 
 class Settings(_Entity):

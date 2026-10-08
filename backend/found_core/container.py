@@ -9,16 +9,19 @@ from found_core.domain.cursor import CursorCodec
 from found_core.domain.investigation import InvestigationConfig
 from found_core.ports.repository import FoundRepository
 from found_core.services.ingest import IngestService
+from found_core.services.investigations import InvestigationService
 from found_core.services.map import MapService
 from found_core.services.people import PeopleService
 from found_core.services.realtime import ConnectionService, PushService
 from found_core.services.reports import ReportService
+from found_core.services.runner import InvestigationRunner
 from found_core.services.subscriptions import SubscriptionService
 from found_core.services.watch import WatchService
 from found_core.tools.service import AgentToolService
 
 if TYPE_CHECKING:
     from found_core.adapters.apigw_connections import ApiGatewayConnections
+    from found_core.adapters.dynamodb import DynamoBudgetLedger
 
 
 @cache
@@ -110,3 +113,47 @@ def investigation_config() -> InvestigationConfig:
 @cache
 def agent_tool_service() -> AgentToolService:
     return AgentToolService(repository(), investigation_config())
+
+
+def _table():
+    import boto3
+
+    return boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"])
+
+
+@cache
+def budget_ledger() -> "DynamoBudgetLedger":
+    from found_core.adapters.dynamodb import DynamoBudgetLedger
+
+    return DynamoBudgetLedger(_table())
+
+
+@cache
+def investigation_service() -> InvestigationService:
+    import boto3
+
+    from found_core.adapters.sqs_queue import SqsInvestigationQueue
+
+    queue = SqsInvestigationQueue(boto3.client("sqs"), os.environ["RUN_QUEUE_URL"])
+    return InvestigationService(repository(), budget_ledger(), queue, investigation_config())
+
+
+@cache
+def investigation_runner() -> InvestigationRunner:
+    import boto3
+    from botocore.config import Config
+
+    from found_core.adapters.agentcore import AgentCoreInvoker
+
+    config = investigation_config()
+    client = boto3.client(
+        "bedrock-agentcore",
+        config=Config(
+            # A quiet stream longer than the wall clock means the run is lost.
+            read_timeout=config.wall_clock_seconds + 10,
+            # A model-driven run is never retried automatically (cost).
+            retries={"max_attempts": 1, "mode": "standard"},
+        ),
+    )
+    invoker = AgentCoreInvoker(client, os.environ["RUNTIME_ARN"])
+    return InvestigationRunner(repository(), budget_ledger(), invoker, config)

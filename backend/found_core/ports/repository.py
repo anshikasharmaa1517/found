@@ -11,6 +11,7 @@ from found_core.domain.models import (
     Connection,
     IdemMarker,
     Investigation,
+    InvestigationStep,
     Location,
     Organization,
     ReviewItem,
@@ -175,4 +176,12 @@ class FoundRepository(Protocol):
 
     def release_run_lock(self, claim_id: str, investigation_id: str) -> None:
         """Drop the lock if `investigation_id` still holds it."""
+        ...
+
+    def put_investigation_step(self, step: InvestigationStep) -> bool:
+        """Store the step unless one exists at its (investigation, seq). True if stored."""
+        ...
+
+    def list_investigation_steps(self, investigation_id: str) -> list[InvestigationStep]:
+        """Every step of the run, in order."""
         ...

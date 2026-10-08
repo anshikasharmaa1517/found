@@ -19,6 +19,7 @@ from found_core.domain.models import (
     Connection,
     IdemMarker,
     Investigation,
+    InvestigationStep,
     Location,
     Organization,
     ReviewItem,
@@ -109,6 +110,10 @@ def marker_key(org_id: str, external_reference: str) -> dict[str, str]:
 
 def investigation_key(investigation_id: str) -> dict[str, str]:
     return {"PK": f"INV#{investigation_id}", "SK": "META"}
+
+
+def investigation_step_key(investigation_id: str, seq: int) -> dict[str, str]:
+    return {"PK": f"INV#{investigation_id}", "SK": f"STEP#{seq:04d}"}
 
 
 def run_lock_key(claim_id: str) -> dict[str, str]:
@@ -290,6 +295,15 @@ def investigation_item(investigation: Investigation) -> dict[str, Any]:
         item["GSI3PK"] = f"FP#{investigation.fingerprint}"
         item["GSI3SK"] = attrs["finished_at"]
     return item
+
+
+def investigation_step_item(step: InvestigationStep) -> dict[str, Any]:
+    return {
+        **investigation_step_key(step.investigation_id, step.seq),
+        "entity_type": "INVESTIGATION_STEP",
+        "schema_version": SCHEMA_VERSION,
+        **_attrs(step),
+    }
 
 
 def mention_item(claim: Claim, mentioned_source_id: str) -> dict[str, Any]:
@@ -789,6 +803,17 @@ class DynamoFoundRepository:
         except ClientError as err:
             if _error_code(err) != "ConditionalCheckFailedException":
                 raise
+
+    def put_investigation_step(self, step: InvestigationStep) -> bool:
+        return self._put_if_absent(investigation_step_item(step))
+
+    def list_investigation_steps(self, investigation_id: str) -> list[InvestigationStep]:
+        items = self._query(
+            KeyConditionExpression=Key("PK").eq(f"INV#{investigation_id}")
+            & Key("SK").begins_with("STEP#"),
+            ConsistentRead=True,
+        )
+        return [InvestigationStep.model_validate(_fields(i)) for i in items]
 
     def _put_if_absent(self, item: dict[str, Any]) -> bool:
         try:

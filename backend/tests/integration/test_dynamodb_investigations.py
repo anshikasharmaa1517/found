@@ -233,3 +233,25 @@ def test_list_source_claims_newest_first_with_subject_filter(repo):
     assert [c.id for c in repo.list_source_claims(source, 1, subject_id=ravi.subject_id)] == [
         ravi.id
     ]
+
+
+def test_steps_are_stored_once_per_seq_and_read_in_order(repo, table):
+    from found_core.domain.models import InvestigationStep
+
+    def step(seq, **fields):
+        return InvestigationStep(
+            investigation_id="inv_1", incident_id="inc_1", seq=seq, kind="TOOL",
+            created_at=AT, **fields,
+        )  # fmt: skip
+
+    repo.put_investigation(investigation("inv_1", S.RUNNING))
+    assert repo.put_investigation_step(step(2, tool_name="get_report", input_json='{"a": 1.5}'))
+    assert repo.put_investigation_step(step(1, output_summary="Read report"))
+    assert not repo.put_investigation_step(step(1, output_summary="again"))
+    steps = repo.list_investigation_steps("inv_1")
+    assert [s.seq for s in steps] == [1, 2]
+    assert steps[0].output_summary == "Read report" and steps[1].input_json == '{"a": 1.5}'
+    item = table.get_item(Key={"PK": "INV#inv_1", "SK": "STEP#0002"})["Item"]
+    assert item["entity_type"] == "INVESTIGATION_STEP" and item["incident_id"] == "inc_1"
+    # The investigation item itself is not a step.
+    assert repo.get_investigation("inv_1").status == S.RUNNING
