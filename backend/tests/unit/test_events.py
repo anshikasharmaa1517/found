@@ -21,6 +21,8 @@ from found_core.events import (
     EVENT_SOURCE,
     AlertCreated,
     ClaimCreated,
+    InvestigationStepCreated,
+    InvestigationUpdated,
     NotADomainEvent,
     ReviewCreated,
     SubjectCreated,
@@ -191,3 +193,69 @@ def test_review_insert_becomes_review_created():
     event = from_stream(record(review_item_item(item)))
     assert isinstance(event, ReviewCreated)
     assert (event.review_id, event.item_type, event.priority) == ("rev_1", "held_alert", 1)
+
+
+def _investigation_item(status):
+    from found_core.adapters.dynamodb import investigation_item
+    from found_core.domain.models import Investigation
+
+    return investigation_item(
+        Investigation(
+            id="inv_1",
+            incident_id="inc_1",
+            claim_id="clm_1",
+            fingerprint="fp_1",
+            mode="LIVE",
+            status=status,
+            model_id="model-a",
+            prompt_version="lineage-v1",
+            agent_version="0.1.0",
+            created_by="rev_1",
+            queued_at=WHEN,
+            finished_at=WHEN if status in ("COMPLETED", "NEEDS_REVIEW") else None,
+        )
+    )
+
+
+def modify(old, new):
+    rec = record(new, event_name="MODIFY")
+    rec["dynamodb"]["OldImage"] = {k: _serializer.serialize(v) for k, v in old.items()}
+    return rec
+
+
+def test_step_insert_becomes_investigation_step():
+    from found_core.adapters.dynamodb import investigation_step_item
+    from found_core.domain.models import InvestigationStep
+
+    step = InvestigationStep(
+        investigation_id="inv_1",
+        incident_id="inc_1",
+        seq=2,
+        kind="TOOL",
+        tool_name="get_report",
+        output_summary="Read report clm_1 from Flood Relief Demo",
+        created_at=WHEN,
+    )
+    assert from_stream(record(investigation_step_item(step))) == InvestigationStepCreated(
+        event_id="evt-1",
+        incident_id="inc_1",
+        investigation_id="inv_1",
+        seq=2,
+        kind="TOOL",
+        tool_name="get_report",
+        summary="Read report clm_1 from Flood Relief Demo",
+        occurred_at=WHEN,
+    )
+
+
+def test_status_change_becomes_investigation_updated():
+    event = from_stream(modify(_investigation_item("RUNNING"), _investigation_item("NEEDS_REVIEW")))
+    assert isinstance(event, InvestigationUpdated)
+    assert (event.investigation_id, event.claim_id) == ("inv_1", "clm_1")
+    assert event.status == "NEEDS_REVIEW"
+
+
+def test_counter_update_without_status_change_is_ignored():
+    running = _investigation_item("RUNNING")
+    assert from_stream(modify(running, {**running, "tool_calls": 3})) is None
+    assert from_stream(modify(subject_item(SUBJECT), subject_item(SUBJECT))) is None

@@ -1,0 +1,65 @@
+{
+  "$defs": {
+    "InvestigationStatus": {
+      "enum": [
+        "QUEUED",
+        "RUNNING",
+        "COMPLETED",
+        "NEEDS_REVIEW",
+        "FAILED"
+      ],
+      "title": "InvestigationStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The run's status moved. Counter updates that keep the status are not events.",
+  "properties": {
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "incident_id": {
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "type": {
+      "const": "investigation.updated",
+      "default": "investigation.updated",
+      "title": "Type",
+      "type": "string"
+    },
+    "investigation_id": {
+      "title": "Investigation Id",
+      "type": "string"
+    },
+    "claim_id": {
+      "title": "Claim Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/InvestigationStatus"
+    }
+  },
+  "required": [
+    "event_id",
+    "incident_id",
+    "occurred_at",
+    "investigation_id",
+    "claim_id",
+    "status"
+  ],
+  "title": "InvestigationUpdated",
+  "type": "object"
+}

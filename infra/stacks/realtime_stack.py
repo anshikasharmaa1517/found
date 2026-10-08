@@ -17,7 +17,7 @@ from aws_cdk import aws_logs as logs
 from constructs import Construct
 
 from config import EnvConfig
-from stacks.consumer import event_consumer, inserted
+from stacks.consumer import event_consumer, inserted, modified
 from stacks.lambda_code import backend_code
 
 STAGE = "prod"
@@ -90,6 +90,8 @@ class RealtimeStack(cdk.Stack):
                 ("push-claim", inserted("CLAIM")),
                 ("push-alert", inserted("ALERT")),
                 ("push-review", inserted("REVIEW_ITEM")),
+                ("push-investigation-step", inserted("INVESTIGATION_STEP")),
+                ("investigation-changed", modified("INVESTIGATION")),
             ],
             bus=bus,
             table=table,

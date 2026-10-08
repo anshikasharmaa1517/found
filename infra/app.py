@@ -21,11 +21,14 @@ def build(app: cdk.App) -> None:
     data = DataStack(app, f"Found-{cfg.name}-Data", cfg=cfg, env=env)
     events = EventsStack(app, f"Found-{cfg.name}-Events", cfg=cfg, table=data.table, env=env)
     auth = AuthStack(app, f"Found-{cfg.name}-Auth", cfg=cfg, env=env)
+    agent = AgentStack(app, f"Found-{cfg.name}-Agent", cfg=cfg, table=data.table, env=env)
     ApiStack(
         app,
         f"Found-{cfg.name}-Api",
         cfg=cfg,
         table=data.table,
+        run_queue=agent.run_queue,
+        model_id=agent.model_id,
         user_pool=auth.user_pool,
         web_client=auth.web_client,
         env=env,
@@ -43,8 +46,6 @@ def build(app: cdk.App) -> None:
     )
 
     MapsStack(app, f"Found-{cfg.name}-Maps", cfg=cfg, env=env)
-
-    AgentStack(app, f"Found-{cfg.name}-Agent", cfg=cfg, table=data.table, env=env)
 
     cdk.Tags.of(app).add("project", "found")
     cdk.Tags.of(app).add("env", cfg.name)

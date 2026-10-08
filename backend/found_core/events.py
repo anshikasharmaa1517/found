@@ -11,7 +11,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from found_core.domain.enums import ReviewItemType, Severity, SubjectType
+from found_core.domain.enums import (
+    InvestigationStatus,
+    ReviewItemType,
+    Severity,
+    StepKind,
+    SubjectType,
+)
 
 EVENT_SOURCE = "found.ddb"
 EVENT_DETAIL_TYPE = "found.ddb.change"
@@ -60,12 +66,39 @@ class ReviewCreated(_Event):
     priority: int
 
 
-DomainEvent = ClaimCreated | SubjectCreated | AlertCreated | ReviewCreated
+class InvestigationStepCreated(_Event):
+    type: Literal["investigation.step"] = "investigation.step"
+    investigation_id: str
+    seq: int
+    kind: StepKind
+    tool_name: str | None = None
+    summary: str | None = None
+
+
+class InvestigationUpdated(_Event):
+    """The run's status moved. Counter updates that keep the status are not events."""
+
+    type: Literal["investigation.updated"] = "investigation.updated"
+    investigation_id: str
+    claim_id: str
+    status: InvestigationStatus
+
+
+DomainEvent = (
+    ClaimCreated
+    | SubjectCreated
+    | AlertCreated
+    | ReviewCreated
+    | InvestigationStepCreated
+    | InvestigationUpdated
+)
 EVENT_MODELS: tuple[type[_Event], ...] = (
     ClaimCreated,
     SubjectCreated,
     AlertCreated,
     ReviewCreated,
+    InvestigationStepCreated,
+    InvestigationUpdated,
 )
 
 
@@ -114,8 +147,26 @@ def _stream_time(record: dict[str, Any]) -> datetime:
     return datetime.fromtimestamp(float(seconds), tz=UTC)
 
 
+def _investigation_changed(record: dict[str, Any]) -> InvestigationUpdated | None:
+    change = record.get("dynamodb", {})
+    new = from_image(change.get("NewImage") or {})
+    old = from_image(change.get("OldImage") or {})
+    if new.get("entity_type") != "INVESTIGATION" or new.get("status") == old.get("status"):
+        return None
+    return InvestigationUpdated(
+        event_id=str(record.get("eventID", "")),
+        incident_id=new["incident_id"],
+        investigation_id=new["id"],
+        claim_id=new["claim_id"],
+        status=new["status"],
+        occurred_at=_stream_time(record),
+    )
+
+
 def from_stream(record: dict[str, Any]) -> DomainEvent | None:
     """Domain event for a stream record, or None for changes no consumer cares about."""
+    if record.get("eventName") == "MODIFY":
+        return _investigation_changed(record)
     if record.get("eventName") != "INSERT":
         return None
     image = from_image(record.get("dynamodb", {}).get("NewImage") or {})
@@ -153,6 +204,17 @@ def from_stream(record: dict[str, Any]) -> DomainEvent | None:
                 ref_id=image["ref_id"],
                 subject_id=image.get("subject_id"),
                 priority=image["priority"],
+                occurred_at=image["created_at"],
+            )
+        case "INVESTIGATION_STEP":
+            return InvestigationStepCreated(
+                event_id=event_id,
+                incident_id=image["incident_id"],
+                investigation_id=image["investigation_id"],
+                seq=image["seq"],
+                kind=image["kind"],
+                tool_name=image.get("tool_name"),
+                summary=image.get("output_summary"),
                 occurred_at=image["created_at"],
             )
         case "SUBJECT":

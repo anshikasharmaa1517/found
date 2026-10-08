@@ -2,6 +2,7 @@ import aws_cdk as cdk
 from aws_cdk.assertions import Match, Template
 
 from config import load
+from stacks.agent_stack import AgentStack
 from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
 from stacks.data_stack import DataStack
@@ -16,11 +17,14 @@ def template() -> Template:
     cfg = load("dev", ENVS)
     data = DataStack(app, "Data", cfg=cfg, env=ENV)
     auth = AuthStack(app, "Auth", cfg=cfg, env=ENV)
+    agent = AgentStack(app, "Agent", cfg=cfg, table=data.table, env=ENV)
     api = ApiStack(
         app,
         "Api",
         cfg=cfg,
         table=data.table,
+        run_queue=agent.run_queue,
+        model_id=agent.model_id,
         user_pool=auth.user_pool,
         web_client=auth.web_client,
         env=ENV,
@@ -72,6 +76,8 @@ def test_signed_in_routes_require_jwt():
         "DELETE /v1/subscriptions/{subscription_id}",
         "GET /v1/me/subscriptions",
         "GET /v1/me/alerts",
+        "POST /v1/claims/{claim_id}/investigations",
+        "GET /v1/investigations/{investigation_id}",
     ):
         assert found[key]["AuthorizationType"] == "JWT"
 
@@ -125,7 +131,11 @@ def test_throttling_matches_design():
                 "POST /v1/incidents/{incident_id}/reports": {
                     "ThrottlingRateLimit": 10,
                     "ThrottlingBurstLimit": 20,
-                }
+                },
+                "POST /v1/claims/{claim_id}/investigations": {
+                    "ThrottlingRateLimit": 2,
+                    "ThrottlingBurstLimit": 5,
+                },
             },
         },
     )
@@ -165,3 +175,19 @@ def test_log_retention_is_one_month():
 
 def test_stack_exports_api_url():
     assert "ApiUrl" in template().find_outputs("*")
+
+
+def test_function_can_queue_runs_with_the_agents_model():
+    t = template()
+    env = next(
+        r["Properties"]["Environment"]["Variables"]
+        for r in t.find_resources("AWS::Lambda::Function").values()
+        if r["Properties"].get("FunctionName") == "found-dev-api"
+    )
+    assert "RUN_QUEUE_URL" in env and "MODEL_ID" in env
+    statements = [
+        s
+        for p in t.find_resources("AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+    ]
+    assert any("sqs:SendMessage" in s["Action"] for s in statements)

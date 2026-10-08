@@ -116,6 +116,8 @@ def test_push_listens_for_claims_alerts_and_reviews_with_dlq():
         "found-dev-push-claim": "CLAIM",
         "found-dev-push-alert": "ALERT",
         "found-dev-push-review": "REVIEW_ITEM",
+        "found-dev-push-investigation-step": "INVESTIGATION_STEP",
+        "found-dev-investigation-changed": "INVESTIGATION",
     }
     assert set(by_name) == set(expected)
     for name, entity in expected.items():
@@ -141,3 +143,19 @@ def test_connection_management_is_limited_to_this_stage():
 
 def test_stack_exports_websocket_url():
     assert "WebSocketUrl" in template().find_outputs("*")
+
+
+def test_investigation_steps_and_status_changes_are_pushed():
+    t = template()
+    patterns = {
+        r["Properties"]["Name"]: r["Properties"]["EventPattern"]["detail"]
+        for r in t.find_resources("AWS::Events::Rule").values()
+    }
+    assert patterns["found-dev-push-investigation-step"] == {
+        "eventName": ["INSERT"],
+        "dynamodb": {"NewImage": {"entity_type": {"S": ["INVESTIGATION_STEP"]}}},
+    }
+    assert patterns["found-dev-investigation-changed"] == {
+        "eventName": ["MODIFY"],
+        "dynamodb": {"NewImage": {"entity_type": {"S": ["INVESTIGATION"]}}},
+    }

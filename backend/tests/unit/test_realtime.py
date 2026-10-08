@@ -7,7 +7,14 @@ from found_core.adapters.memory import InMemoryFoundRepository
 from found_core.domain.auth import Caller
 from found_core.domain.errors import BadRequest, Forbidden, NotFound
 from found_core.domain.models import Connection, Organization
-from found_core.events import AlertCreated, ClaimCreated, ReviewCreated, SubjectCreated
+from found_core.events import (
+    AlertCreated,
+    ClaimCreated,
+    InvestigationStepCreated,
+    InvestigationUpdated,
+    ReviewCreated,
+    SubjectCreated,
+)
 from found_core.realtime import message_for, receives
 from found_core.services.realtime import ConnectionService, PushService
 
@@ -266,3 +273,57 @@ def test_expired_connections_are_skipped(push, repo, gateway, clock):
 
 def test_nothing_to_push_is_a_no_op(push, gateway):
     assert push.push(CLAIM).sent == 0 and gateway.sent == []
+
+
+STEP = InvestigationStepCreated(
+    event_id="e4",
+    incident_id="inc_1",
+    investigation_id="inv_1",
+    seq=3,
+    kind="TOOL",
+    tool_name="find_reports_by_source",
+    summary="2 reports from Central Hospital Demo",
+    occurred_at=NOW,
+)
+UPDATED = InvestigationUpdated(
+    event_id="e5",
+    incident_id="inc_1",
+    investigation_id="inv_1",
+    claim_id="clm_1",
+    status="NEEDS_REVIEW",
+    occurred_at=NOW,
+)
+
+
+def test_investigation_messages_match_the_protocol():
+    assert message_for(STEP) == {
+        "type": "investigation.step",
+        "incident_id": "inc_1",
+        "investigation_id": "inv_1",
+        "seq": 3,
+        "kind": "TOOL",
+        "tool": "find_reports_by_source",
+        "summary": "2 reports from Central Hospital Demo",
+    }
+    assert message_for(UPDATED) == {
+        "type": "investigation.updated",
+        "incident_id": "inc_1",
+        "investigation_id": "inv_1",
+        "claim_id": "clm_1",
+        "status": "NEEDS_REVIEW",
+    }
+
+
+@pytest.mark.parametrize("event", [STEP, UPDATED])
+@pytest.mark.parametrize(
+    ("groups", "incident", "expected"),
+    [
+        (("reviewer",), "inc_1", True),
+        (("admin",), "inc_1", True),
+        (("reviewer",), "inc_2", False),
+        (("publisher",), "inc_1", False),
+        (("family",), "inc_1", False),
+    ],
+)
+def test_investigations_go_to_reviewers_of_the_incident(event, groups, incident, expected):
+    assert receives(conn("c", groups=groups, incident=incident), event) is expected

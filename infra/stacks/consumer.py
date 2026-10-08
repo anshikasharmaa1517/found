@@ -35,6 +35,17 @@ def inserted(entity_type: str) -> events.EventPattern:
     )
 
 
+def modified(entity_type: str) -> events.EventPattern:
+    return events.EventPattern(
+        source=[EVENT_SOURCE],
+        detail_type=[EVENT_DETAIL_TYPE],
+        detail={
+            "eventName": ["MODIFY"],
+            "dynamodb": {"NewImage": {"entity_type": {"S": [entity_type]}}},
+        },
+    )
+
+
 def dead_letter_queue(scope: Construct, construct_id: str, queue_name: str) -> sqs.Queue:
     return sqs.Queue(
         scope,

@@ -26,7 +26,7 @@ from found_core.domain.investigation import (
     can_transition,
     fingerprint,
 )
-from found_core.domain.models import Claim, Investigation, Settings
+from found_core.domain.models import Claim, Investigation, InvestigationStep, Settings, Source
 from found_core.ports.budget import BudgetLedger
 from found_core.ports.clock import Clock, SystemClock
 from found_core.ports.queue import InvestigationQueue
@@ -40,6 +40,18 @@ class StartResult:
     investigation: Investigation
     mode: InvestigationMode
     created: bool
+
+
+@dataclass(frozen=True)
+class InvestigationDetail:
+    investigation: Investigation
+    steps: list[InvestigationStep]
+    referenced_source: Source | None = None
+
+
+def _require_reviewer(caller: Caller) -> None:
+    if not (caller.has(REVIEWER) or caller.has(ADMIN)):
+        raise Forbidden("Only reviewers can see investigations.")
 
 
 class InvestigationService:
@@ -62,6 +74,22 @@ class InvestigationService:
         mentioned = list(claim.mentioned_source_ids)
         latest = {sid: self._repo.latest_source_claim_id(sid) for sid in set(mentioned)}
         return fingerprint(claim, mentioned, latest, self._config)
+
+    def get(self, caller: Caller, investigation_id: str) -> InvestigationDetail:
+        _require_reviewer(caller)
+        investigation = self._repo.get_investigation(investigation_id)
+        if investigation is None:
+            raise NotFound("Investigation not found.", investigation_id=investigation_id)
+        source = None
+        if investigation.referenced_source_id:
+            source = self._repo.get_source(
+                investigation.incident_id, investigation.referenced_source_id
+            )
+        return InvestigationDetail(
+            investigation=investigation,
+            steps=self._repo.list_investigation_steps(investigation_id),
+            referenced_source=source,
+        )
 
     def start(self, caller: Caller, claim_id: str, *, force_live: bool = False) -> StartResult:
         if not (caller.has(REVIEWER) or caller.has(ADMIN)):

@@ -14,6 +14,7 @@ from found_core.domain.errors import BadRequest, FoundError
 from found_core.domain.models import Alert, Claim, Subject, Subscription
 from found_core.domain.normalize import excerpt
 from found_core.domain.visibility import SENSITIVE_NOTICE
+from found_core.services.investigations import InvestigationDetail
 from found_core.services.people import PersonProfile, TimelineEntry
 
 logger = Logger(service="api")
@@ -291,6 +292,109 @@ def my_alerts() -> Response:
         HTTPStatus.OK,
         {"alerts": [alert_view(a) for a in page.alerts], "next_cursor": page.next_cursor},
     )
+
+
+def _iso(value: Any) -> str | None:
+    return value.isoformat().replace("+00:00", "Z") if value else None
+
+
+def investigation_view(detail: InvestigationDetail) -> dict[str, Any]:
+    inv = detail.investigation
+    data = inv.model_dump(mode="json")
+    finding = None
+    if inv.attribution is not None:
+        referenced = None
+        if inv.referenced_source_id:
+            source = detail.referenced_source
+            referenced = {"id": inv.referenced_source_id, "name": source.name if source else None}
+        finding = {
+            "attribution": data["attribution"],
+            "referenced_source": referenced,
+            "comparison": data["comparison"],
+            "summary": inv.summary,
+            "citations": data["citations"],
+        }
+    duration_ms = (
+        int((inv.finished_at - inv.started_at).total_seconds() * 1000)
+        if inv.started_at and inv.finished_at
+        else None
+    )
+    return {
+        "id": inv.id,
+        "incident_id": inv.incident_id,
+        "claim_id": inv.claim_id,
+        "mode": data["mode"],
+        "status": data["status"],
+        "model_id": inv.model_id,
+        "prompt_version": inv.prompt_version,
+        "agent_version": inv.agent_version,
+        "finding": finding,
+        "outcome_reasons": list(inv.outcome_reasons),
+        "failure_reason": inv.failure_reason,
+        "usage": {
+            "tool_calls": inv.tool_calls,
+            "model_calls": inv.model_calls,
+            "input_tokens": inv.input_tokens,
+            "output_tokens": inv.output_tokens,
+            "usage_source": inv.usage_source,
+        },
+        "timing": {
+            "queued_at": _iso(inv.queued_at),
+            "started_at": _iso(inv.started_at),
+            "finished_at": _iso(inv.finished_at),
+            "duration_ms": duration_ms,
+        },
+        "steps": [
+            {
+                "seq": s.seq,
+                "kind": s.kind.value,
+                "tool": s.tool_name,
+                "summary": s.output_summary,
+                "duration_ms": s.duration_ms,
+                "input_tokens": s.input_tokens,
+                "output_tokens": s.output_tokens,
+                "error_code": s.error_code,
+            }
+            for s in detail.steps
+        ],
+        "review": None,
+    }
+
+
+@app.post("/v1/claims/<claim_id>/investigations")
+def start_investigation(claim_id: str) -> Response:
+    caller = _caller()
+    body = _body(optional=True)
+    force_live = body.get("force_live", False)
+    if set(body) - {"force_live"} or not isinstance(force_live, bool):
+        raise BadRequest("The body may only hold force_live, true or false.")
+    result = container.investigation_service().start(caller, claim_id, force_live=force_live)
+    inv = result.investigation
+    if not result.created:
+        return _json(
+            HTTPStatus.OK,
+            {
+                "investigation_id": inv.id,
+                "mode": result.mode.value,
+                "status": inv.status.value,
+                "original_run_at": _iso(inv.finished_at),
+            },
+        )
+    return _json(
+        HTTPStatus.ACCEPTED,
+        {
+            "investigation_id": inv.id,
+            "mode": result.mode.value,
+            "status": inv.status.value,
+            "ws_topic": f"investigation:{inv.id}",
+        },
+    )
+
+
+@app.get("/v1/investigations/<investigation_id>")
+def get_investigation(investigation_id: str) -> Response:
+    detail = container.investigation_service().get(_caller(), investigation_id)
+    return _json(HTTPStatus.OK, investigation_view(detail))
 
 
 @app.exception_handler(FoundError)

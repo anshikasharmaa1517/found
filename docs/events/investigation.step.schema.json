@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "StepKind": {
+      "enum": [
+        "MODEL",
+        "TOOL",
+        "GUARD",
+        "ERROR"
+      ],
+      "title": "StepKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "incident_id": {
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "type": {
+      "const": "investigation.step",
+      "default": "investigation.step",
+      "title": "Type",
+      "type": "string"
+    },
+    "investigation_id": {
+      "title": "Investigation Id",
+      "type": "string"
+    },
+    "seq": {
+      "title": "Seq",
+      "type": "integer"
+    },
+    "kind": {
+      "$ref": "#/$defs/StepKind"
+    },
+    "tool_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tool Name"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Summary"
+    }
+  },
+  "required": [
+    "event_id",
+    "incident_id",
+    "occurred_at",
+    "investigation_id",
+    "seq",
+    "kind"
+  ],
+  "title": "InvestigationStepCreated",
+  "type": "object"
+}

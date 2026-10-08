@@ -11,7 +11,14 @@ from typing import Any
 
 from found_core.domain.auth import ADMIN, PUBLISHER, REVIEWER
 from found_core.domain.models import Connection
-from found_core.events import AlertCreated, ClaimCreated, DomainEvent, ReviewCreated
+from found_core.events import (
+    AlertCreated,
+    ClaimCreated,
+    DomainEvent,
+    InvestigationStepCreated,
+    InvestigationUpdated,
+    ReviewCreated,
+)
 
 MAX_CONNECTIONS_PER_USER = 3
 CONNECTION_HOURS = 2  # API Gateway closes WebSocket connections after two hours anyway.
@@ -49,6 +56,24 @@ def message_for(event: DomainEvent) -> dict[str, Any] | None:
                 "review_id": event.review_id,
                 "item_type": event.item_type.value,
             }
+        case InvestigationStepCreated():
+            return {
+                "type": "investigation.step",
+                "incident_id": event.incident_id,
+                "investigation_id": event.investigation_id,
+                "seq": event.seq,
+                "kind": event.kind.value,
+                "tool": event.tool_name,
+                "summary": event.summary,
+            }
+        case InvestigationUpdated():
+            return {
+                "type": "investigation.updated",
+                "incident_id": event.incident_id,
+                "investigation_id": event.investigation_id,
+                "claim_id": event.claim_id,
+                "status": event.status.value,
+            }
     return None
 
 
@@ -60,6 +85,7 @@ def receives(connection: Connection, event: DomainEvent) -> bool:
             return connection.user_id == event.user_id
         case ClaimCreated():
             return connection.incident_id == event.incident_id and bool(groups & _INCIDENT_FEED)
-        case ReviewCreated():
+        case ReviewCreated() | InvestigationStepCreated() | InvestigationUpdated():
+            # Investigations are reviewer work: publishers do not see the trace.
             return connection.incident_id == event.incident_id and bool(groups & _REVIEW_FEED)
     return False

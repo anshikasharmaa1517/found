@@ -9,12 +9,14 @@ from aws_cdk import aws_dynamodb as ddb
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_secretsmanager as secretsmanager
+from aws_cdk import aws_sqs as sqs
 from constructs import Construct
 
 from config import EnvConfig
 from stacks.lambda_code import backend_code
 
 REPORTS_ROUTE = "POST /v1/incidents/{incident_id}/reports"
+INVESTIGATE_ROUTE = "POST /v1/claims/{claim_id}/investigations"
 # Every route below needs a signed-in user; the service checks the role.
 SIGNED_IN_ROUTES = (
     ("GET", "/v1/incidents/{incident_id}/people"),
@@ -25,9 +27,14 @@ SIGNED_IN_ROUTES = (
     ("DELETE", "/v1/subscriptions/{subscription_id}"),
     ("GET", "/v1/me/subscriptions"),
     ("GET", "/v1/me/alerts"),
+    ("POST", "/v1/claims/{claim_id}/investigations"),
+    ("GET", "/v1/investigations/{investigation_id}"),
 )
 DEFAULT_THROTTLE = {"ThrottlingRateLimit": 20, "ThrottlingBurstLimit": 40}
-ROUTE_THROTTLES = {REPORTS_ROUTE: {"ThrottlingRateLimit": 10, "ThrottlingBurstLimit": 20}}
+ROUTE_THROTTLES = {
+    REPORTS_ROUTE: {"ThrottlingRateLimit": 10, "ThrottlingBurstLimit": 20},
+    INVESTIGATE_ROUTE: {"ThrottlingRateLimit": 2, "ThrottlingBurstLimit": 5},
+}
 
 
 class ApiStack(cdk.Stack):
@@ -38,6 +45,8 @@ class ApiStack(cdk.Stack):
         *,
         cfg: EnvConfig,
         table: ddb.ITableV2,
+        run_queue: sqs.IQueue,
+        model_id: str,
         user_pool: cognito.IUserPool,
         web_client: cognito.IUserPoolClient,
         **kwargs,
@@ -67,6 +76,9 @@ class ApiStack(cdk.Stack):
             tracing=lambda_.Tracing.ACTIVE,
             environment={
                 "TABLE_NAME": table.table_name,
+                "RUN_QUEUE_URL": run_queue.queue_url,
+                # Part of every evidence fingerprint; must be the model the agent runs.
+                "MODEL_ID": model_id,
                 "CURSOR_SECRET_ARN": self.cursor_secret.secret_arn,
                 "POWERTOOLS_SERVICE_NAME": "api",
                 "LOG_LEVEL": "INFO",
@@ -80,6 +92,7 @@ class ApiStack(cdk.Stack):
         )
         table.grant_read_write_data(self.function)
         self.cursor_secret.grant_read(self.function)
+        run_queue.grant_send_messages(self.function)
 
         self.http_api = apigw.HttpApi(
             self,
