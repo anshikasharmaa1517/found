@@ -489,6 +489,38 @@ def review_investigation(investigation_id: str) -> Response:
     return _json(HTTPStatus.OK, investigation_view(detail))
 
 
+@app.get("/v1/incidents/<incident_id>/activity")
+def incident_activity(incident_id: str) -> Response:
+    entries = container.demo_service().activity(_caller(), incident_id)
+    return _json(
+        HTTPStatus.OK,
+        {
+            "activity": [
+                {
+                    "id": a.id,
+                    "actor": a.actor,
+                    "component": a.component,
+                    "message": a.message,
+                    "target_ids": list(a.target_ids),
+                    "at": _iso(a.created_at),
+                }
+                for a in entries
+            ]
+        },
+    )
+
+
+@app.post("/v1/admin/incidents/<incident_id>/reset")
+def reset_demo(incident_id: str) -> Response:
+    container.demo_service().request_reset(_caller(), incident_id)
+    return _json(HTTPStatus.ACCEPTED, {"incident_id": incident_id, "status": "RESETTING"})
+
+
+@app.get("/v1/admin/investigations/<investigation_id>/recording")
+def investigation_recording(investigation_id: str) -> Response:
+    return _json(HTTPStatus.OK, container.demo_service().recording(_caller(), investigation_id))
+
+
 @app.exception_handler(FoundError)
 def handle_found_error(err: FoundError) -> Response:
     return _json(

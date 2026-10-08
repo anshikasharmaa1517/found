@@ -8,12 +8,18 @@ from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as ddb
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
+from aws_cdk import aws_s3 as s3
+from aws_cdk import aws_s3_deployment as s3deploy
 from aws_cdk import aws_secretsmanager as secretsmanager
 from aws_cdk import aws_sqs as sqs
 from constructs import Construct
 
 from config import EnvConfig
-from stacks.lambda_code import backend_code
+from stacks.lambda_code import ROOT, backend_code
+
+FIXTURES = ROOT / "data" / "fixtures"
+FIXTURES_PREFIX = "fixtures"
+DEMO_VERSION = "demo-v1"
 
 REPORTS_ROUTE = "POST /v1/incidents/{incident_id}/reports"
 INVESTIGATE_ROUTE = "POST /v1/claims/{claim_id}/investigations"
@@ -32,6 +38,9 @@ SIGNED_IN_ROUTES = (
     ("POST", "/v1/investigations/{investigation_id}/review"),
     ("GET", "/v1/incidents/{incident_id}/review-queue"),
     ("POST", "/v1/incidents/{incident_id}/review-items/{review_id}/resolve"),
+    ("GET", "/v1/incidents/{incident_id}/activity"),
+    ("POST", "/v1/admin/incidents/{incident_id}/reset"),
+    ("GET", "/v1/admin/investigations/{investigation_id}/recording"),
 )
 DEFAULT_THROTTLE = {"ThrottlingRateLimit": 20, "ThrottlingBurstLimit": 40}
 ROUTE_THROTTLES = {
@@ -66,6 +75,58 @@ class ApiStack(cdk.Stack):
             ),
         )
 
+        # Demo fixtures, copied from data/fixtures on every deploy (design Section 5.5).
+        self.fixtures_bucket = s3.Bucket(
+            self,
+            "FixturesBucket",
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            enforce_ssl=True,
+            removal_policy=cdk.RemovalPolicy.RETAIN
+            if cfg.deletion_protection
+            else cdk.RemovalPolicy.DESTROY,
+            auto_delete_objects=not cfg.deletion_protection,
+        )
+        s3deploy.BucketDeployment(
+            self,
+            "FixturesDeployment",
+            sources=[s3deploy.Source.asset(str(FIXTURES))],
+            destination_bucket=self.fixtures_bucket,
+            destination_key_prefix=FIXTURES_PREFIX,
+        )
+        fixtures_env = {
+            "FIXTURES_BUCKET": self.fixtures_bucket.bucket_name,
+            "FIXTURES_PREFIX": f"{FIXTURES_PREFIX}/{DEMO_VERSION}",
+        }
+
+        # Reset worker: a full reload outlasts the API timeout, so it runs on its own.
+        self.reset_function = lambda_.Function(
+            self,
+            "DemoResetFunction",
+            function_name=f"found-{cfg.name}-demo-reset",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            architecture=lambda_.Architecture.ARM_64,
+            handler="handlers.demo_reset.handler",
+            code=backend_code(),
+            memory_size=512,
+            timeout=cdk.Duration.minutes(5),
+            tracing=lambda_.Tracing.ACTIVE,
+            environment={
+                "TABLE_NAME": table.table_name,
+                **fixtures_env,
+                "POWERTOOLS_SERVICE_NAME": "demo_reset",
+                "LOG_LEVEL": "INFO",
+            },
+            log_group=logs.LogGroup(
+                self,
+                "DemoResetLogs",
+                retention=logs.RetentionDays.ONE_MONTH,
+                removal_policy=cdk.RemovalPolicy.DESTROY,
+            ),
+        )
+        table.grant_read_write_data(self.reset_function)
+        self.fixtures_bucket.grant_read(self.reset_function)
+
         self.function = lambda_.Function(
             self,
             "ApiFunction",
@@ -83,6 +144,8 @@ class ApiStack(cdk.Stack):
                 # Part of every evidence fingerprint; must be the model the agent runs.
                 "MODEL_ID": model_id,
                 "CURSOR_SECRET_ARN": self.cursor_secret.secret_arn,
+                **fixtures_env,
+                "RESET_FUNCTION_NAME": self.reset_function.function_name,
                 "POWERTOOLS_SERVICE_NAME": "api",
                 "LOG_LEVEL": "INFO",
             },
@@ -96,6 +159,8 @@ class ApiStack(cdk.Stack):
         table.grant_read_write_data(self.function)
         self.cursor_secret.grant_read(self.function)
         run_queue.grant_send_messages(self.function)
+        self.fixtures_bucket.grant_read(self.function)
+        self.reset_function.grant_invoke(self.function)
 
         self.http_api = apigw.HttpApi(
             self,

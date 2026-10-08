@@ -50,9 +50,7 @@ def test_function_runtime_and_handler():
             "Handler": "handlers.api.handler",
             "Timeout": 10,
             "TracingConfig": {"Mode": "Active"},
-            "Environment": {
-                "Variables": Match.object_like({"TABLE_NAME": Match.any_value()})
-            },
+            "Environment": {"Variables": Match.object_like({"TABLE_NAME": Match.any_value()})},
         },
     )
 
@@ -81,6 +79,9 @@ def test_signed_in_routes_require_jwt():
         "POST /v1/investigations/{investigation_id}/review",
         "GET /v1/incidents/{incident_id}/review-queue",
         "POST /v1/incidents/{incident_id}/review-items/{review_id}/resolve",
+        "GET /v1/incidents/{incident_id}/activity",
+        "POST /v1/admin/incidents/{incident_id}/reset",
+        "GET /v1/admin/investigations/{investigation_id}/recording",
     ):
         assert found[key]["AuthorizationType"] == "JWT"
 
@@ -194,3 +195,34 @@ def test_function_can_queue_runs_with_the_agents_model():
         for s in p["Properties"]["PolicyDocument"]["Statement"]
     ]
     assert any("sqs:SendMessage" in s["Action"] for s in statements)
+
+
+def test_demo_reset_runs_in_its_own_worker_with_the_fixtures():
+    t = template()
+    functions = {
+        r["Properties"].get("FunctionName"): r["Properties"]
+        for r in t.find_resources("AWS::Lambda::Function").values()
+    }
+    worker = functions["found-dev-demo-reset"]
+    assert worker["Handler"] == "handlers.demo_reset.handler" and worker["Timeout"] == 300
+    assert worker["Environment"]["Variables"]["FIXTURES_PREFIX"] == "fixtures/demo-v1"
+    api_env = functions["found-dev-api"]["Environment"]["Variables"]
+    assert {"FIXTURES_BUCKET", "FIXTURES_PREFIX", "RESET_FUNCTION_NAME"} <= set(api_env)
+    statements = [
+        s
+        for p in t.find_resources("AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+    ]
+    assert any("lambda:InvokeFunction" in s["Action"] for s in statements)
+    t.resource_count_is("Custom::CDKBucketDeployment", 1)
+    t.has_resource_properties(
+        "AWS::S3::Bucket",
+        {
+            "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": True,
+                "RestrictPublicBuckets": True,
+                "BlockPublicPolicy": True,
+                "IgnorePublicAcls": True,
+            }
+        },
+    )

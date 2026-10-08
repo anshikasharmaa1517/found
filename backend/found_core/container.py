@@ -8,6 +8,7 @@ from found_core.adapters.cognito_jwt import CognitoTokenVerifier
 from found_core.domain.cursor import CursorCodec
 from found_core.domain.investigation import InvestigationConfig
 from found_core.ports.repository import FoundRepository
+from found_core.services.demo import DemoService
 from found_core.services.ingest import IngestService
 from found_core.services.investigations import InvestigationService
 from found_core.services.map import MapService
@@ -163,3 +164,18 @@ def investigation_runner() -> InvestigationRunner:
 @cache
 def review_service() -> ReviewService:
     return ReviewService(repository(), cursor_codec())
+
+
+@cache
+def demo_service() -> DemoService:
+    import boto3
+
+    from found_core.adapters.fixtures import LambdaResetTrigger, S3Fixtures
+
+    repo = repository()
+    fixtures = S3Fixtures(
+        boto3.client("s3"), os.environ["FIXTURES_BUCKET"], os.environ["FIXTURES_PREFIX"]
+    )
+    worker = os.environ.get("RESET_FUNCTION_NAME")
+    trigger = LambdaResetTrigger(boto3.client("lambda"), worker) if worker else None
+    return DemoService(repo, IngestService(repo), fixtures, trigger)

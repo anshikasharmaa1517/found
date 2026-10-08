@@ -318,3 +318,47 @@ def test_held_alert_is_released_once(repo):
     assert repo.release_held_alert("sub_x", "clm_1", DeliveryStatus.PENDING) is False
     assert repo.get_alert("sub_1", "clm_1").delivery_status == DeliveryStatus.PENDING
     assert repo.get_alert("sub_1", "clm_x") is None
+
+
+def test_delete_incident_data_removes_only_that_incident(repo, table):
+    from pathlib import Path
+
+    from found_core.adapters.dynamodb import DynamoBudgetLedger
+    from found_core.adapters.fixtures import DirectoryFixtures
+    from found_core.domain.models import Activity, Subscription
+    from found_core.fixtures import Dataset, load_dataset
+
+    fixtures = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "demo-v1"
+    ingest = IngestService(repo, clock=FixedClock(), sleep=lambda _: None)
+    loaded = load_dataset(Dataset.from_files(DirectoryFixtures(fixtures).read()), repo, ingest)
+    maya = loaded.subjects_by_person["maya"]
+    repo.save_subscription(Subscription(id="sub_1", subject_id=maya, user_id="fam_1"))
+    claim = next(iter(loaded.claims_by_reference.values()))
+    repo.acquire_run_lock(claim.id, "inv_1", AT, AT + timedelta(minutes=10))
+    repo.put_activity(
+        Activity(id="act_1", incident_id="inc_demo", actor="a", component="admin",
+                 message="m", created_at=AT)
+    )  # fmt: skip
+    ledger = DynamoBudgetLedger(table)
+    ledger.reserve_run("2026-10", 5)
+    publish = PublishCommand.parse(
+        {
+            "incident_id": "inc_1", "org_id": "org_p", "org_name": "District Police Demo",
+            "org_type": "POLICE", "actor": "u", "subject": {"type": "PERSON", "new": {"name": "X"}},
+            "claim_type": "MISSING", "original_text": "X missing.", "external_reference": "R1",
+        }
+    )  # fmt: skip
+    other = ingest.publish(publish).claim
+
+    assert [a.id for a in repo.list_activity("inc_demo", 5)] == ["act_1"]
+    removed = repo.delete_incident_data("inc_demo")
+    assert removed > 56
+    leftovers = [
+        i for i in table.scan()["Items"]
+        if i.get("incident_id") == "inc_demo" or str(i["PK"]).startswith("IDEM#org_police")
+        or i["PK"] == f"SUBJ#{maya}" or i["PK"] == f"LOCK#INV#{claim.id}"
+    ]  # fmt: skip
+    assert leftovers == []
+    assert not repo.incident_exists("inc_demo")
+    assert repo.get_claim(other.id) == other and repo.incident_exists("inc_1")
+    assert ledger.usage("2026-10").runs == 1

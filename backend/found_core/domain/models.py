@@ -27,6 +27,18 @@ class _Entity(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
+class Activity(_Entity):
+    """One line of the activity feed: which component did what, and when (FR-33)."""
+
+    id: str
+    incident_id: str
+    actor: str
+    component: str
+    message: str
+    target_ids: tuple[str, ...] = ()
+    created_at: datetime
+
+
 class Incident(_Entity):
     """A disaster incident. Only a demo incident may be reset."""
 

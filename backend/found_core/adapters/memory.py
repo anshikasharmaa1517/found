@@ -18,6 +18,7 @@ from found_core.domain.enums import (
 )
 from found_core.domain.investigation import CACHEABLE_STATUSES
 from found_core.domain.models import (
+    Activity,
     Alert,
     Claim,
     Connection,
@@ -47,6 +48,7 @@ class InMemoryFoundRepository:
         self._lock = threading.Lock()
         self.incidents: set[str] = set()
         self.incident_records: dict[str, Incident] = {}
+        self.activity: list[Activity] = []
         self.organizations: dict[tuple[str, str], Organization] = {}
         self.sources: dict[str, Source] = {}
         self.subjects: dict[str, Subject] = {}
@@ -411,6 +413,70 @@ class InMemoryFoundRepository:
                 update={"delivery_status": status}
             )
             return True
+
+    def put_activity(self, activity: Activity) -> None:
+        self.activity.append(activity)
+
+    def list_activity(self, incident_id: str, limit: int) -> list[Activity]:
+        found = [a for a in self.activity if a.incident_id == incident_id]
+        return sorted(found, key=lambda a: (a.created_at, a.id), reverse=True)[:limit]
+
+    def delete_incident_data(self, incident_id: str) -> int:
+        with self._lock:
+            subjects = {s for s, v in self.subjects.items() if v.incident_id == incident_id}
+            claims = {c for c, v in self.claims.items() if v.incident_id == incident_id}
+            investigations = {
+                i for i, v in self.investigations.items() if v.incident_id == incident_id
+            }
+            removed = 0
+
+            def drop(store: dict, keys) -> int:
+                keys = list(keys)
+                for key in keys:
+                    del store[key]
+                return len(keys)
+
+            removed += drop(self.subjects, subjects)
+            removed += drop(self.claims, claims)
+            removed += drop(self.investigations, investigations)
+            removed += drop(
+                self.steps, [k for k, v in self.steps.items() if v.incident_id == incident_id]
+            )
+            removed += drop(
+                self.sources, [k for k, v in self.sources.items() if v.incident_id == incident_id]
+            )
+            removed += drop(
+                self.locations,
+                [k for k, v in self.locations.items() if v.incident_id == incident_id],
+            )
+            removed += drop(
+                self.organizations, [k for k in self.organizations if k[0] == incident_id]
+            )
+            removed += drop(
+                self.markers, [k for k, v in self.markers.items() if v.claim_id in claims]
+            )
+            removed += drop(
+                self.subscriptions,
+                [k for k, v in self.subscriptions.items() if v.subject_id in subjects],
+            )
+            removed += drop(
+                self.alerts, [k for k, v in self.alerts.items() if v.incident_id == incident_id]
+            )
+            removed += drop(
+                self.review_items,
+                [k for k, v in self.review_items.items() if v.incident_id == incident_id],
+            )
+            removed += drop(self.run_locks, [k for k in self.run_locks if k in claims])
+            for token in list(self.name_tokens):
+                self.name_tokens[token] -= subjects
+                if not self.name_tokens[token]:
+                    del self.name_tokens[token]
+            kept = [a for a in self.activity if a.incident_id != incident_id]
+            removed += len(self.activity) - len(kept)
+            self.activity = kept
+            self.incidents.discard(incident_id)
+            self.incident_records.pop(incident_id, None)
+            return removed + 1
 
     def list_investigation_steps(self, investigation_id: str) -> list[InvestigationStep]:
         found = [s for (inv, _), s in self.steps.items() if inv == investigation_id]

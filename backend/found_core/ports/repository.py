@@ -12,6 +12,7 @@ from found_core.domain.enums import (
     SubjectType,
 )
 from found_core.domain.models import (
+    Activity,
     Alert,
     Claim,
     Connection,
@@ -222,4 +223,18 @@ class FoundRepository(Protocol):
         self, subscription_id: str, claim_id: str, status: DeliveryStatus
     ) -> bool:
         """Move a HELD alert to `status`. False if it is not held (any more)."""
+        ...
+
+    def put_activity(self, activity: Activity) -> None: ...
+
+    def list_activity(self, incident_id: str, limit: int) -> list[Activity]:
+        """Newest first."""
+        ...
+
+    def delete_incident_data(self, incident_id: str) -> int:
+        """Remove every item that belongs to the incident, and nothing else.
+
+        Budget, settings, other incidents and open connections are never touched.
+        Returns how many items were removed.
+        """
         ...

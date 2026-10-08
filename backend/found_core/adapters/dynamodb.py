@@ -20,6 +20,7 @@ from found_core.domain.enums import (
 )
 from found_core.domain.investigation import CACHEABLE_STATUSES
 from found_core.domain.models import (
+    Activity,
     Alert,
     Claim,
     Connection,
@@ -150,6 +151,20 @@ def _plain(value: Any) -> Any:
 
 def _fields(item: dict[str, Any]) -> dict[str, Any]:
     return {k: _plain(v) for k, v in item.items() if k not in _META_ATTRS}
+
+
+def activity_key(activity: Activity) -> dict[str, str]:
+    created = activity.model_dump(mode="json")["created_at"]
+    return {"PK": f"INC#{activity.incident_id}", "SK": f"ACT#{created}#{activity.id}"}
+
+
+def activity_item(activity: Activity) -> dict[str, Any]:
+    return {
+        **activity_key(activity),
+        "entity_type": "ACTIVITY",
+        "schema_version": SCHEMA_VERSION,
+        **_attrs(activity),
+    }
 
 
 def incident_item(incident: Incident) -> dict[str, Any]:
@@ -951,6 +966,67 @@ class DynamoFoundRepository:
 
     def put_investigation_step(self, step: InvestigationStep) -> bool:
         return self._put_if_absent(investigation_step_item(step))
+
+    def put_activity(self, activity: Activity) -> None:
+        self._table.put_item(Item=activity_item(activity))
+
+    def list_activity(self, incident_id: str, limit: int) -> list[Activity]:
+        resp = self._table.query(
+            KeyConditionExpression=Key("PK").eq(f"INC#{incident_id}")
+            & Key("SK").begins_with("ACT#"),
+            ScanIndexForward=False,
+            Limit=limit,
+        )
+        return [Activity.model_validate(_fields(i)) for i in resp.get("Items", [])]
+
+    def delete_incident_data(self, incident_id: str) -> int:
+        """Scan for the incident's items, then delete them with their keyless companions.
+
+        Items without an `incident_id` that still belong to it: subscriptions (in the
+        subject partitions), idempotency markers and run locks (found from its claims).
+        The demo table is small, so a filtered scan is the simple, complete way.
+        """
+        keys: dict[tuple[str, str], dict[str, str]] = {}
+        subjects: set[str] = set()
+        org_of_source: dict[str, str] = {}
+        claims: list[tuple[str, str, str]] = []
+        kwargs: dict[str, Any] = {"FilterExpression": Attr("incident_id").eq(incident_id)}
+        while True:
+            resp = self._table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                kind = item.get("entity_type")
+                if kind == "CONNECTION":
+                    continue
+                keys[(item["PK"], item["SK"])] = {"PK": item["PK"], "SK": item["SK"]}
+                if kind == "SUBJECT":
+                    subjects.add(str(item["id"]))
+                elif kind == "SOURCE" and item.get("organization_id"):
+                    org_of_source[str(item["id"])] = str(item["organization_id"])
+                elif kind == "CLAIM":
+                    claims.append(
+                        (str(item["id"]), str(item["source_id"]), str(item["external_reference"]))
+                    )
+            last = resp.get("LastEvaluatedKey")
+            if not last:
+                break
+            kwargs["ExclusiveStartKey"] = last
+        for subject in subjects:
+            for item in self._query(
+                KeyConditionExpression=Key("PK").eq(f"SUBJ#{subject}"),
+                ProjectionExpression="PK, SK",
+            ):
+                keys[(item["PK"], item["SK"])] = {"PK": item["PK"], "SK": item["SK"]}
+        for claim_id, source, reference in claims:
+            lock = run_lock_key(claim_id)
+            keys[(lock["PK"], lock["SK"])] = lock
+            org = org_of_source.get(source)
+            if org:
+                marker = marker_key(org, reference)
+                keys[(marker["PK"], marker["SK"])] = marker
+        with self._table.batch_writer() as batch:
+            for key in keys.values():
+                batch.delete_item(Key=key)
+        return len(keys)
 
     def list_investigation_steps(self, investigation_id: str) -> list[InvestigationStep]:
         items = self._query(
