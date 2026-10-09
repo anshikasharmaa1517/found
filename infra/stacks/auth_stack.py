@@ -73,7 +73,10 @@ class AuthStack(cdk.Stack):
             read_attributes=cognito.ClientAttributes()
             .with_standard_attributes(email=True, email_verified=True, fullname=True)
             .with_custom_attributes(ORG_ATTRIBUTE),
-            write_attributes=cognito.ClientAttributes().with_standard_attributes(fullname=True),
+            # Cognito requires every required attribute (email) to be writable by the client.
+            write_attributes=cognito.ClientAttributes().with_standard_attributes(
+                email=True, fullname=True
+            ),
         )
 
         cdk.CfnOutput(self, "UserPoolId", value=self.user_pool.user_pool_id)

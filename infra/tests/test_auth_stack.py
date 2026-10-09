@@ -71,7 +71,8 @@ def test_users_can_read_but_never_write_their_organization():
     props = client(template())
     assert "custom:org_id" in props["ReadAttributes"]
     assert "custom:org_id" not in props["WriteAttributes"]
-    assert props["WriteAttributes"] == ["name"]
+    # Cognito refuses a client that cannot write a required attribute (email).
+    assert sorted(props["WriteAttributes"]) == ["email", "name"]
 
 
 def test_token_lifetimes():
