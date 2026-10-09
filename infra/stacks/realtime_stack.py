@@ -85,6 +85,7 @@ class RealtimeStack(cdk.Stack):
             self,
             "WsPush",
             env_name=cfg.name,
+            retention=cfg.retention,
             handler="handlers.ws_push.handler",
             rules=[
                 ("push-claim", inserted("CLAIM")),
@@ -121,7 +122,7 @@ class RealtimeStack(cdk.Stack):
             log_group=logs.LogGroup(
                 self,
                 f"{name}Logs",
-                retention=logs.RetentionDays.ONE_MONTH,
+                retention=self._cfg.retention,
                 removal_policy=cdk.RemovalPolicy.DESTROY,
             ),
         )

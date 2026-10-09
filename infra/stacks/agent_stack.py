@@ -114,7 +114,7 @@ class AgentStack(cdk.Stack):
             log_group=logs.LogGroup(
                 self,
                 "ToolsLogs",
-                retention=logs.RetentionDays.ONE_MONTH,
+                retention=cfg.retention,
                 removal_policy=cdk.RemovalPolicy.DESTROY,
             ),
         )
@@ -283,13 +283,14 @@ class AgentStack(cdk.Stack):
                 "TABLE_NAME": table.table_name,
                 "MODEL_ID": self.model_id,
                 "RUNTIME_ARN": self.runtime.attr_agent_runtime_arn,
+                **cfg.cap_environment(),
                 "POWERTOOLS_SERVICE_NAME": "investigation_runner",
                 "LOG_LEVEL": "INFO",
             },
             log_group=logs.LogGroup(
                 self,
                 "RunnerLogs",
-                retention=logs.RetentionDays.ONE_MONTH,
+                retention=cfg.retention,
                 removal_policy=cdk.RemovalPolicy.DESTROY,
             ),
         )

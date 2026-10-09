@@ -63,6 +63,7 @@ def event_consumer(
     *,
     env_name: str,
     handler: str,
+    retention: logs.RetentionDays = logs.RetentionDays.ONE_MONTH,
     rules: list[tuple[str, events.EventPattern]],
     bus: events.IEventBus,
     table: ddb.ITableV2,
@@ -93,7 +94,7 @@ def event_consumer(
         log_group=logs.LogGroup(
             scope,
             f"{name}Logs",
-            retention=logs.RetentionDays.ONE_MONTH,
+            retention=retention,
             removal_policy=cdk.RemovalPolicy.DESTROY,
         ),
     )

@@ -109,6 +109,7 @@ class EventsStack(cdk.Stack):
             self,
             "Watcher",
             env_name=cfg.name,
+            retention=cfg.retention,
             handler="handlers.watcher.handler",
             rules=[("claim-inserted", inserted("CLAIM"))],
             bus=self.bus,

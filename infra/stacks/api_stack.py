@@ -120,7 +120,7 @@ class ApiStack(cdk.Stack):
             log_group=logs.LogGroup(
                 self,
                 "DemoResetLogs",
-                retention=logs.RetentionDays.ONE_MONTH,
+                retention=cfg.retention,
                 removal_policy=cdk.RemovalPolicy.DESTROY,
             ),
         )
@@ -145,6 +145,7 @@ class ApiStack(cdk.Stack):
                 "MODEL_ID": model_id,
                 "CURSOR_SECRET_ARN": self.cursor_secret.secret_arn,
                 **fixtures_env,
+                **cfg.cap_environment(),
                 "RESET_FUNCTION_NAME": self.reset_function.function_name,
                 "POWERTOOLS_SERVICE_NAME": "api",
                 "LOG_LEVEL": "INFO",
@@ -152,7 +153,7 @@ class ApiStack(cdk.Stack):
             log_group=logs.LogGroup(
                 self,
                 "ApiLogs",
-                retention=logs.RetentionDays.ONE_MONTH,
+                retention=cfg.retention,
                 removal_policy=cdk.RemovalPolicy.DESTROY,
             ),
         )
