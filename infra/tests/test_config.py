@@ -101,3 +101,8 @@ def test_alert_delivery_is_off_unless_configured():
     assert dev.sms_enabled is False
     cfg = load("x", {"x": {"deletion_protection": False, "web_origins": []}})
     assert (cfg.email_from, cfg.sms_enabled) == ("", False)
+
+
+def test_dev_sends_email_from_its_configured_sender_and_demo_sends_none():
+    assert "@" in load("dev", ENVS).email_from
+    assert load("demo", ENVS).email_from == ""
