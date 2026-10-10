@@ -30,6 +30,31 @@ export interface ReviewItem {
     comparison: string | null;
     outcome_reasons: string[];
   } | null;
+  /** Identity items only: the pair the resolver proposed, with its reasons. */
+  proposal?: IdentityProposal | null;
+}
+
+export interface IdentityProposal {
+  pair_key: string;
+  people: { id: string; name: string; age: number | null; incident_id: string }[];
+  reasons: string[];
+  score: number;
+  proposed_by: string;
+}
+
+export type IdentityVerdict = "CONFIRMED" | "REJECTED";
+
+export interface IdentityDecision {
+  pair_key: string;
+  person_a_id: string;
+  person_b_id: string;
+  decision: IdentityVerdict;
+  reviewer: string;
+  note: string;
+  evidence_claim_ids: string[];
+  version: number;
+  decided_at: string;
+  history: Omit<IdentityDecision, "pair_key" | "person_a_id" | "person_b_id" | "history">[];
 }
 
 export interface ReviewPage {
@@ -77,4 +102,18 @@ export function reviewFinding<T>(
     decision,
     ...(note.trim() ? { note: note.trim() } : {}),
   });
+}
+
+/** Confirm or reject a proposed pair. `expectedVersion` is 0 for a pair not decided yet. */
+export function decideIdentity(
+  api: ApiClient,
+  pairKey: string,
+  decision: IdentityVerdict,
+  note: string,
+  expectedVersion = 0,
+): Promise<{ decision: IdentityDecision }> {
+  return api.post<{ decision: IdentityDecision }>(
+    `/v1/identity-proposals/${encodeURIComponent(pairKey)}/decision`,
+    { decision, note: note.trim(), expected_version: expectedVersion },
+  );
 }

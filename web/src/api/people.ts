@@ -51,10 +51,19 @@ export type TimelineEntry =
   | VisibleEntry
   | (WithheldClaim & { seq: number; reported_at: string | null });
 
+/** A reviewer's decision linking this record to another. The records stay separate. */
+export interface IdentityLink {
+  pair_key: string;
+  other_person_id: string;
+  decision: "CONFIRMED" | "REJECTED";
+  reviewer: string;
+  decided_at: string;
+}
+
 export interface Timeline {
   person: PersonRow;
   summary: Summary;
-  identity: unknown[];
+  identity: IdentityLink[];
   entries: TimelineEntry[];
   next_cursor: string | null;
 }

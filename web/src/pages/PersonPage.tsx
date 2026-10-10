@@ -4,18 +4,49 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../api/context";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
-import { getTimeline, type Order, type Summary, type TimelineEntry } from "../api/people";
+import {
+  getTimeline,
+  type IdentityLink,
+  type Order,
+  type Summary,
+  type TimelineEntry,
+} from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FollowPanel } from "../components/FollowPanel";
 import { TraceButton } from "../components/TraceButton";
 import { rememberedIncident } from "../incident";
-import { claimTypeLabel, formatTime, relationLabel } from "../labels";
+import {
+  claimTypeLabel,
+  formatTime,
+  IDENTITY_DECISION_LABELS,
+  labelFor,
+  relationLabel,
+} from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
 import { useLoad } from "../useLoad";
 import { usePager } from "../usePager";
 
 function anchor(claimId: string): string {
   return `entry-${claimId}`;
+}
+
+/** Reviewers' decisions about other records of this person. Nothing is merged. */
+function IdentityLinks({ links }: { links: IdentityLink[] }) {
+  if (links.length === 0) return null;
+  return (
+    <section aria-labelledby="identity-title">
+      <h2 id="identity-title">Other records</h2>
+      <ul className="identity-links">
+        {links.map((link) => (
+          <li key={link.pair_key}>
+            {labelFor(IDENTITY_DECISION_LABELS, link.decision)}{" "}
+            <Link to={`/people/${encodeURIComponent(link.other_person_id)}`}>another record</Link>{" "}
+            <span className="muted">by a reviewer, {formatTime(link.decided_at)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 function SummaryCard({ summary }: { summary: Summary }) {
@@ -141,7 +172,7 @@ export function PersonPage() {
     );
   }
 
-  const { person, summary, entries } = first.data;
+  const { person, summary, identity, entries } = first.data;
   const canTrace = hasRole(user, "reviewer", "admin");
   return (
     <section className="page">
@@ -166,6 +197,7 @@ export function PersonPage() {
       )}
 
       <SummaryCard summary={summary} />
+      <IdentityLinks links={identity} />
 
       {hasRole(user, "family") && <FollowPanel personId={person.id} personName={person.name} />}
 

@@ -11,6 +11,7 @@ import {
   type ReviewType,
 } from "../api/review";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { IdentityReview } from "../components/IdentityReview";
 import {
   claimTypeLabel,
   formatTime,
@@ -35,6 +36,7 @@ const FILTERS: { type: ReviewType | null; label: string }[] = [
   { type: "held_alert", label: "Held reports" },
   { type: "conflict", label: "Conflicts" },
   { type: "finding", label: "Findings" },
+  { type: "identity", label: "Possible same person" },
 ];
 
 function Decision({
@@ -134,6 +136,13 @@ function Items({
                 Open the investigation
               </Link>
             </p>
+          )}
+          {item.proposal && (
+            <IdentityReview
+              proposal={item.proposal}
+              open={item.status === "OPEN"}
+              onDone={onChange}
+            />
           )}
           {item.status === "DONE" ? (
             <p className="muted">

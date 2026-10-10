@@ -77,6 +77,47 @@ function timeline(overrides: Partial<Timeline> = {}): Timeline {
 }
 
 describe("person page", () => {
+  it("links other records a reviewer decided about, without merging them", async () => {
+    const { api } = routedApi({
+      [PATH]: () =>
+        timeline({
+          identity: [
+            {
+              pair_key: "per_1|per_2",
+              other_person_id: "per_2",
+              decision: "CONFIRMED",
+              reviewer: "rev_1",
+              decided_at: "2026-10-05T09:02:11Z",
+            },
+            {
+              pair_key: "per_1|per_3",
+              other_person_id: "per_3",
+              decision: "REJECTED",
+              reviewer: "rev_1",
+              decided_at: "2026-10-05T09:05:00Z",
+            },
+          ],
+        }),
+    });
+    renderApp(signedIn(), "/people/per_1", api);
+    const section = (await screen.findByRole("heading", { name: "Other records" })).closest(
+      "section",
+    )!;
+    const [confirmed, rejected] = within(section).getAllByRole("listitem");
+    expect(confirmed).toHaveTextContent(/Confirmed as the same person as another record/);
+    expect(within(confirmed!).getByRole("link")).toHaveAttribute("href", "/people/per_2");
+    expect(rejected).toHaveTextContent(/not to be the same person/);
+    // The timeline itself is unchanged: only this record's reports are listed.
+    expect(screen.getAllByRole("listitem").filter((li) => li.id.startsWith("entry-"))).toHaveLength(2);
+  });
+
+  it("has no other records section when nothing was decided", async () => {
+    const { api } = routedApi({ [PATH]: () => timeline() });
+    renderApp(signedIn(), "/people/per_1", api);
+    expect(await screen.findByRole("heading", { name: "Maya Rawat" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Other records" })).toBeNull();
+  });
+
   it("shows the cited summary and other sources", async () => {
     const { api } = routedApi({ [PATH]: () => timeline() });
     renderApp(signedIn(), "/people/per_1", api);

@@ -97,6 +97,24 @@ export const FAILURE_LABELS: Record<string, string> = {
   QUEUE_UNAVAILABLE: "The run could not be queued.",
 };
 
+/** Why the resolver proposed a pair (design Section 9.7). */
+export const MATCH_REASON_LABELS: Record<string, string> = {
+  FULL_NAME_EXACT: "Same full name",
+  SURNAME_EXACT: "Same surname",
+  GIVEN_EXACT: "Same given name",
+  GIVEN_INITIAL: "Given names share an initial",
+  NAME_EDIT_DISTANCE_1: "Names differ by one letter",
+  AGE_EQUAL: "Same age",
+  AGE_WITHIN_2: "Ages within 2 years",
+  AGE_DIFF_GT_5: "Ages more than 5 years apart",
+  SHARED_LOCATION: "Reported at the same place",
+};
+
+export const IDENTITY_DECISION_LABELS: Record<string, string> = {
+  CONFIRMED: "Confirmed as the same person as",
+  REJECTED: "Checked and found not to be the same person as",
+};
+
 export function labelFor(labels: Record<string, string>, code: string): string {
   return labels[code] ?? code;
 }
