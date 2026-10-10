@@ -6,11 +6,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from found_core.domain.enums import (
     Attribution,
+    CandidateStatus,
     Comparison,
     DeliveryStatus,
     ExtractionMethod,
     FindingReview,
     IdentityVerdict,
+    IntakeStatus,
     InvestigationMode,
     InvestigationStatus,
     Relation,
@@ -205,6 +207,50 @@ class IdentityDecision(IdentityDecisionRecord):
         return IdentityDecisionRecord.model_validate(
             self.model_dump(include=set(IdentityDecisionRecord.model_fields))
         )
+
+
+class IntakeJob(_Entity):
+    """One uploaded file or pasted text, from upload to candidates ready for review."""
+
+    id: str
+    incident_id: str
+    organization_id: str
+    s3_key: str
+    filename: str
+    content_type: str
+    status: IntakeStatus = IntakeStatus.RECEIVED
+    sha256: str | None = None
+    size_bytes: int | None = None
+    # The text the candidates were checked against, kept for reviewers (capped).
+    extracted_text: str | None = None
+    candidate_count: int = 0
+    dropped_count: int = 0
+    failure_reason: str | None = None
+    created_by: str
+    created_at: datetime
+    updated_at: datetime | None = None
+
+
+class IntakeCandidate(_Entity):
+    """A claim the model proposed from an intake job. It becomes a claim only if confirmed."""
+
+    id: str
+    job_id: str
+    incident_id: str
+    idx: int = Field(ge=0)
+    subject_type: SubjectType
+    subject_name: str
+    age: int | None = None
+    claim_type: str
+    reported_at: datetime | None = None
+    location_name: str | None = None
+    span_text: str
+    status: CandidateStatus = CandidateStatus.PENDING_REVIEW
+    claim_id: str | None = None
+    subject_id: str | None = None
+    decided_by: str | None = None
+    decided_at: datetime | None = None
+    note: str | None = None
 
 
 class Connection(_Entity):

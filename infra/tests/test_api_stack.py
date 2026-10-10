@@ -1,3 +1,5 @@
+import json
+
 import aws_cdk as cdk
 from aws_cdk.assertions import Match, Template
 
@@ -23,6 +25,7 @@ def template() -> Template:
         "Api",
         cfg=cfg,
         table=data.table,
+        bucket=data.bucket,
         run_queue=agent.run_queue,
         model_id=agent.model_id,
         user_pool=auth.user_pool,
@@ -80,6 +83,10 @@ def test_signed_in_routes_require_jwt():
         "GET /v1/incidents/{incident_id}/review-queue",
         "POST /v1/incidents/{incident_id}/review-items/{review_id}/resolve",
         "POST /v1/identity-proposals/{pair_key}/decision",
+        "POST /v1/incidents/{incident_id}/uploads",
+        "POST /v1/incidents/{incident_id}/intake-text",
+        "GET /v1/intake-jobs/{job_id}",
+        "POST /v1/intake-candidates/{candidate_id}/decision",
         "GET /v1/incidents/{incident_id}/activity",
         "POST /v1/admin/incidents/{incident_id}/reset",
         "GET /v1/admin/investigations/{investigation_id}/recording",
@@ -234,3 +241,22 @@ def test_stage_waits_for_the_routes_its_throttles_name():
     stage = next(iter(t.find_resources("AWS::ApiGatewayV2::Stage").values()))
     routes = set(t.find_resources("AWS::ApiGatewayV2::Route"))
     assert routes and routes <= set(stage.get("DependsOn", []))
+
+
+def test_api_may_write_only_under_the_intake_prefix():
+    t = template()
+    fn = next(
+        f["Properties"]
+        for f in t.find_resources("AWS::Lambda::Function").values()
+        if f["Properties"].get("Handler") == "handlers.api.handler"
+    )
+    assert "DATA_BUCKET" in fn["Environment"]["Variables"]
+    puts = [
+        s
+        for p in t.find_resources("AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+        if "s3:PutObject" in (s["Action"] if isinstance(s["Action"], list) else [s["Action"]])
+    ]
+    on_data_bucket = [s for s in puts if "Data:Exports" in json.dumps(s["Resource"])]
+    assert on_data_bucket
+    assert all("/intake/*" in json.dumps(s["Resource"]) for s in on_data_bucket)

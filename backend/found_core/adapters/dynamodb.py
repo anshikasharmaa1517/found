@@ -12,7 +12,9 @@ from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 from found_core.domain.enums import (
+    CandidateStatus,
     DeliveryStatus,
+    IntakeStatus,
     InvestigationStatus,
     ReviewItemType,
     ReviewStatus,
@@ -28,6 +30,8 @@ from found_core.domain.models import (
     IdentityDecision,
     IdentityProposal,
     Incident,
+    IntakeCandidate,
+    IntakeJob,
     Investigation,
     InvestigationStep,
     Location,
@@ -120,6 +124,14 @@ def identity_proposal_key(incident_id: str, pair_key: str) -> dict[str, str]:
 
 def identity_decision_key(incident_id: str, pair_key: str) -> dict[str, str]:
     return {"PK": f"INC#{incident_id}", "SK": f"IDD#{pair_key}"}
+
+
+def intake_job_key(incident_id: str, job_id: str) -> dict[str, str]:
+    return {"PK": f"INC#{incident_id}", "SK": f"IJOB#{job_id}"}
+
+
+def intake_candidate_key(job_id: str, idx: int) -> dict[str, str]:
+    return {"PK": f"IJOB#{job_id}", "SK": f"CAND#{idx:03d}"}
 
 
 def marker_key(org_id: str, external_reference: str) -> dict[str, str]:
@@ -326,6 +338,28 @@ def identity_decision_item(decision: IdentityDecision) -> dict[str, Any]:
         "entity_type": "IDENTITY_DECISION",
         "schema_version": SCHEMA_VERSION,
         **_attrs(decision),
+    }
+
+
+def intake_job_item(job: IntakeJob) -> dict[str, Any]:
+    return {
+        **intake_job_key(job.incident_id, job.id),
+        "GSI3PK": f"IJOB#{job.id}",
+        "GSI3SK": "META",
+        "entity_type": "INTAKE_JOB",
+        "schema_version": SCHEMA_VERSION,
+        **_attrs(job),
+    }
+
+
+def intake_candidate_item(candidate: IntakeCandidate) -> dict[str, Any]:
+    return {
+        **intake_candidate_key(candidate.job_id, candidate.idx),
+        "GSI3PK": f"CAND#{candidate.id}",
+        "GSI3SK": "META",
+        "entity_type": "INTAKE_CANDIDATE",
+        "schema_version": SCHEMA_VERSION,
+        **_attrs(candidate),
     }
 
 
@@ -1023,6 +1057,72 @@ class DynamoFoundRepository:
                 UpdateExpression="SET " + ", ".join(sets),
                 ConditionExpression="attribute_exists(PK) AND delivery_status = :expected",
                 ExpressionAttributeValues=values,
+            )
+            return True
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return False
+
+    def put_intake_job(self, job: IntakeJob) -> None:
+        if not self._put_if_absent(intake_job_item(job)):
+            raise ValueError("intake job id already exists")
+
+    def _by_lookup(self, gsi3pk: str) -> dict[str, Any] | None:
+        """Find an item by its id on GSI3, then read it consistently by its key."""
+        resp = self._table.query(
+            IndexName="GSI3", KeyConditionExpression=Key("GSI3PK").eq(gsi3pk), Limit=1
+        )
+        items = resp.get("Items", [])
+        return self._get({"PK": items[0]["PK"], "SK": items[0]["SK"]}) if items else None
+
+    def get_intake_job(self, job_id: str) -> IntakeJob | None:
+        item = self._by_lookup(f"IJOB#{job_id}")
+        return IntakeJob.model_validate(_fields(item)) if item else None
+
+    def update_intake_job_if(
+        self, job_id: str, expected: tuple[IntakeStatus, ...], changes: dict[str, Any]
+    ) -> IntakeJob | None:
+        current = self.get_intake_job(job_id)
+        if current is None or current.status not in expected:
+            return None
+        updated = IntakeJob.model_validate({**current.model_dump(), **changes})
+        values = {f":e{n}": str(status) for n, status in enumerate(expected)}
+        try:
+            self._table.put_item(
+                Item=intake_job_item(updated),
+                ConditionExpression=f"#status IN ({', '.join(values)})",
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues=values,
+            )
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return None
+        return updated
+
+    def put_intake_candidates(self, candidates: list[IntakeCandidate]) -> None:
+        for candidate in candidates:
+            self._put_if_absent(intake_candidate_item(candidate))
+
+    def list_intake_candidates(self, job_id: str) -> list[IntakeCandidate]:
+        items = self._query(
+            KeyConditionExpression=Key("PK").eq(f"IJOB#{job_id}") & Key("SK").begins_with("CAND#"),
+            ConsistentRead=True,
+        )
+        return [IntakeCandidate.model_validate(_fields(i)) for i in items]
+
+    def get_intake_candidate(self, candidate_id: str) -> IntakeCandidate | None:
+        item = self._by_lookup(f"CAND#{candidate_id}")
+        return IntakeCandidate.model_validate(_fields(item)) if item else None
+
+    def save_candidate_decision(self, candidate: IntakeCandidate) -> bool:
+        try:
+            self._table.put_item(
+                Item=intake_candidate_item(candidate),
+                ConditionExpression="attribute_exists(PK) AND #status = :pending",
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues={":pending": str(CandidateStatus.PENDING_REVIEW)},
             )
             return True
         except ClientError as err:

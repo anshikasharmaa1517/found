@@ -73,6 +73,8 @@ class AgentStack(cdk.Stack):
         name = f"found-{cfg.name}"
 
         self.model_id = cfg.model_id
+        # Set by the Lambda host, which reaches the model through bedrock-mantle.
+        self.api_key_secret: secretsmanager.ISecret | None = None
 
         # Run queue, consumed by the runner below.
         self.run_dlq = dead_letter_queue(self, "RunDlq", f"{name}-investigation-dlq")

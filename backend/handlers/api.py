@@ -12,7 +12,16 @@ from aws_lambda_powertools.logging import correlation_paths
 from found_core import container
 from found_core.domain.auth import Caller
 from found_core.domain.errors import BadRequest, FoundError
-from found_core.domain.models import Alert, Claim, IdentityDecision, Subject, Subscription
+from found_core.domain.intake import MAX_BYTES, UPLOAD_EXPIRES_SECONDS
+from found_core.domain.models import (
+    Alert,
+    Claim,
+    IdentityDecision,
+    IntakeCandidate,
+    IntakeJob,
+    Subject,
+    Subscription,
+)
 from found_core.domain.normalize import excerpt
 from found_core.domain.visibility import SENSITIVE_NOTICE
 from found_core.services.investigations import InvestigationDetail
@@ -446,6 +455,46 @@ def get_investigation(investigation_id: str) -> Response:
     return _json(HTTPStatus.OK, investigation_view(detail))
 
 
+def intake_job_view(job: IntakeJob) -> dict[str, Any]:
+    data = job.model_dump(mode="json")
+    return {
+        "id": job.id,
+        "incident_id": job.incident_id,
+        "organization_id": job.organization_id,
+        "filename": job.filename,
+        "content_type": job.content_type,
+        "status": data["status"],
+        "sha256": job.sha256,
+        "size_bytes": job.size_bytes,
+        "candidate_count": job.candidate_count,
+        "dropped_count": job.dropped_count,
+        "failure_reason": job.failure_reason,
+        "created_at": data["created_at"],
+        "updated_at": data["updated_at"],
+    }
+
+
+def candidate_view(candidate: IntakeCandidate) -> dict[str, Any]:
+    data = candidate.model_dump(mode="json")
+    return {
+        "id": candidate.id,
+        "job_id": candidate.job_id,
+        "idx": candidate.idx,
+        "subject_type": data["subject_type"],
+        "subject_name": candidate.subject_name,
+        "age": candidate.age,
+        "claim_type": candidate.claim_type,
+        "reported_at": data["reported_at"],
+        "location_name": candidate.location_name,
+        "span_text": candidate.span_text,
+        "status": data["status"],
+        "claim_id": candidate.claim_id,
+        "subject_id": candidate.subject_id,
+        "decided_at": data["decided_at"],
+        "note": candidate.note,
+    }
+
+
 def review_entry_view(entry: ReviewEntry) -> dict[str, Any]:
     item = entry.item
     data = item.model_dump(mode="json")
@@ -463,7 +512,15 @@ def review_entry_view(entry: ReviewEntry) -> dict[str, Any]:
         "claim": None,
         "investigation": None,
         "proposal": None,
+        "intake": None,
     }
+    if entry.intake_job is not None:
+        view["intake"] = {
+            "job": intake_job_view(entry.intake_job),
+            # Reviewers check each span against the text it was taken from.
+            "extracted_text": entry.intake_job.extracted_text,
+            "candidates": [candidate_view(c) for c in entry.candidates],
+        }
     if entry.proposal is not None:
         proposal = entry.proposal
         view["proposal"] = {
@@ -546,6 +603,45 @@ def decide_identity(pair_key: str) -> Response:
     body = _body()
     decision = container.resolve_service().decide(caller, unquote(pair_key), body)
     return _json(HTTPStatus.OK, {"decision": decision_view(decision)})
+
+
+@app.post("/v1/incidents/<incident_id>/uploads")
+def request_upload(incident_id: str) -> Response:
+    form = container.intake_service().request_upload(_caller(), incident_id, _body())
+    return _json(
+        HTTPStatus.CREATED,
+        {
+            "upload_id": form.job.id,
+            "post": form.post,
+            "max_bytes": MAX_BYTES,
+            "expires_in": UPLOAD_EXPIRES_SECONDS,
+        },
+    )
+
+
+@app.post("/v1/incidents/<incident_id>/intake-text")
+def submit_text(incident_id: str) -> Response:
+    job = container.intake_service().submit_text(_caller(), incident_id, _body())
+    return _json(HTTPStatus.ACCEPTED, {"job": intake_job_view(job)})
+
+
+@app.get("/v1/intake-jobs/<job_id>")
+def intake_job(job_id: str) -> Response:
+    detail = container.intake_service().detail(_caller(), job_id)
+    return _json(
+        HTTPStatus.OK,
+        {
+            "job": intake_job_view(detail.job),
+            "candidates": [candidate_view(c) for c in detail.candidates],
+        },
+    )
+
+
+@app.post("/v1/intake-candidates/<candidate_id>/decision")
+def decide_candidate(candidate_id: str) -> Response:
+    caller = _caller()
+    candidate = container.intake_service().decide(caller, candidate_id, _body())
+    return _json(HTTPStatus.OK, {"candidate": candidate_view(candidate)})
 
 
 @app.get("/v1/incidents/<incident_id>/activity")

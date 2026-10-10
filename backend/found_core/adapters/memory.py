@@ -10,7 +10,9 @@ from datetime import datetime
 from typing import Any
 
 from found_core.domain.enums import (
+    CandidateStatus,
     DeliveryStatus,
+    IntakeStatus,
     InvestigationStatus,
     ReviewItemType,
     ReviewStatus,
@@ -26,6 +28,8 @@ from found_core.domain.models import (
     IdentityDecision,
     IdentityProposal,
     Incident,
+    IntakeCandidate,
+    IntakeJob,
     Investigation,
     InvestigationStep,
     Location,
@@ -68,6 +72,8 @@ class InMemoryFoundRepository:
         self.steps: dict[tuple[str, int], InvestigationStep] = {}
         self.identity_proposals: dict[str, IdentityProposal] = {}
         self.identity_decisions: dict[str, IdentityDecision] = {}
+        self.intake_jobs: dict[str, IntakeJob] = {}
+        self.intake_candidates: dict[str, IntakeCandidate] = {}
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
@@ -443,6 +449,52 @@ class InMemoryFoundRepository:
             self.alerts[(subscription_id, claim_id)] = alert.model_copy(update=changes)
             return True
 
+    def put_intake_job(self, job: IntakeJob) -> None:
+        with self._lock:
+            if job.id in self.intake_jobs:
+                raise ValueError("intake job id already exists")
+            self.intake_jobs[job.id] = job
+
+    def get_intake_job(self, job_id: str) -> IntakeJob | None:
+        return self.intake_jobs.get(job_id)
+
+    def update_intake_job_if(
+        self, job_id: str, expected: tuple[IntakeStatus, ...], changes: dict[str, Any]
+    ) -> IntakeJob | None:
+        with self._lock:
+            job = self.intake_jobs.get(job_id)
+            if job is None or job.status not in expected:
+                return None
+            updated = IntakeJob.model_validate({**job.model_dump(), **changes})
+            self.intake_jobs[job_id] = updated
+            return updated
+
+    def put_intake_candidates(self, candidates: list[IntakeCandidate]) -> None:
+        with self._lock:
+            for c in candidates:
+                taken = any(
+                    o.job_id == c.job_id and o.idx == c.idx for o in self.intake_candidates.values()
+                )
+                if not taken:
+                    self.intake_candidates[c.id] = c
+
+    def list_intake_candidates(self, job_id: str) -> list[IntakeCandidate]:
+        return sorted(
+            (c for c in self.intake_candidates.values() if c.job_id == job_id),
+            key=lambda c: c.idx,
+        )
+
+    def get_intake_candidate(self, candidate_id: str) -> IntakeCandidate | None:
+        return self.intake_candidates.get(candidate_id)
+
+    def save_candidate_decision(self, candidate: IntakeCandidate) -> bool:
+        with self._lock:
+            current = self.intake_candidates.get(candidate.id)
+            if current is None or current.status != CandidateStatus.PENDING_REVIEW:
+                return False
+            self.intake_candidates[candidate.id] = candidate
+            return True
+
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
         with self._lock:
             if proposal.pair_key in self.identity_proposals:
@@ -529,7 +581,12 @@ class InMemoryFoundRepository:
                 [k for k, v in self.review_items.items() if v.incident_id == incident_id],
             )
             removed += drop(self.run_locks, [k for k in self.run_locks if k in claims])
-            for store in (self.identity_proposals, self.identity_decisions):
+            for store in (
+                self.identity_proposals,
+                self.identity_decisions,
+                self.intake_jobs,
+                self.intake_candidates,
+            ):
                 removed += drop(
                     store, [k for k, v in store.items() if v.incident_id == incident_id]
                 )

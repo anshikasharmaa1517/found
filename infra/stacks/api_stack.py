@@ -19,6 +19,7 @@ from stacks.lambda_code import ROOT, backend_code
 
 FIXTURES = ROOT / "data" / "fixtures"
 FIXTURES_PREFIX = "fixtures"
+INTAKE_PREFIX = "intake"
 DEMO_VERSION = "demo-v1"
 
 REPORTS_ROUTE = "POST /v1/incidents/{incident_id}/reports"
@@ -39,6 +40,10 @@ SIGNED_IN_ROUTES = (
     ("GET", "/v1/incidents/{incident_id}/review-queue"),
     ("POST", "/v1/incidents/{incident_id}/review-items/{review_id}/resolve"),
     ("POST", "/v1/identity-proposals/{pair_key}/decision"),
+    ("POST", "/v1/incidents/{incident_id}/uploads"),
+    ("POST", "/v1/incidents/{incident_id}/intake-text"),
+    ("GET", "/v1/intake-jobs/{job_id}"),
+    ("POST", "/v1/intake-candidates/{candidate_id}/decision"),
     ("GET", "/v1/incidents/{incident_id}/activity"),
     ("POST", "/v1/admin/incidents/{incident_id}/reset"),
     ("GET", "/v1/admin/investigations/{investigation_id}/recording"),
@@ -58,6 +63,7 @@ class ApiStack(cdk.Stack):
         *,
         cfg: EnvConfig,
         table: ddb.ITableV2,
+        bucket: s3.IBucket,
         run_queue: sqs.IQueue,
         model_id: str,
         user_pool: cognito.IUserPool,
@@ -145,6 +151,7 @@ class ApiStack(cdk.Stack):
                 # Part of every evidence fingerprint; must be the model the agent runs.
                 "MODEL_ID": model_id,
                 "CURSOR_SECRET_ARN": self.cursor_secret.secret_arn,
+                "DATA_BUCKET": bucket.bucket_name,
                 **fixtures_env,
                 **cfg.cap_environment(),
                 "RESET_FUNCTION_NAME": self.reset_function.function_name,
@@ -163,6 +170,9 @@ class ApiStack(cdk.Stack):
         run_queue.grant_send_messages(self.function)
         self.fixtures_bucket.grant_read(self.function)
         self.reset_function.grant_invoke(self.function)
+        # Pasted text is stored by the API; uploads are signed with its role, so the
+        # presigned form can only ever write under the intake prefix.
+        bucket.grant_put(self.function, f"{INTAKE_PREFIX}/*")
 
         self.http_api = apigw.HttpApi(
             self,

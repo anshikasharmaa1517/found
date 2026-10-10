@@ -10,6 +10,7 @@ from found_core.domain.investigation import InvestigationConfig
 from found_core.ports.repository import FoundRepository
 from found_core.services.demo import DemoService
 from found_core.services.ingest import IngestService
+from found_core.services.intake import IntakeService
 from found_core.services.investigations import InvestigationService
 from found_core.services.map import MapService
 from found_core.services.notify import NotifyService
@@ -212,22 +213,59 @@ def demo_service() -> DemoService:
     return DemoService(repo, IngestService(repo), fixtures, trigger)
 
 
+def _bedrock_api_key() -> str | None:
+    """The stored Bedrock API key, if this env reaches the model through bedrock-mantle."""
+    import boto3
+
+    arn = os.environ.get("BEDROCK_API_KEY_SECRET_ARN")
+    if not arn:
+        return None
+    secret = boto3.client("secretsmanager").get_secret_value(SecretId=arn)
+    return secret["SecretString"].strip().strip("<>").strip() or None
+
+
+@cache
+def intake_service() -> IntakeService:
+    """Uploads, the workflow steps and candidate decisions. The model is the agent's."""
+    import boto3
+
+    from found_core.adapters.extractors import ConverseExtractor, MantleExtractor, mantle_url
+    from found_core.adapters.s3_store import S3ObjectStore
+    from found_core.adapters.textract_reader import TextractReader
+
+    repo = repository()
+    bucket = os.environ["DATA_BUCKET"]
+    model_id = os.environ.get("MODEL_ID", "")
+    extractor = None
+    if model_id:
+        key = _bedrock_api_key()
+        region = os.environ.get("AWS_REGION", "ap-south-1")
+        extractor = (
+            MantleExtractor(mantle_url(region), key, model_id)
+            if key
+            else ConverseExtractor(boto3.client("bedrock-runtime"), model_id)
+        )
+    return IntakeService(
+        repo,
+        IngestService(repo),
+        S3ObjectStore(boto3.client("s3"), bucket),
+        TextractReader(boto3.client("textract"), bucket),
+        extractor,
+    )
+
+
 def local_agent_invoker(config: InvestigationConfig) -> "LocalAgentInvoker":
     """The agent in this process, reaching the model with the stored Bedrock API key."""
-    import boto3
     from found_agent.config import AgentConfig
     from found_agent.models import build_model
 
     from found_core.adapters.local_agent import LocalAgentInvoker
 
-    secret = boto3.client("secretsmanager").get_secret_value(
-        SecretId=os.environ["BEDROCK_API_KEY_SECRET_ARN"]
-    )
     agent_config = AgentConfig(
         model_id=config.model_id,
         gateway_url="",
         region=os.environ.get("AWS_REGION", "ap-south-1"),
-        api_key=secret["SecretString"].strip().strip("<>").strip() or None,
+        api_key=_bedrock_api_key(),
     )
     return LocalAgentInvoker(
         agent_tool_service(),

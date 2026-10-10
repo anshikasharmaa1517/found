@@ -51,6 +51,19 @@ class ReviewItemType(StrEnum):
     HELD_ALERT = "held_alert"
 
 
+class IntakeStatus(StrEnum):
+    RECEIVED = "RECEIVED"
+    EXTRACTING = "EXTRACTING"
+    READY_FOR_REVIEW = "READY_FOR_REVIEW"
+    FAILED = "FAILED"
+
+
+class CandidateStatus(StrEnum):
+    PENDING_REVIEW = "PENDING_REVIEW"
+    CONFIRMED = "CONFIRMED"
+    REJECTED = "REJECTED"
+
+
 class IdentityVerdict(StrEnum):
     CONFIRMED = "CONFIRMED"
     REJECTED = "REJECTED"

@@ -115,6 +115,7 @@ REVIEW_PRIORITY: dict[ReviewItemType, int] = {
     ReviewItemType.HELD_ALERT: 1,
     ReviewItemType.CONFLICT: 2,
     ReviewItemType.IDENTITY: 3,
+    ReviewItemType.INTAKE: 3,
 }
 
 

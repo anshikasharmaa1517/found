@@ -6,6 +6,7 @@ from typing import Any, Protocol
 
 from found_core.domain.enums import (
     DeliveryStatus,
+    IntakeStatus,
     InvestigationStatus,
     ReviewItemType,
     ReviewStatus,
@@ -20,6 +21,8 @@ from found_core.domain.models import (
     IdentityDecision,
     IdentityProposal,
     Incident,
+    IntakeCandidate,
+    IntakeJob,
     Investigation,
     InvestigationStep,
     Location,
@@ -242,6 +245,28 @@ class FoundRepository(Protocol):
 
         Only one caller wins a transition, which is what keeps texts and emails at most once.
         """
+        ...
+
+    def put_intake_job(self, job: IntakeJob) -> None: ...
+
+    def get_intake_job(self, job_id: str) -> IntakeJob | None: ...
+
+    def update_intake_job_if(
+        self, job_id: str, expected: tuple[IntakeStatus, ...], changes: dict[str, Any]
+    ) -> IntakeJob | None:
+        """Apply `changes` only while the job's status is one of `expected`."""
+        ...
+
+    def put_intake_candidates(self, candidates: list[IntakeCandidate]) -> None:
+        """Store each candidate unless one exists at its (job, idx)."""
+        ...
+
+    def list_intake_candidates(self, job_id: str) -> list[IntakeCandidate]: ...
+
+    def get_intake_candidate(self, candidate_id: str) -> IntakeCandidate | None: ...
+
+    def save_candidate_decision(self, candidate: IntakeCandidate) -> bool:
+        """Store a decided candidate only if the stored one is still PENDING_REVIEW."""
         ...
 
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:

@@ -20,6 +20,8 @@ from found_core.domain.investigation import TERMINAL_STATUSES
 from found_core.domain.models import (
     Claim,
     IdentityProposal,
+    IntakeCandidate,
+    IntakeJob,
     Investigation,
     ReviewItem,
     Source,
@@ -42,6 +44,9 @@ class ReviewEntry:
     # Identity items: the proposal and both people, person_a first.
     proposal: IdentityProposal | None = None
     people: tuple[Subject, ...] = ()
+    # Intake items: the job and its candidates, in order.
+    intake_job: IntakeJob | None = None
+    candidates: tuple[IntakeCandidate, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -119,6 +124,13 @@ class ReviewService:
         )
 
     def _entry(self, item: ReviewItem, sources: dict[str, Source]) -> ReviewEntry:
+        if item.item_type == ReviewItemType.INTAKE:
+            job = self._repo.get_intake_job(item.ref_id)
+            return ReviewEntry(
+                item=item,
+                intake_job=job,
+                candidates=tuple(self._repo.list_intake_candidates(item.ref_id)) if job else (),
+            )
         if item.item_type == ReviewItemType.IDENTITY:
             proposal = self._repo.get_identity_proposal(item.incident_id, item.ref_id)
             ids = [proposal.person_a_id, proposal.person_b_id] if proposal else []
@@ -159,7 +171,8 @@ class ReviewService:
             raise VersionConflict("This item was already resolved.", review_id=review_id)
         if item.item_type not in (ReviewItemType.CONFLICT, ReviewItemType.HELD_ALERT):
             raise BadRequest(
-                "Findings and identity proposals are decided on their own routes; "
+                "Findings, identity proposals and extracted reports are decided on their own "
+                "routes; "
                 "this item cannot be closed here.",
                 item_type=item.item_type.value,
             )

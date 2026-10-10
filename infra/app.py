@@ -10,6 +10,7 @@ from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
 from stacks.data_stack import DataStack
 from stacks.events_stack import EventsStack
+from stacks.intake_stack import IntakeStack
 from stacks.maps_stack import MapsStack
 from stacks.realtime_stack import RealtimeStack
 
@@ -27,6 +28,7 @@ def build(app: cdk.App) -> None:
         f"Found-{cfg.name}-Api",
         cfg=cfg,
         table=data.table,
+        bucket=data.bucket,
         run_queue=agent.run_queue,
         model_id=cfg.model_id,
         user_pool=auth.user_pool,
@@ -46,6 +48,17 @@ def build(app: cdk.App) -> None:
     )
 
     MapsStack(app, f"Found-{cfg.name}-Maps", cfg=cfg, env=env)
+
+    IntakeStack(
+        app,
+        f"Found-{cfg.name}-Intake",
+        cfg=cfg,
+        table=data.table,
+        bucket=data.bucket,
+        model_id=cfg.model_id,
+        api_key_secret=agent.api_key_secret,
+        env=env,
+    )
 
     cdk.Tags.of(app).add("project", "found")
     cdk.Tags.of(app).add("env", cfg.name)
