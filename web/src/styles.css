@@ -790,3 +790,27 @@ button.link-button {
 .identity-links {
   padding-left: 1.25rem;
 }
+
+/* Intake: suggested reports and the text they were read from. */
+.candidates {
+  padding-left: 1.25rem;
+}
+
+.candidate {
+  margin: 0.75rem 0;
+}
+
+.extracted-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 16rem;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+}
+
+.intake-status {
+  margin-top: 1rem;
+}

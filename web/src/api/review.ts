@@ -1,6 +1,7 @@
 /** The review queue and reviewer decisions (design Sections 7.4 and 9.6). */
 
 import type { ApiClient } from "./client";
+import type { IntakeCandidate, IntakeJob } from "./intake";
 
 export type ReviewType = "conflict" | "held_alert" | "finding" | "identity" | "intake";
 export type ReviewStatus = "OPEN" | "DONE";
@@ -32,6 +33,8 @@ export interface ReviewItem {
   } | null;
   /** Identity items only: the pair the resolver proposed, with its reasons. */
   proposal?: IdentityProposal | null;
+  /** Intake items only: the uploaded report, its text and the suggested reports. */
+  intake?: { job: IntakeJob; extracted_text: string | null; candidates: IntakeCandidate[] } | null;
 }
 
 export interface IdentityProposal {

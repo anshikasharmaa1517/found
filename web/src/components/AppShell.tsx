@@ -57,6 +57,9 @@ function Shell({ incidentId }: { incidentId: string | null }) {
           {incidentId && hasRole(user, "publisher") && (
             <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/report`}>Report</NavLink>
           )}
+          {incidentId && hasRole(user, "publisher") && (
+            <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/upload`}>Upload</NavLink>
+          )}
           {incidentId && hasRole(user, "reviewer", "admin") && (
             <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/review`}>Review</NavLink>
           )}

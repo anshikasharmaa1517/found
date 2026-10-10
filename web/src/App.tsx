@@ -11,6 +11,7 @@ import { AppShell } from "./components/AppShell";
 import type { SocketLike } from "./live/client";
 import { AlertsPage } from "./pages/AlertsPage";
 import { HomePage } from "./pages/HomePage";
+import { IntakePage } from "./pages/IntakePage";
 import { InvestigationPage } from "./pages/InvestigationPage";
 import { MapPage } from "./pages/MapPage";
 import { PeoplePage } from "./pages/PeoplePage";
@@ -69,6 +70,14 @@ export function AppRoutes({
           element={
             <RequireAuth roles={["publisher"]}>
               <ReportPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="incidents/:incidentId/upload"
+          element={
+            <RequireAuth roles={["publisher"]}>
+              <IntakePage />
             </RequireAuth>
           }
         />

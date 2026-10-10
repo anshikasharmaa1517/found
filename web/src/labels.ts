@@ -115,6 +115,30 @@ export const IDENTITY_DECISION_LABELS: Record<string, string> = {
   REJECTED: "Checked and found not to be the same person as",
 };
 
+export const INTAKE_STATUS_LABELS: Record<string, string> = {
+  RECEIVED: "Received, waiting to start",
+  EXTRACTING: "Reading the report",
+  READY_FOR_REVIEW: "Ready for a reviewer",
+  FAILED: "Could not be processed",
+};
+
+const INTAKE_FAILURE_LABELS: Record<string, string> = {
+  TYPE_MISMATCH: "The file type did not match what was declared.",
+  CONTENT_MISMATCH: "The file content did not match its type.",
+  TOO_LARGE: "The file is larger than 5 MB.",
+  NO_TEXT: "No text could be found in it.",
+  NO_CANDIDATES: "No reports about people or places were found in it.",
+  JOB_NOT_FOUND: "The upload was not recognised. Try again.",
+};
+
+/** Plain words for an intake failure reason; model and text reader errors are grouped. */
+export function intakeFailureLabel(reason: string | null): string {
+  if (!reason) return "Something went wrong. Try again.";
+  if (reason.startsWith("MODEL_")) return "The model could not extract reports from it.";
+  if (reason.startsWith("TEXTRACT_")) return "The text could not be read from the file.";
+  return INTAKE_FAILURE_LABELS[reason] ?? "Something went wrong. Try again.";
+}
+
 export function labelFor(labels: Record<string, string>, code: string): string {
   return labels[code] ?? code;
 }

@@ -314,3 +314,131 @@ describe("identity review", () => {
     );
   });
 });
+
+const INTAKE_JOB = {
+  id: "ijb_1",
+  incident_id: "inc_1",
+  organization_id: "org_s",
+  filename: "register.jpg",
+  content_type: "image/jpeg",
+  status: "READY_FOR_REVIEW" as const,
+  sha256: "ab",
+  size_bytes: 1000,
+  candidate_count: 2,
+  dropped_count: 1,
+  failure_reason: null,
+  created_at: "2026-10-05T10:15:00Z",
+  updated_at: null,
+};
+
+function cand(idx: number, overrides = {}) {
+  return {
+    id: `icd_${idx}`,
+    job_id: "ijb_1",
+    idx,
+    subject_type: "PERSON",
+    subject_name: "Kavita Bisht",
+    age: 29,
+    claim_type: "SHELTERED",
+    reported_at: null,
+    location_name: "Riverside Shelter Demo",
+    span_text: "Kavita Bisht, 29, staying in hall B.",
+    status: "PENDING_REVIEW" as const,
+    claim_id: null,
+    subject_id: null,
+    decided_at: null,
+    note: null,
+    ...overrides,
+  };
+}
+
+const INTAKE = item({
+  id: "rev_intake",
+  type: "intake",
+  priority: 3,
+  ref_id: "ijb_1",
+  person: null,
+  claim: null,
+  intake: {
+    job: INTAKE_JOB,
+    extracted_text: "Riverside Shelter Demo register.\nKavita Bisht, 29, staying in hall B.",
+    candidates: [cand(0), cand(1, { subject_name: "Road to Upper Village", subject_type: "INFRASTRUCTURE", age: null, claim_type: "ROAD_BLOCKED", span_text: "Road blocked." })],
+  },
+});
+
+describe("intake review", () => {
+  it("shows each suggestion with its quote and the full text on request", async () => {
+    const { api } = routedApi({ [PATH]: () => ({ items: [INTAKE], next_cursor: null }) });
+    renderApp(as(), "/incidents/inc_1/review", api);
+    expect(await screen.findByText("Extracted report", { selector: "strong" })).toBeInTheDocument();
+    expect(screen.getByText(/register\.jpg/)).toBeInTheDocument();
+    expect(screen.getByText(/1 suggestion was left out/)).toBeInTheDocument();
+    expect(screen.getByText("Kavita Bisht, 29, staying in hall B.", { selector: "blockquote" })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Show the full text" }));
+    expect(screen.getByText(/Riverside Shelter Demo register\./, { selector: "pre" })).toBeInTheDocument();
+    // Only people get a report type to edit.
+    expect(screen.getAllByLabelText("Report type")).toHaveLength(1);
+  });
+
+  it("confirms with an edited type and rejects another", async () => {
+    let candidates = INTAKE.intake!.candidates;
+    const { api, sent } = routedApi(
+      {
+        [PATH]: () => ({
+          items: [{ ...INTAKE, intake: { ...INTAKE.intake!, candidates } }],
+          next_cursor: null,
+        }),
+      },
+      {
+        "/v1/intake-candidates/icd_0/decision": () => {
+          candidates = [cand(0, { status: "CONFIRMED", subject_id: "per_9" }), candidates[1]!];
+          return { candidate: candidates[0] };
+        },
+        "/v1/intake-candidates/icd_1/decision": () => ({ candidate: candidates[1] }),
+      },
+    );
+    renderApp(as(), "/incidents/inc_1/review", api);
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText("Report type"), "FOUND_SAFE");
+    await user.click(screen.getAllByRole("button", { name: "Confirm and publish" })[0]!);
+    expect(await screen.findByRole("link", { name: "Open the person's timeline" })).toHaveAttribute(
+      "href",
+      "/people/per_9",
+    );
+    await user.click(screen.getAllByRole("button", { name: "Reject" })[0]!);
+    expect(sent).toEqual([
+      {
+        path: "/v1/intake-candidates/icd_0/decision",
+        body: { decision: "CONFIRMED", edits: { claim_type: "FOUND_SAFE" } },
+      },
+      { path: "/v1/intake-candidates/icd_1/decision", body: { decision: "REJECTED" } },
+    ]);
+  });
+
+  it("attaches to a listed person only after one is picked", async () => {
+    const { api, sent } = routedApi(
+      {
+        [PATH]: () => ({ items: [{ ...INTAKE, intake: { ...INTAKE.intake!, candidates: [cand(0)] } }], next_cursor: null }),
+        "/v1/incidents/inc_1/people": () => ({ people: [{ id: "per_1", name: "Kavita Bisht", age: 29 }], next_cursor: null }),
+      },
+      { "/v1/intake-candidates/icd_0/decision": () => ({ candidate: cand(0, { status: "CONFIRMED" }) }) },
+    );
+    renderApp(as(), "/incidents/inc_1/review", api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByLabelText("About someone already listed"));
+    expect(screen.getByRole("button", { name: "Confirm and publish" })).toBeDisabled();
+    await user.type(screen.getByLabelText("Name"), "Kavita");
+    await user.click(screen.getByRole("button", { name: "Find" }));
+    await user.click(await screen.findByRole("button", { name: /Kavita Bisht/ }));
+    await user.click(screen.getByRole("button", { name: "Confirm and publish" }));
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]!.body).toEqual({ decision: "CONFIRMED", person_id: "per_1" });
+  });
+
+  it("can be filtered", async () => {
+    const { api, calls } = routedApi({ [PATH]: () => ({ items: [], next_cursor: null }) });
+    renderApp(as(), "/incidents/inc_1/review", api);
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Extracted reports" }));
+    await waitFor(() => expect(calls.at(-1)!.query).toEqual({ type: "intake", status: "OPEN" }));
+  });
+});

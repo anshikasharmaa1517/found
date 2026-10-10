@@ -12,6 +12,7 @@ import {
 } from "../api/review";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { IdentityReview } from "../components/IdentityReview";
+import { IntakeReview } from "../components/IntakeReview";
 import {
   claimTypeLabel,
   formatTime,
@@ -37,6 +38,7 @@ const FILTERS: { type: ReviewType | null; label: string }[] = [
   { type: "conflict", label: "Conflicts" },
   { type: "finding", label: "Findings" },
   { type: "identity", label: "Possible same person" },
+  { type: "intake", label: "Extracted reports" },
 ];
 
 function Decision({
@@ -136,6 +138,9 @@ function Items({
                 Open the investigation
               </Link>
             </p>
+          )}
+          {item.intake && (
+            <IntakeReview intake={item.intake} incidentId={incidentId} onChange={onChange} />
           )}
           {item.proposal && (
             <IdentityReview
