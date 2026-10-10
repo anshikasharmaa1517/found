@@ -60,7 +60,7 @@ vi.mock("maplibre-gl", () => {
     }
   }
   class NavigationControl {}
-  return { Map, Popup, Marker, LngLatBounds, NavigationControl };
+  return { Map, Popup, Marker, LngLatBounds, NavigationControl, setWorkerUrl: vi.fn() };
 });
 
 function place(overrides: Partial<MapPlace>): MapPlace {

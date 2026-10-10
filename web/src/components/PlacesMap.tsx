@@ -6,12 +6,18 @@ import {
   Marker,
   NavigationControl,
   Popup,
+  setWorkerUrl,
 } from "maplibre-gl";
+// MapLibre looks for its worker next to its own file, which no longer exists once it is
+// bundled. Ship the worker as its own asset and say where it is, or no tiles load.
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { useEffect, useRef } from "react";
 
 import { CLIMATE_TYPE_LABELS, plotted, type ClimateFeature } from "../api/climate";
 import { BUCKET_LABELS, BUCKETS, type MapPlace } from "../api/map";
 import { claimTypeLabel, formatTime } from "../labels";
+
+setWorkerUrl(workerUrl);
 
 // Fallback view when there is nothing to fit: the demo region in Uttarakhand.
 const DEFAULT_CENTER: [number, number] = [78.4, 30.7];
