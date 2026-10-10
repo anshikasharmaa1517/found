@@ -27,7 +27,7 @@ from found_core.domain.models import (
 from found_core.domain.normalize import excerpt
 from found_core.domain.visibility import SENSITIVE_NOTICE
 from found_core.services.investigations import InvestigationDetail
-from found_core.services.people import PersonProfile, TimelineEntry
+from found_core.services.people import PersonProfile, PersonStatus, TimelineEntry
 from found_core.services.review import ReviewEntry
 
 logger = Logger(service="api")
@@ -91,6 +91,19 @@ def _query(name: str) -> str | None:
 
 def person_view(person: Subject) -> dict[str, Any]:
     return {"id": person.id, "name": person.display_name, "age": person.age}
+
+
+def status_view(status: PersonStatus | None) -> dict[str, Any] | None:
+    if status is None:
+        return None
+    return {
+        "label": status.label,
+        "claim_type": status.claim_type,
+        "needs_review": status.needs_review,
+        "conflicts": status.conflicts,
+        "report_count": status.report_count,
+        "withheld": status.withheld,
+    }
 
 
 def _source_name(profile: PersonProfile, source_id: str) -> str:
@@ -297,7 +310,29 @@ def list_people(incident_id: str) -> Response:
     )
     return _json(
         HTTPStatus.OK,
-        {"people": [person_view(p) for p in page.people], "next_cursor": page.next_cursor},
+        {
+            "people": [
+                {**person_view(p), "status": status_view(page.statuses.get(p.id))}
+                for p in page.people
+            ],
+            "next_cursor": page.next_cursor,
+        },
+    )
+
+
+@app.get("/v1/incidents/<incident_id>/people/stats")
+def people_stats(incident_id: str) -> Response:
+    stats = container.people_service().stats(_caller(), incident_id)
+    return _json(
+        HTTPStatus.OK,
+        {
+            "people": stats.people,
+            "by_status": stats.by_status,
+            "disagree": stats.disagree,
+            "needs_review": stats.needs_review,
+            "matches_open": stats.matches_open,
+            "matches_decided": stats.matches_decided,
+        },
     )
 
 

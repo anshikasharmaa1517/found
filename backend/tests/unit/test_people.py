@@ -262,3 +262,43 @@ def test_publisher_cannot_read_people_of_other_incidents(world):
     pid = next(iter(s.id for s in world.repo.subjects.values() if s.incident_id == "inc_2"))
     with pytest.raises(Forbidden):
         world.service.timeline(PUBLISHER, pid)
+
+
+def test_list_statuses_cite_the_summary_and_mask_sensitive_reports():
+    from found_core.domain.cursor import CursorCodec
+    from found_core.services.people import PeopleService
+    from found_core.services.watch import WatchService
+    from tests.unit.test_review import FAMILY, HOSPITAL, REVIEWER, World
+
+    world = World()
+    world.report("MISSING")
+    world.report("DECEASED", reported_at="2026-10-03T07:40:00+05:30", org=HOSPITAL)
+    people = PeopleService(world.repo, CursorCodec(b"k" * 32))
+
+    (seen,) = people.list_people(REVIEWER, "inc_1").statuses.values()
+    assert seen.claim_type == "DECEASED" and not seen.withheld and seen.report_count == 2
+
+    (masked,) = people.list_people(FAMILY, "inc_1").statuses.values()
+    assert masked.withheld and masked.claim_type is None
+    assert masked.label == "Sensitive report received"
+    assert WatchService  # the world already ran the watcher on each report
+
+
+def test_stats_count_people_by_status_disagreement_and_matches():
+    from found_core.domain.cursor import CursorCodec
+    from found_core.services.people import PeopleService
+    from tests.unit.test_review import FAMILY, HOSPITAL, REVIEWER, World
+
+    world = World()
+    world.report("MISSING")
+    world.report("FOUND_SAFE", reported_at=None, org=HOSPITAL)  # undated: disagreement
+    world.person = None
+    world.report("DECEASED", reported_at="2026-10-03T07:40:00+05:30", org=HOSPITAL)
+    people = PeopleService(world.repo, CursorCodec(b"k" * 32))
+
+    stats = people.stats(REVIEWER, "inc_1")
+    assert stats.people == 2
+    assert stats.by_status == {"MISSING": 1, "DECEASED": 1}
+    assert stats.disagree == 1 and stats.needs_review == 1
+    assert (stats.matches_open, stats.matches_decided) == (0, 0)
+    assert people.stats(FAMILY, "inc_1").by_status == {"MISSING": 1, "WITHHELD": 1}

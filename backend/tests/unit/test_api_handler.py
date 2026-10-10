@@ -212,7 +212,24 @@ def maya(repo):
 def test_people_list_and_search(maya):
     status, body, headers = get("/v1/incidents/inc_1/people", {"q": "rawat", "age": "25"})
     assert status == 200
-    assert body == {"people": [{"id": maya, "name": "Maya Rawat", "age": 24}], "next_cursor": None}
+    assert body == {
+        "people": [
+            {
+                "id": maya,
+                "name": "Maya Rawat",
+                "age": 24,
+                "status": {
+                    "label": "Reported found safe",
+                    "claim_type": "FOUND_SAFE",
+                    "needs_review": False,
+                    "conflicts": 0,
+                    "report_count": 2,
+                    "withheld": False,
+                },
+            }
+        ],
+        "next_cursor": None,
+    }
     assert headers["x-request-id"] == "req-abc"
 
 

@@ -5,7 +5,7 @@ page and the alerts always agree.
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from found_core.domain.auth import Caller
 from found_core.domain.cursor import CursorCodec, parse_limit
@@ -20,12 +20,39 @@ from found_core.ports.repository import FoundRepository, NamePosition
 from found_core.services.access import ensure_can_read
 
 MAX_AGE = 120
+# People counted for the stats; a district-sized incident, not a census.
+STATS_MAX = 2000
+
+
+@dataclass(frozen=True)
+class PersonStatus:
+    """A person's cited status for lists, masked for callers who may not see it."""
+
+    label: str
+    claim_type: str | None
+    needs_review: bool
+    conflicts: int
+    report_count: int
+    withheld: bool = False
 
 
 @dataclass(frozen=True)
 class PeoplePage:
     people: list[Subject]
     next_cursor: str | None
+    statuses: dict[str, PersonStatus] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class PeopleStats:
+    """Counts across everyone reported in the incident (people, not reports)."""
+
+    people: int
+    by_status: dict[str, int]
+    disagree: int
+    needs_review: int
+    matches_open: int
+    matches_decided: int
 
 
 @dataclass(frozen=True)
@@ -114,7 +141,66 @@ class PeopleService:
         if len(found) > page_size:
             last = people[-1]
             next_cursor = self._cursors.encode(scope, {"n": last.name_norm, "i": last.id})
-        return PeoplePage(people=people, next_cursor=next_cursor)
+        return PeoplePage(
+            people=people,
+            next_cursor=next_cursor,
+            statuses={p.id: self._status(p, caller) for p in people},
+        )
+
+    def stats(self, caller: Caller, incident_id: str) -> PeopleStats:
+        """How many people stand at each status, disagree, or wait on a match decision."""
+        if not self._repo.incident_exists(incident_id):
+            raise NotFound("Incident not found.", incident_id=incident_id)
+        ensure_can_read(self._repo, caller, incident_id)
+        people: list[Subject] = []
+        after: NamePosition | None = None
+        while len(people) < STATS_MAX:
+            batch = self._repo.list_subjects(incident_id, SubjectType.PERSON, 200, after)
+            people += batch
+            if len(batch) < 200:
+                break
+            after = NamePosition(name_norm=batch[-1].name_norm, subject_id=batch[-1].id)
+        by_status: dict[str, int] = {}
+        disagree = needs_review = 0
+        for person in people[:STATS_MAX]:
+            status = self._status(person, caller)
+            key = "WITHHELD" if status.withheld else (status.claim_type or "NONE")
+            by_status[key] = by_status.get(key, 0) + 1
+            disagree += status.conflicts > 0
+            needs_review += status.needs_review
+        return PeopleStats(
+            people=len(people),
+            by_status=by_status,
+            disagree=disagree,
+            needs_review=needs_review,
+            matches_open=self._count_identity(incident_id, ReviewStatus.OPEN),
+            matches_decided=self._count_identity(incident_id, ReviewStatus.DONE),
+        )
+
+    def _count_identity(self, incident_id: str, status: ReviewStatus) -> int:
+        count, after = 0, None
+        while True:
+            items, after = self._repo.list_review_items(
+                incident_id, status, 100, ReviewItemType.IDENTITY, after
+            )
+            count += len(items)
+            if not after:
+                return count
+
+    def _status(self, person: Subject, caller: Caller) -> PersonStatus:
+        claims = self._repo.list_subject_claims(person.id)
+        withheld = withheld_ids(claims, caller, self._released(person, claims, caller))
+        summary = summarize(claims, person.subject_type)
+        cited = next((c for c in claims if c.id == summary.cited_claim_id), None)
+        hidden = cited is not None and cited.id in withheld
+        return PersonStatus(
+            label=masked_summary(summary, withheld).label,
+            claim_type=None if hidden or cited is None else cited.claim_type,
+            needs_review=summary.needs_review,
+            conflicts=len(summary.conflicts),
+            report_count=len(claims),
+            withheld=hidden,
+        )
 
     def profile(self, caller: Caller, person_id: str) -> PersonProfile:
         person, claims = self._person_with_claims(caller, person_id)
