@@ -30,6 +30,11 @@ class EnvConfig:
     # email. SMS stays off until sender registration is done (owner decision 7).
     email_from: str = ""
     sms_enabled: bool = False
+    # Where alarms are emailed (confirmed once by the recipient), and an optional monthly
+    # budget in USD created by the observability stack. Leave it unset when a budget
+    # already exists for the account.
+    alarm_email: str = ""
+    budget_usd: float | None = None
 
     @property
     def retention(self) -> logs.RetentionDays:
@@ -60,4 +65,6 @@ def load(name: str, envs: dict[str, Any]) -> EnvConfig:
         model_id=model_id,
         email_from=str(raw.get("email_from", "")).strip(),
         sms_enabled=bool(raw.get("sms_enabled", False)),
+        alarm_email=str(raw.get("alarm_email", "")).strip(),
+        budget_usd=float(raw["budget_usd"]) if raw.get("budget_usd") else None,
     )

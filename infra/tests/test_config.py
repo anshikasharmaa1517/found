@@ -108,3 +108,8 @@ def test_alert_delivery_is_off_unless_configured():
 def test_dev_sends_email_from_its_configured_sender_and_demo_sends_none():
     assert "@" in load("dev", ENVS).email_from
     assert load("demo", ENVS).email_from == ""
+
+
+def test_dev_alarms_go_to_the_alert_address_and_no_extra_budget_is_made():
+    dev = load("dev", ENVS)
+    assert "@" in dev.alarm_email and dev.budget_usd is None

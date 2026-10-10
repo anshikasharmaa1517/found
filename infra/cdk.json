@@ -11,7 +11,8 @@
         "model_call_cap": 200,
         "agent_host": "lambda",
         "model_id": "qwen.qwen3-next-80b-a3b-instruct",
-        "email_from": "anshikashharma1511@gmail.com"
+        "email_from": "anshikashharma1511@gmail.com",
+        "alarm_email": "anshikashharma1511@gmail.com"
       },
       "demo": {
         "deletion_protection": true,

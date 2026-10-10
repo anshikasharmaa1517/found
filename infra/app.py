@@ -12,6 +12,7 @@ from stacks.data_stack import DataStack
 from stacks.events_stack import EventsStack
 from stacks.intake_stack import IntakeStack
 from stacks.maps_stack import MapsStack
+from stacks.observability_stack import ObservabilityStack
 from stacks.realtime_stack import RealtimeStack
 
 
@@ -59,6 +60,8 @@ def build(app: cdk.App) -> None:
         api_key_secret=agent.api_key_secret,
         env=env,
     )
+
+    ObservabilityStack(app, f"Found-{cfg.name}-Observability", cfg=cfg, env=env)
 
     cdk.Tags.of(app).add("project", "found")
     cdk.Tags.of(app).add("env", cfg.name)
