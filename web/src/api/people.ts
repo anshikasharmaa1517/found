@@ -2,10 +2,34 @@
 
 import type { ApiClient } from "./client";
 
+/** A person's cited status, as the list shows it; masked for roles that may not see it. */
+export interface PersonStatus {
+  label: string;
+  claim_type: string | null;
+  needs_review: boolean;
+  conflicts: number;
+  report_count: number;
+  withheld: boolean;
+}
+
 export interface PersonRow {
   id: string;
   name: string;
   age: number | null;
+  status?: PersonStatus | null;
+}
+
+export interface PeopleStats {
+  people: number;
+  by_status: Record<string, number>;
+  disagree: number;
+  needs_review: number;
+  matches_open: number;
+  matches_decided: number;
+}
+
+export function getPeopleStats(api: ApiClient, incidentId: string): Promise<PeopleStats> {
+  return api.get<PeopleStats>(`/v1/incidents/${encodeURIComponent(incidentId)}/people/stats`);
 }
 
 export interface PeoplePage {

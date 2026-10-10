@@ -94,3 +94,149 @@ describe("people page", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Enter an incident id");
   });
 });
+
+const STATUSED = {
+  ...MAYA,
+  status: {
+    label: "Reported found safe",
+    claim_type: "FOUND_SAFE",
+    needs_review: false,
+    conflicts: 1,
+    report_count: 3,
+    withheld: false,
+  },
+};
+
+function overviewRoutes() {
+  return routedApi({
+    [PATH]: () => ({ people: [STATUSED, RAVI], next_cursor: null }),
+    [`${PATH}/stats`]: () => ({
+      people: 2,
+      by_status: { MISSING: 1, FOUND_SAFE: 1 },
+      disagree: 1,
+      needs_review: 0,
+      matches_open: 1,
+      matches_decided: 0,
+    }),
+    "/v1/incidents/inc_1/review-queue": () => ({
+      items: [
+        {
+          id: "rev_i",
+          type: "identity",
+          status: "OPEN",
+          priority: 3,
+          created_at: "2026-10-05T10:15:00Z",
+          ref_id: "per_1|per_9",
+          resolved_by: null,
+          resolved_at: null,
+          note: null,
+          person: null,
+          claim: null,
+          investigation: null,
+          proposal: {
+            pair_key: "per_1|per_9",
+            people: [
+              { id: "per_1", name: "Maya Rawat", age: 24, incident_id: "inc_1" },
+              { id: "per_9", name: "Maya R.", age: 24, incident_id: "inc_1" },
+            ],
+            reasons: ["GIVEN_EXACT", "AGE_EQUAL"],
+            score: 40,
+            proposed_by: "resolver",
+          },
+        },
+      ],
+      next_cursor: null,
+    }),
+    "/v1/people/per_1/timeline": () => ({
+      person: MAYA,
+      summary: {
+        label: "Reported found safe",
+        basis: "Latest dated status report",
+        cited_claim_id: "clm_2",
+        conflicts: [
+          { claim_id: "clm_1", claim_type: "MISSING", source: "District Police Demo", withheld: false },
+        ],
+        needs_review: false,
+      },
+      identity: [],
+      entries: [
+        {
+          withheld: false,
+          claim_id: "clm_2",
+          seq: 2,
+          claim_type: "FOUND_SAFE",
+          value: null,
+          source_id: "src_h",
+          source: "Central Hospital Demo",
+          reported_at: "2026-10-03T02:10:00Z",
+          relation: "UPDATE",
+          excerpt: "Maya Rawat, 24, admitted to ward 3.",
+        },
+      ],
+      next_cursor: null,
+    }),
+  });
+}
+
+function wide(matches: boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
+describe("people overview", () => {
+  it("shows counts, statuses and possible matches", async () => {
+    const { api } = overviewRoutes();
+    renderApp(signedIn(), "/incidents/inc_1/people", api);
+    const stats = await screen.findByLabelText("2 people reported");
+    expect(within(stats).getByText("Latest report: missing")).toBeInTheDocument();
+    expect(within(stats).getByText("Possible matches to review")).toBeInTheDocument();
+    const row = await screen.findByRole("row", { name: /Maya Rawat/ });
+    expect(within(row).getByText("Reported found safe")).toBeInTheDocument();
+    expect(within(row).getByText("3")).toBeInTheDocument();
+    const matches = (await screen.findByRole("heading", { name: "Could these be the same person?" })).closest(
+      "section",
+    )!;
+    expect(within(matches).getByText(/Same given name, Same age/)).toBeInTheDocument();
+    expect(within(matches).getByRole("link", { name: "Review matches" })).toHaveAttribute(
+      "href",
+      "/incidents/inc_1/review?type=identity",
+    );
+  });
+
+  it("previews a person beside the list on wide screens", async () => {
+    wide(true);
+    const { api } = overviewRoutes();
+    renderApp(signedIn(), "/incidents/inc_1/people", api);
+    expect(await screen.findByText("Pick someone to see what is known")).toBeInTheDocument();
+    const table = await screen.findByRole("table");
+    await userEvent.setup().click(within(table).getByRole("link", { name: "Maya Rawat" }));
+    const preview = (await screen.findByRole("heading", { name: "Maya Rawat", level: 2 })).closest(
+      "section",
+    )!;
+    expect(within(preview).getByText(/District Police Demo, Missing/)).toBeInTheDocument();
+    expect(within(preview).getByText("Maya Rawat, 24, admitted to ward 3.")).toBeInTheDocument();
+    expect(within(preview).getByRole("link", { name: "Open the full timeline" })).toHaveAttribute(
+      "href",
+      "/people/per_1",
+    );
+    // Still on the list.
+    expect(screen.getByRole("heading", { name: "People", level: 1 })).toBeInTheDocument();
+  });
+
+  it("opens the full page on small screens", async () => {
+    wide(false);
+    const { api } = overviewRoutes();
+    renderApp(signedIn(), "/incidents/inc_1/people", api);
+    const table = await screen.findByRole("table");
+    await userEvent.setup().click(within(table).getByRole("link", { name: "Maya Rawat" }));
+    expect(await screen.findByRole("heading", { name: "Maya Rawat", level: 1 })).toBeInTheDocument();
+  });
+});
