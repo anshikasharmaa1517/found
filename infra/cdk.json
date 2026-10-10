@@ -5,7 +5,7 @@
     "envs": {
       "dev": {
         "deletion_protection": false,
-        "web_origins": ["http://localhost:5173"],
+        "web_origins": ["http://localhost:5173", "https://main.d27hwl3xfgsxm8.amplifyapp.com"],
         "log_retention": "ONE_WEEK",
         "run_cap": 30,
         "model_call_cap": 200,
