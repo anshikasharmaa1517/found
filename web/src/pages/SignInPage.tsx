@@ -64,7 +64,10 @@ export function SignInPage() {
   return (
     <main className="sign-in">
       <section className="card" aria-labelledby="sign-in-title">
-        <p className="brand">Found</p>
+        <p className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          Found
+        </p>
         {challenge === null && (
           <form onSubmit={onSignIn} noValidate={false}>
             <h1 id="sign-in-title">Sign in</h1>

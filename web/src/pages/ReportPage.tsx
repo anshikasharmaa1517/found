@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import { useApi } from "../api/context";
 import { publishReport, type PublishResult } from "../api/reports";
 import { PersonPicker, type Picked } from "../components/PersonPicker";
+import { PageHeader } from "../components/ui";
 import { rememberIncident } from "../incident";
 import { claimTypeLabel } from "../labels";
 import {
@@ -169,11 +170,10 @@ export function ReportPage() {
 
   return (
     <section className="page">
-      <h1>Publish a report</h1>
-      <p className="muted">
-        Incident {incidentId}. The report is published as your organization and cannot be edited
-        later; a correction is a new report.
-      </p>
+      <PageHeader
+        title="Publish a report"
+        description="The report is published as your organization and cannot be edited later; a correction is a new report."
+      />
 
       <form className="report" onSubmit={onSubmit} noValidate>
         {errors.form && (

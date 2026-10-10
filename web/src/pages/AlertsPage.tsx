@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { DELIVERY_LABELS, listAlerts, type Alert } from "../api/alerts";
 import { useApi } from "../api/context";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { Empty, PageHeader, SkeletonRows } from "../components/ui";
 import { formatTime } from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
 import { useLoad } from "../useLoad";
@@ -15,10 +16,13 @@ function AlertItems({ alerts }: { alerts: Alert[] }) {
       {alerts.map((alert) => (
         <li key={alert.id} className={alert.severity === "high" ? "alert high" : "alert"}>
           <p>{alert.message}</p>
-          <p className="muted">
-            {formatTime(alert.created_at)}. {DELIVERY_LABELS[alert.delivery_status]}.
+          <p className="meta">
+            {formatTime(alert.created_at)}
+            <span className="meta-sep">{DELIVERY_LABELS[alert.delivery_status]}</span>
+            <span className="meta-sep">
+              <Link to={`/people/${encodeURIComponent(alert.person_id)}`}>View timeline</Link>
+            </span>
           </p>
-          <Link to={`/people/${encodeURIComponent(alert.person_id)}`}>View timeline</Link>
         </li>
       ))}
     </>
@@ -48,15 +52,16 @@ export function AlertsPage() {
 
   return (
     <section className="page">
-      <h1>Alerts</h1>
-      <p className="muted">
-        Alerts arrive when a new report changes what is known about someone you follow. Earlier
-        reports are always kept on the timeline.
-      </p>
-      {first.status === "loading" && <p className="muted">Loading alerts</p>}
+      <PageHeader
+        title="Alerts"
+        description="Alerts arrive when a new report changes what is known about someone you follow. Earlier reports are always kept on the timeline."
+      />
+      {first.status === "loading" && <SkeletonRows label="Loading alerts" rows={4} />}
       {first.status === "error" && <ErrorNotice error={first.error} onRetry={retry} />}
       {first.status === "ready" && first.data.alerts.length === 0 && (
-        <p className="muted">No alerts yet. Follow a person from their page to get alerts.</p>
+        <Empty title="No alerts yet.">
+          Follow a person from their page to get alerts when new reports about them arrive.
+        </Empty>
       )}
       {first.status === "ready" && first.data.alerts.length > 0 && (
         <ul className="alerts">

@@ -12,9 +12,16 @@ import {
   type IntakeJob,
   type UploadType,
 } from "../api/intake";
+import { PageHeader } from "../components/ui";
 import { intakeFailureLabel, INTAKE_STATUS_LABELS, labelFor } from "../labels";
 
 export const POLL_MS = 3000;
+const STATUS_TONE: Record<string, string> = {
+  RECEIVED: "accent pulse",
+  EXTRACTING: "accent pulse",
+  READY_FOR_REVIEW: "ok",
+  FAILED: "bad",
+};
 const MAX_TEXT = 20000;
 
 type Mode = "file" | "text";
@@ -49,7 +56,9 @@ function JobStatus({ jobId, onAnother }: { jobId: string; onAnother: () => void 
 
   return (
     <section className="intake-status" aria-live="polite">
-      <h2>{job ? labelFor(INTAKE_STATUS_LABELS, job.status) : "Checking the upload"}</h2>
+      <h2 className={`status-heading ${job ? STATUS_TONE[job.status] : "accent pulse"}`}>
+        {job ? labelFor(INTAKE_STATUS_LABELS, job.status) : "Checking the upload"}
+      </h2>
       {job?.status === "READY_FOR_REVIEW" && (
         <p>
           {job.candidate_count === 1
@@ -128,17 +137,15 @@ export function IntakePage() {
 
   return (
     <section className="page">
-      <h1>Upload a report</h1>
-      <p className="muted">
-        Send a scanned list, a photo of a notice or pasted text. The model suggests reports
-        from it; nothing is published until a reviewer confirms each one. Reports are
-        published as your organization.
-      </p>
+      <PageHeader
+        title="Upload a report"
+        description="Send a scanned list, a photo of a notice or pasted text. The model suggests reports from it; nothing is published until a reviewer confirms each one. Reports are published as your organization."
+      />
       {jobId ? (
         <JobStatus jobId={jobId} onAnother={another} />
       ) : (
         <form onSubmit={submit} noValidate>
-          <div className="filters" role="group" aria-label="What to send">
+          <div className="segmented intake-mode" role="group" aria-label="What to send">
             {(["file", "text"] as const).map((m) => (
               <button
                 key={m}

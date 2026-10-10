@@ -125,7 +125,8 @@ export default function PlacesMap({
     );
     for (const feature of located) {
       markers.push(
-        new Marker({ element: featurePin(feature) })
+        // Offset up and right, so a condition never hides the people count at the same place.
+        new Marker({ element: featurePin(feature), offset: [16, -16] })
           .setLngLat([feature.location.lon, feature.location.lat])
           .setPopup(new Popup({ offset: 14 }).setDOMContent(featureContent(feature)))
           .addTo(map),

@@ -1374,6 +1374,32 @@ button.menu-button[aria-expanded="true"] {
 
 /* Home. */
 
+.section-label {
+  font-size: var(--fs-13);
+  font-weight: 500;
+  color: var(--text-2);
+  margin: 0 0 var(--s-2);
+}
+
+.destinations a {
+  font-weight: 600;
+  font-size: var(--fs-16);
+  text-decoration: none;
+}
+
+.destinations a:hover {
+  text-decoration: underline;
+}
+
+.destinations .meta {
+  margin: var(--s-1) 0 0;
+}
+
+.search.panel {
+  align-items: flex-end;
+  padding-bottom: var(--s-1);
+}
+
 .roles {
   padding-left: var(--s-5);
 }
@@ -1758,6 +1784,46 @@ button.menu-button[aria-expanded="true"] {
 
 .intake-status {
   margin-top: var(--s-4);
+}
+
+.intake-mode {
+  margin-bottom: var(--s-4);
+}
+
+.status-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.status-heading::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.status-heading.ok::before {
+  background: var(--ok);
+}
+
+.status-heading.bad::before {
+  background: var(--bad);
+}
+
+.status-heading.accent::before {
+  background: var(--accent);
+}
+
+.status-heading.pulse::before {
+  animation: pulse 1.4s var(--ease) infinite;
+}
+
+/* Forms read best at a measure, not the full content width. */
+.report,
+.page > form:not(.search) {
+  max-width: 44rem;
 }
 
 /* Investigation. */

@@ -11,6 +11,7 @@ import {
 import { useApi } from "../api/context";
 import { BUCKET_LABELS, BUCKETS, getIncidentMap, type IncidentMap } from "../api/map";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { PageHeader, SkeletonRows } from "../components/ui";
 import { rememberIncident } from "../incident";
 import { claimTypeLabel, formatTime } from "../labels";
 import { useLoad } from "../useLoad";
@@ -29,9 +30,11 @@ function PlacesTable({ data }: { data: IncidentMap }) {
         <thead>
           <tr>
             <th scope="col">Place</th>
-            <th scope="col">Reports</th>
+            <th scope="col" className="num">
+              Reports
+            </th>
             {BUCKETS.map((b) => (
-              <th scope="col" key={b}>
+              <th scope="col" className="num" key={b}>
                 {BUCKET_LABELS[b]}
               </th>
             ))}
@@ -41,9 +44,11 @@ function PlacesTable({ data }: { data: IncidentMap }) {
           {data.places.map((place) => (
             <tr key={place.location_id}>
               <th scope="row">{place.name}</th>
-              <td>{place.reports}</td>
+              <td className="num">{place.reports}</td>
               {BUCKETS.map((b) => (
-                <td key={b}>{place.by_status[b]}</td>
+                <td className="num" key={b}>
+                  {place.by_status[b]}
+                </td>
               ))}
             </tr>
           ))}
@@ -55,7 +60,9 @@ function PlacesTable({ data }: { data: IncidentMap }) {
 
 /** The conditions as a list: always shown, so the picture works without the map. */
 function Conditions({ features }: { features: ClimateFeature[] }) {
-  if (features.length === 0) return <p className="muted">No reports about roads, shelters or hazards yet.</p>;
+  if (features.length === 0) {
+    return <p className="empty">No reports about roads, shelters or hazards yet.</p>;
+  }
   return (
     <ul className="conditions">
       {features.map((f) => (
@@ -63,10 +70,10 @@ function Conditions({ features }: { features: ClimateFeature[] }) {
           <div className="entry-head">
             <strong>{f.name}</strong>
             <span className="tag">{CLIMATE_TYPE_LABELS[f.subject_type]}</span>
-            {f.conflicts.length > 0 && <span className="tag tag-needs_review">Sources disagree</span>}
+            {f.conflicts.length > 0 && <span className="status-dot warn">Sources disagree</span>}
           </div>
           <p>
-            {f.label}. <span className="muted">{f.basis}.</span>
+            {f.label}. <span className="meta">{f.basis}.</span>
           </p>
           {f.conflicts.length > 0 && (
             <ul>
@@ -77,7 +84,7 @@ function Conditions({ features }: { features: ClimateFeature[] }) {
               ))}
             </ul>
           )}
-          <p className="muted">
+          <p className="meta">
             {f.location ? f.location.name : "No place given"}. {f.report_count} report
             {f.report_count === 1 ? "" : "s"}.
           </p>
@@ -126,18 +133,20 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
 
   return (
     <section className="page">
-      <h1>Map</h1>
-      <p className="muted">Incident {incidentId}</p>
-      {state.status === "loading" && <p className="muted">Loading places</p>}
+      <PageHeader
+        title="Map"
+        description="Where reports say people were, and the state of roads, shelters and hazards."
+      />
+      {state.status === "loading" && <SkeletonRows label="Loading places" rows={4} />}
       {state.status === "error" && (
         <ErrorNotice error={state.error} notFound="This incident does not exist." onRetry={reload} />
       )}
       {state.status === "ready" && (
         <>
-          <p className="flag" role="note">
+          <p className="notice-box" role="note">
             {state.data.caveat}
           </p>
-          <p className="muted">
+          <p className="meta">
             {state.data.located_reports} reports with a place, {state.data.unlocated_reports} without.
             Counts as of {formatTime(state.data.updated_at)}; they refresh every 30 seconds.{" "}
             <button type="button" className="link" onClick={refresh}>
@@ -178,7 +187,7 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
           )}
           {climate.status === "ready" && (
             <>
-              <p className="flag" role="note">
+              <p className="notice-box" role="note">
                 {climate.data.caveat}
               </p>
               <Conditions features={features} />
