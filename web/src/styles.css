@@ -238,10 +238,10 @@ button:active {
   transform: translateY(1px);
 }
 
+/* A solid offset ring reads on every button, including the accent one. */
 button:focus-visible {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: var(--ring);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 button[type="submit"],
@@ -300,9 +300,6 @@ button.link-button:hover {
 
 button.link:focus-visible,
 button.link-button:focus-visible {
-  box-shadow: none;
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
   border-radius: var(--r-1);
 }
 
