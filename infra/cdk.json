@@ -9,14 +9,16 @@
         "log_retention": "ONE_WEEK",
         "run_cap": 30,
         "model_call_cap": 200,
-        "agent_host": "lambda"
+        "agent_host": "lambda",
+        "model_id": "qwen.qwen3-next-80b-a3b-instruct"
       },
       "demo": {
         "deletion_protection": true,
         "web_origins": ["http://localhost:5173"],
         "log_retention": "ONE_MONTH",
         "run_cap": 50,
-        "model_call_cap": 300
+        "model_call_cap": 300,
+        "model_id": "qwen.qwen3-next-80b-a3b-instruct"
       }
     }
   }

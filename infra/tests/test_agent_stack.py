@@ -3,7 +3,7 @@ import json
 import aws_cdk as cdk
 from aws_cdk.assertions import Match, Template
 
-from config import load
+from config import DEFAULT_MODEL_ID, load
 from stacks.agent_stack import MAX_TOOL_CALLS, AgentStack, load_tool_specs
 from stacks.data_stack import DataStack
 
@@ -25,10 +25,9 @@ def one(t: Template, kind: str) -> dict:
     return next(iter(found.values()))["Properties"]
 
 
-def test_model_is_a_deploy_parameter():
-    params = template().to_json()["Parameters"]
-    assert params["ModelId"]["Type"] == "String"
-    assert params["ModelId"]["MinLength"] == 1
+def test_model_comes_from_the_env_config_not_a_parameter():
+    assert "ModelId" not in template().to_json().get("Parameters", {})
+    assert load("dev", ENVS).model_id == DEFAULT_MODEL_ID
 
 
 def test_run_queue_retries_twice_then_dead_letters():
@@ -58,7 +57,7 @@ def test_tools_lambda_reads_the_table_and_knows_the_model():
             "Environment": {
                 "Variables": Match.object_like(
                     {
-                        "MODEL_ID": {"Ref": "ModelId"},
+                        "MODEL_ID": DEFAULT_MODEL_ID,
                         "MAX_TOOL_CALLS": str(MAX_TOOL_CALLS),
                         "TABLE_NAME": Match.any_value(),
                     }
@@ -105,7 +104,7 @@ def test_runtime_runs_the_agent_zip_with_gateway_and_guardrail():
     assert code["EntryPoint"] == ["main.py"] and code["Runtime"] == "PYTHON_3_12"
     assert set(code["Code"]["S3"]) == {"Bucket", "Prefix"}
     env = props["EnvironmentVariables"]
-    assert env["MODEL_ID"] == {"Ref": "ModelId"}
+    assert env["MODEL_ID"] == DEFAULT_MODEL_ID
     assert set(env) == {"MODEL_ID", "GATEWAY_URL", "GUARDRAIL_ID", "GUARDRAIL_VERSION"}
     assert props["NetworkConfiguration"] == {"NetworkMode": "PUBLIC"}
 
@@ -163,7 +162,7 @@ def test_runner_reads_the_queue_two_at_a_time_without_reserved_concurrency():
     assert runner["Handler"] == "handlers.investigation_runner.handler"
     assert runner["Timeout"] == 180
     env = runner["Environment"]["Variables"]
-    assert env["MODEL_ID"] == {"Ref": "ModelId"} and "RUNTIME_ARN" in env
+    assert env["MODEL_ID"] == DEFAULT_MODEL_ID and "RUNTIME_ARN" in env
 
 
 def test_queue_hides_a_message_longer_than_a_run_takes():

@@ -28,7 +28,7 @@ def build(app: cdk.App) -> None:
         cfg=cfg,
         table=data.table,
         run_queue=agent.run_queue,
-        model_id=agent.model_id,
+        model_id=cfg.model_id,
         user_pool=auth.user_pool,
         web_client=auth.web_client,
         env=env,

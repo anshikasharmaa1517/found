@@ -5,7 +5,7 @@ import aws_cdk as cdk
 from aws_cdk import aws_logs as logs
 from aws_cdk.assertions import Template
 
-from config import load
+from config import DEFAULT_MODEL_ID, load
 from stacks.agent_stack import AgentStack
 from stacks.api_stack import ApiStack
 from stacks.auth_stack import AuthStack
@@ -61,3 +61,36 @@ def test_dev_settings_reach_the_templates():
     for name in ("found-dev-api", "found-dev-investigation-runner"):
         env = functions[name]["Environment"]["Variables"]
         assert (env["RUN_CAP"], env["MODEL_CALL_CAP"]) == ("30", "200")
+
+
+def test_both_envs_name_the_model_and_an_empty_one_is_refused():
+    import pytest
+
+    assert load("dev", ENVS).model_id == load("demo", ENVS).model_id == DEFAULT_MODEL_ID
+    with pytest.raises(ValueError):
+        load("x", {"x": {"deletion_protection": False, "web_origins": [], "model_id": " "}})
+
+
+def test_the_api_gets_the_model_as_a_plain_value_not_an_import():
+    app = cdk.App(context={"aws:cdk:bundling-stacks": []})
+    cfg = load("dev", ENVS)
+    data = DataStack(app, "Data", cfg=cfg, env=ENV)
+    auth = AuthStack(app, "Auth", cfg=cfg, env=ENV)
+    agent = AgentStack(app, "Agent", cfg=cfg, table=data.table, env=ENV)
+    api = ApiStack(
+        app,
+        "Api",
+        cfg=cfg,
+        table=data.table,
+        run_queue=agent.run_queue,
+        model_id=cfg.model_id,
+        user_pool=auth.user_pool,
+        web_client=auth.web_client,
+        env=ENV,
+    )
+    api_fn = next(
+        f["Properties"]
+        for f in Template.from_stack(api).find_resources("AWS::Lambda::Function").values()
+        if f["Properties"].get("Handler") == "handlers.api.handler"
+    )
+    assert api_fn["Environment"]["Variables"]["MODEL_ID"] == cfg.model_id

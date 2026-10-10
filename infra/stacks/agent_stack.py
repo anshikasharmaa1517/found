@@ -6,8 +6,8 @@ auth), and the Gateway role invokes the tools Lambda. The run queue feeds the ru
 which invokes the Runtime. At most two runs proceed at once: the queue's event source
 caps concurrency, and no Lambda concurrency is reserved (owner decision 3).
 
-The Bedrock model is a deploy-time parameter (`ModelId`), so choosing one needs no
-code change. It may be a foundation model ID or an inference profile ID.
+The Bedrock model is the env's `model_id` in cdk.json, so choosing one needs no code
+change. It may be a foundation model ID or an inference profile ID.
 """
 
 import json
@@ -72,13 +72,7 @@ class AgentStack(cdk.Stack):
         super().__init__(scope, construct_id, **kwargs)
         name = f"found-{cfg.name}"
 
-        self.model_id = cdk.CfnParameter(
-            self,
-            "ModelId",
-            type="String",
-            min_length=1,
-            description="Bedrock model ID or inference profile ID used by the agent.",
-        ).value_as_string
+        self.model_id = cfg.model_id
 
         # Run queue, consumed by the runner below.
         self.run_dlq = dead_letter_queue(self, "RunDlq", f"{name}-investigation-dlq")

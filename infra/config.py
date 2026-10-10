@@ -7,6 +7,7 @@ from aws_cdk import aws_logs as logs
 
 REGION = "ap-south-1"
 AGENT_HOSTS = ("agentcore", "lambda")
+DEFAULT_MODEL_ID = "qwen.qwen3-next-80b-a3b-instruct"
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,9 @@ class EnvConfig:
     # Where the agent runs: "agentcore" (the design) or "lambda" (inside the runner,
     # for accounts without AgentCore Runtime).
     agent_host: str = "agentcore"
+    # The Bedrock model ID or inference profile ID the agent uses. A plain value, not a
+    # stack parameter, so the Api stack gets it without importing it across stacks.
+    model_id: str = DEFAULT_MODEL_ID
 
     @property
     def retention(self) -> logs.RetentionDays:
@@ -38,6 +42,9 @@ def load(name: str, envs: dict[str, Any]) -> EnvConfig:
     agent_host = str(raw.get("agent_host", "agentcore"))
     if agent_host not in AGENT_HOSTS:
         raise ValueError(f"agent_host must be one of {AGENT_HOSTS}, not {agent_host!r}")
+    model_id = str(raw.get("model_id", DEFAULT_MODEL_ID)).strip()
+    if not model_id:
+        raise ValueError("model_id must not be empty")
     return EnvConfig(
         name=name,
         deletion_protection=bool(raw["deletion_protection"]),
@@ -46,4 +53,5 @@ def load(name: str, envs: dict[str, Any]) -> EnvConfig:
         run_cap=int(raw.get("run_cap", 200)),
         model_call_cap=int(raw.get("model_call_cap", 1200)),
         agent_host=agent_host,
+        model_id=model_id,
     )
