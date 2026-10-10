@@ -141,7 +141,7 @@ export default function PlacesMap({
     if (points.length > 1) {
       const bounds = new LngLatBounds();
       for (const point of points) bounds.extend(point);
-      map.fitBounds(bounds, { padding: 48, maxZoom: 13, duration: 0 });
+      map.fitBounds(bounds, { padding: 64, maxZoom: 15, duration: 0 });
     }
     return () => {
       for (const marker of markers) marker.remove();
