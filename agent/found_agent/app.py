@@ -5,26 +5,16 @@ from typing import Any
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from pydantic import ValidationError
-from strands.models import BedrockModel
 
 from found_agent.config import AgentConfig
 from found_agent.gateway import gateway_client
+from found_agent.models import bedrock_model, build_model
 from found_agent.run import RunRequest, run_investigation
 
 app = BedrockAgentCoreApp()
 
 
-def bedrock_model(config: AgentConfig, max_tokens: int) -> BedrockModel:
-    settings: dict[str, Any] = {
-        "model_id": config.model_id,
-        "temperature": 0.0,
-        "max_tokens": max_tokens,
-    }
-    if config.guardrail_id and config.guardrail_version:
-        # Prompt-attack filter over the untrusted report text.
-        settings["guardrail_id"] = config.guardrail_id
-        settings["guardrail_version"] = config.guardrail_version
-    return BedrockModel(region_name=config.region, **settings)
+__all__ = ["app", "bedrock_model", "build_model", "investigate"]
 
 
 @app.entrypoint
@@ -40,7 +30,7 @@ async def investigate(payload: dict[str, Any], context: Any) -> AsyncIterator[di
         }
         return
     config = AgentConfig.from_env()
-    model = bedrock_model(config, request.limits.max_output_tokens)
+    model = build_model(config, request.limits.max_output_tokens)
     tools = gateway_client(config.gateway_url, config.region)
     async for event in run_investigation(
         request, model, [tools], model_id=config.model_id, agent_version=config.agent_version

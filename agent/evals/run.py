@@ -17,8 +17,8 @@ from found_core.domain.investigation import InvestigationConfig
 
 from evals.cases import CASES
 from evals.harness import Prices, gate, run_case, summarize
-from found_agent.app import bedrock_model
 from found_agent.config import AGENT_VERSION, AgentConfig
+from found_agent.models import DEFAULT_KEY_FILE, build_model, read_api_key
 from found_agent.prompts import PROMPT_VERSION
 
 HERE = Path(__file__).parent
@@ -28,6 +28,12 @@ def _args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--model-id", required=True)
     parser.add_argument("--region", default="ap-south-1")
+    parser.add_argument(
+        "--api-key-file",
+        type=Path,
+        default=DEFAULT_KEY_FILE,
+        help="Bedrock API key file; with a key, calls go through bedrock-mantle.",
+    )
     parser.add_argument("--guardrail-id")
     parser.add_argument("--guardrail-version")
     parser.add_argument("--case", action="append", help="Run only these case ids.")
@@ -50,6 +56,7 @@ async def _run(args: argparse.Namespace) -> int:
         region=args.region,
         guardrail_id=args.guardrail_id,
         guardrail_version=args.guardrail_version,
+        api_key=read_api_key(args.api_key_file),
     )
     config = InvestigationConfig(
         model_id=args.model_id, prompt_version=PROMPT_VERSION, agent_version=AGENT_VERSION
@@ -59,7 +66,7 @@ async def _run(args: argparse.Namespace) -> int:
         # A fresh model client per case keeps runs independent.
         result = await run_case(
             case,
-            lambda _world: bedrock_model(agent_config, config.max_output_tokens),
+            lambda _world: build_model(agent_config, config.max_output_tokens),
             config,
             model_id=args.model_id,
         )
