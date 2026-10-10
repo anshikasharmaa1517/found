@@ -12,6 +12,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from found_core.domain.enums import (
+    DeliveryStatus,
     InvestigationStatus,
     ReviewItemType,
     Severity,
@@ -52,9 +53,22 @@ class AlertCreated(_Event):
     alert_id: str
     user_id: str
     subject_id: str
+    subscription_id: str
     claim_id: str
     severity: Severity
     message: str
+    delivery_status: DeliveryStatus
+
+
+class AlertReleased(_Event):
+    """A reviewer released a held alert, so it is now due for text or email."""
+
+    type: Literal["alert.released"] = "alert.released"
+    alert_id: str
+    user_id: str
+    subject_id: str
+    subscription_id: str
+    claim_id: str
 
 
 class ReviewCreated(_Event):
@@ -88,6 +102,7 @@ DomainEvent = (
     ClaimCreated
     | SubjectCreated
     | AlertCreated
+    | AlertReleased
     | ReviewCreated
     | InvestigationStepCreated
     | InvestigationUpdated
@@ -96,6 +111,7 @@ EVENT_MODELS: tuple[type[_Event], ...] = (
     ClaimCreated,
     SubjectCreated,
     AlertCreated,
+    AlertReleased,
     ReviewCreated,
     InvestigationStepCreated,
     InvestigationUpdated,
@@ -163,10 +179,32 @@ def _investigation_changed(record: dict[str, Any]) -> InvestigationUpdated | Non
     )
 
 
+def _alert_released(record: dict[str, Any]) -> AlertReleased | None:
+    change = record.get("dynamodb", {})
+    new = from_image(change.get("NewImage") or {})
+    old = from_image(change.get("OldImage") or {})
+    if (
+        new.get("entity_type") != "ALERT"
+        or old.get("delivery_status") != DeliveryStatus.HELD
+        or new.get("delivery_status") != DeliveryStatus.PENDING
+    ):
+        return None
+    return AlertReleased(
+        event_id=str(record.get("eventID", "")),
+        incident_id=new["incident_id"],
+        alert_id=new["id"],
+        user_id=new["user_id"],
+        subject_id=new["subject_id"],
+        subscription_id=new["subscription_id"],
+        claim_id=new["claim_id"],
+        occurred_at=_stream_time(record),
+    )
+
+
 def from_stream(record: dict[str, Any]) -> DomainEvent | None:
     """Domain event for a stream record, or None for changes no consumer cares about."""
     if record.get("eventName") == "MODIFY":
-        return _investigation_changed(record)
+        return _investigation_changed(record) or _alert_released(record)
     if record.get("eventName") != "INSERT":
         return None
     image = from_image(record.get("dynamodb", {}).get("NewImage") or {})
@@ -190,9 +228,11 @@ def from_stream(record: dict[str, Any]) -> DomainEvent | None:
                 alert_id=image["id"],
                 user_id=image["user_id"],
                 subject_id=image["subject_id"],
+                subscription_id=image["subscription_id"],
                 claim_id=image["claim_id"],
                 severity=image["severity"],
                 message=image["message"],
+                delivery_status=image["delivery_status"],
                 occurred_at=image["created_at"],
             )
         case "REVIEW_ITEM":

@@ -12,6 +12,7 @@ from found_core.services.demo import DemoService
 from found_core.services.ingest import IngestService
 from found_core.services.investigations import InvestigationService
 from found_core.services.map import MapService
+from found_core.services.notify import NotifyService
 from found_core.services.people import PeopleService
 from found_core.services.realtime import ConnectionService, PushService
 from found_core.services.reports import ReportService
@@ -61,6 +62,25 @@ def people_service() -> PeopleService:
 @cache
 def watch_service() -> WatchService:
     return WatchService(repository())
+
+
+@cache
+def notify_service() -> NotifyService:
+    """Email needs a sender (EMAIL_FROM); SMS stays off unless SMS_ENABLED is true."""
+    import boto3
+
+    from found_core.adapters.ses_email import SesEmail
+    from found_core.adapters.sns_sms import SnsSms
+    from found_core.ports.channels import Channel, DisabledChannel
+
+    sender = os.environ.get("EMAIL_FROM", "").strip()
+    email: Channel = SesEmail(boto3.client("ses"), sender) if sender else DisabledChannel("email")
+    sms: Channel = (
+        SnsSms(boto3.client("sns"))
+        if os.environ.get("SMS_ENABLED", "").lower() == "true"
+        else DisabledChannel("sms")
+    )
+    return NotifyService(repository(), email, sms)
 
 
 @cache

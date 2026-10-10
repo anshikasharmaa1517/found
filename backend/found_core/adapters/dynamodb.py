@@ -995,6 +995,41 @@ class DynamoFoundRepository:
     def put_investigation_step(self, step: InvestigationStep) -> bool:
         return self._put_if_absent(investigation_step_item(step))
 
+    def transition_alert(
+        self,
+        subscription_id: str,
+        claim_id: str,
+        expected: DeliveryStatus,
+        status: DeliveryStatus,
+        *,
+        channels: tuple[str, ...] = (),
+        note: str | None = None,
+        at: datetime | None = None,
+    ) -> bool:
+        sets = ["delivery_status = :new"]
+        values: dict[str, Any] = {":new": str(status), ":expected": str(expected)}
+        if channels:
+            sets.append("delivered_channels = :channels")
+            values[":channels"] = list(channels)
+        if note is not None:
+            sets.append("delivery_note = :note")
+            values[":note"] = note
+        if at is not None:
+            sets.append("delivered_at = :at")
+            values[":at"] = at.isoformat().replace("+00:00", "Z")
+        try:
+            self._table.update_item(
+                Key=alert_key(subscription_id, claim_id),
+                UpdateExpression="SET " + ", ".join(sets),
+                ConditionExpression="attribute_exists(PK) AND delivery_status = :expected",
+                ExpressionAttributeValues=values,
+            )
+            return True
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return False
+
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
         return self._put_if_absent(identity_proposal_item(proposal))
 

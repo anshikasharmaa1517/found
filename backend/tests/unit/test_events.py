@@ -20,6 +20,7 @@ from found_core.events import (
     EVENT_MODELS,
     EVENT_SOURCE,
     AlertCreated,
+    AlertReleased,
     ClaimCreated,
     InvestigationStepCreated,
     InvestigationUpdated,
@@ -173,9 +174,11 @@ def test_alert_insert_becomes_alert_created():
         alert_id="alr_1",
         user_id="fam_1",
         subject_id="per_1",
+        subscription_id="sub_1",
         claim_id="clm_1",
         severity="high",
         message="Newer report.",
+        delivery_status="HELD",
         occurred_at=WHEN,
     )
 
@@ -259,3 +262,49 @@ def test_counter_update_without_status_change_is_ignored():
     running = _investigation_item("RUNNING")
     assert from_stream(modify(running, {**running, "tool_calls": 3})) is None
     assert from_stream(modify(subject_item(SUBJECT), subject_item(SUBJECT))) is None
+
+
+def _alert(status: str) -> dict:
+    return alert_item(
+        Alert(
+            id="alr_1",
+            incident_id="inc_1",
+            subject_id="per_1",
+            subscription_id="sub_1",
+            claim_id="clm_1",
+            user_id="fam_1",
+            relation="UPDATE",
+            severity="high",
+            message="A sensitive report was received.",
+            delivery_status=status,
+            created_at=WHEN,
+        )
+    )
+
+
+def _modify(old: dict, new: dict) -> dict:
+    rec = record(new, event_name="MODIFY")
+    rec["dynamodb"]["OldImage"] = {k: _serializer.serialize(v) for k, v in old.items()}
+    return rec
+
+
+def test_a_released_held_alert_becomes_alert_released():
+    event = from_stream(_modify(_alert("HELD"), _alert("PENDING")))
+    assert event == AlertReleased(
+        event_id="evt-1",
+        incident_id="inc_1",
+        alert_id="alr_1",
+        user_id="fam_1",
+        subject_id="per_1",
+        subscription_id="sub_1",
+        claim_id="clm_1",
+        occurred_at=datetime.fromtimestamp(1791195322, tz=UTC),
+    )
+
+
+@pytest.mark.parametrize(
+    "old, new",
+    [("PENDING", "SENDING"), ("SENDING", "SENT"), ("HELD", "NOT_REQUIRED"), ("HELD", "HELD")],
+)
+def test_other_alert_changes_are_not_events(old, new):
+    assert from_stream(_modify(_alert(old), _alert(new))) is None

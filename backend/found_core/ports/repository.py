@@ -227,6 +227,23 @@ class FoundRepository(Protocol):
         """Move a HELD alert to `status`. False if it is not held (any more)."""
         ...
 
+    def transition_alert(
+        self,
+        subscription_id: str,
+        claim_id: str,
+        expected: DeliveryStatus,
+        status: DeliveryStatus,
+        *,
+        channels: tuple[str, ...] = (),
+        note: str | None = None,
+        at: datetime | None = None,
+    ) -> bool:
+        """Move the alert from `expected` to `status`. False if it is not in `expected`.
+
+        Only one caller wins a transition, which is what keeps texts and emails at most once.
+        """
+        ...
+
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
         """Store the proposal unless one exists for its pair. True if stored."""
         ...

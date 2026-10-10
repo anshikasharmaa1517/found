@@ -12,6 +12,7 @@ from aws_cdk import aws_dynamodb as ddb
 from aws_cdk import aws_events as events
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_pipes as pipes
+from aws_cdk import aws_ses as ses
 from constructs import Construct
 
 from config import EnvConfig
@@ -22,6 +23,7 @@ from stacks.consumer import (
     dead_letter_queue,
     event_consumer,
     inserted,
+    released_alert,
 )
 
 # Subjects are stored as SUBJECT with a `subject_type`; the resolver rule narrows to people.
@@ -39,10 +41,23 @@ def _entity_filter(event_name: str, entities: list[str]) -> str:
     )
 
 
+# Alerts change status several times; only a release (back to PENDING) is forwarded.
+RELEASED_ALERT_FILTER = json.dumps(
+    {
+        "eventName": ["MODIFY"],
+        "dynamodb": {
+            "NewImage": {"entity_type": {"S": ["ALERT"]}, "delivery_status": {"S": ["PENDING"]}}
+        },
+    },
+    separators=(",", ":"),
+)
+
 PIPE_FILTERS = (
     _entity_filter("INSERT", INSERTED_ENTITIES),
     _entity_filter("MODIFY", MODIFIED_ENTITIES),
+    RELEASED_ALERT_FILTER,
 )
+
 
 class EventsStack(cdk.Stack):
     def __init__(
@@ -127,6 +142,47 @@ class EventsStack(cdk.Stack):
             bus=self.bus,
             table=table,
         )
+
+        # Sends due alerts by email or text (design 6.4). Held alerts arrive on release.
+        self.notifier = event_consumer(
+            self,
+            "Notifier",
+            env_name=cfg.name,
+            retention=cfg.retention,
+            handler="handlers.notifier.handler",
+            rules=[
+                ("alert-inserted", inserted("ALERT", delivery_status="PENDING")),
+                ("alert-released", released_alert()),
+            ],
+            bus=self.bus,
+            table=table,
+            environment={
+                "EMAIL_FROM": cfg.email_from,
+                "SMS_ENABLED": "true" if cfg.sms_enabled else "false",
+            },
+        )
+        if cfg.email_from:
+            # Creating the identity mails a verification link to the sender address.
+            sender = ses.EmailIdentity(
+                self, "AlertSender", identity=ses.Identity.email(cfg.email_from)
+            )
+            self.notifier.add_to_role_policy(
+                iam.PolicyStatement(
+                    actions=["ses:SendEmail"],
+                    resources=[
+                        self.format_arn(
+                            service="ses",
+                            resource="identity",
+                            resource_name=sender.email_identity_name,
+                        )
+                    ],
+                )
+            )
+        if cfg.sms_enabled:
+            # Text messages go to phone numbers, which have no ARN to scope to.
+            self.notifier.add_to_role_policy(
+                iam.PolicyStatement(actions=["sns:Publish"], resources=["*"])
+            )
 
         cdk.CfnOutput(self, "EventBusName", value=self.bus.event_bus_name)
         cdk.CfnOutput(self, "PipeDlqUrl", value=self.pipe_dlq.queue_url)

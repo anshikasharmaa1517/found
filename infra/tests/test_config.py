@@ -94,3 +94,10 @@ def test_the_api_gets_the_model_as_a_plain_value_not_an_import():
         if f["Properties"].get("Handler") == "handlers.api.handler"
     )
     assert api_fn["Environment"]["Variables"]["MODEL_ID"] == cfg.model_id
+
+
+def test_alert_delivery_is_off_unless_configured():
+    dev = load("dev", ENVS)
+    assert dev.sms_enabled is False
+    cfg = load("x", {"x": {"deletion_protection": False, "web_origins": []}})
+    assert (cfg.email_from, cfg.sms_enabled) == ("", False)

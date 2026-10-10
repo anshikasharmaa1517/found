@@ -144,6 +144,10 @@ class Alert(_Entity):
     delivery_status: DeliveryStatus
     held_reason: str | None = None
     created_at: datetime
+    # Filled in by the notifier: channels that accepted the message, and why any did not.
+    delivered_channels: tuple[str, ...] = ()
+    delivery_note: str | None = None
+    delivered_at: datetime | None = None
 
 
 class ReviewItem(_Entity):

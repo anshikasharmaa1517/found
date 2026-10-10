@@ -26,6 +26,10 @@ class EnvConfig:
     # The Bedrock model ID or inference profile ID the agent uses. A plain value, not a
     # stack parameter, so the Api stack gets it without importing it across stacks.
     model_id: str = DEFAULT_MODEL_ID
+    # Alert delivery. Email needs a sender address that SES has verified; empty means no
+    # email. SMS stays off until sender registration is done (owner decision 7).
+    email_from: str = ""
+    sms_enabled: bool = False
 
     @property
     def retention(self) -> logs.RetentionDays:
@@ -54,4 +58,6 @@ def load(name: str, envs: dict[str, Any]) -> EnvConfig:
         model_call_cap=int(raw.get("model_call_cap", 1200)),
         agent_host=agent_host,
         model_id=model_id,
+        email_from=str(raw.get("email_from", "")).strip(),
+        sms_enabled=bool(raw.get("sms_enabled", False)),
     )

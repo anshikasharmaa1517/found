@@ -240,3 +240,100 @@ def test_the_pipe_already_forwards_subject_inserts():
 def test_no_consumer_reserves_concurrency():
     functions = template().find_resources("AWS::Lambda::Function")
     assert all("ReservedConcurrentExecutions" not in f["Properties"] for f in functions.values())
+
+
+def _alert_change(old: str, new: str) -> dict:
+    return {
+        "eventName": "MODIFY",
+        "dynamodb": {
+            "OldImage": {"entity_type": {"S": "ALERT"}, "delivery_status": {"S": old}},
+            "NewImage": {"entity_type": {"S": "ALERT"}, "delivery_status": {"S": new}},
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "forwarded"),
+    [("HELD", "PENDING", True), ("PENDING", "SENDING", False), ("SENDING", "SENT", False)],
+)
+def test_pipe_forwards_alert_releases_but_not_delivery_progress(old, new, forwarded):
+    patterns = [json.loads(p) for p in events_stack.PIPE_FILTERS]
+    assert any(_matches(p, _alert_change(old, new)) for p in patterns) is forwarded
+
+
+def _rule(t: Template, name: str) -> dict:
+    (rule,) = t.find_resources("AWS::Events::Rule", {"Properties": {"Name": name}}).values()
+    return rule["Properties"]
+
+
+def test_notifier_gets_pending_inserts_and_releases_only():
+    t = template()
+    inserted = _rule(t, "found-dev-alert-inserted")["EventPattern"]["detail"]
+    assert inserted["dynamodb"]["NewImage"] == {
+        "entity_type": {"S": ["ALERT"]},
+        "delivery_status": {"S": ["PENDING"]},
+    }
+    released = _rule(t, "found-dev-alert-released")
+    assert released["EventPattern"]["detail"] == {
+        "eventName": ["MODIFY"],
+        "dynamodb": {
+            "OldImage": {"delivery_status": {"S": ["HELD"]}},
+            "NewImage": {"entity_type": {"S": ["ALERT"]}, "delivery_status": {"S": ["PENDING"]}},
+        },
+    }
+    for name in ("found-dev-alert-inserted", "found-dev-alert-released"):
+        (target,) = _rule(t, name)["Targets"]
+        assert "NotifierFunction" in json.dumps(target["Arn"])
+        assert "NotifierDlq" in json.dumps(target["DeadLetterConfig"])
+
+
+def _notifier(t: Template) -> dict:
+    return next(
+        f["Properties"]
+        for f in t.find_resources("AWS::Lambda::Function").values()
+        if f["Properties"].get("FunctionName") == "found-dev-notifier"
+    )
+
+
+def _actions(t: Template) -> set[str]:
+    found: set[str] = set()
+    for p in t.find_resources("AWS::IAM::Policy").values():
+        for s in p["Properties"]["PolicyDocument"]["Statement"]:
+            action = s["Action"]
+            found |= set(action if isinstance(action, list) else [action])
+    return found
+
+
+def test_by_default_nothing_can_be_texted_or_emailed():
+    t = template()
+    env = _notifier(t)["Environment"]["Variables"]
+    assert env["EMAIL_FROM"] == "" and env["SMS_ENABLED"] == "false"
+    assert not {"ses:SendEmail", "sns:Publish"} & _actions(t)
+    t.resource_count_is("AWS::SES::EmailIdentity", 0)
+
+
+def configured(**settings) -> Template:
+    app = cdk.App(context={"aws:cdk:bundling-stacks": []})
+    cfg = load("dev", {"dev": {**ENVS["dev"], **settings}})
+    data = DataStack(app, "Data", cfg=cfg, env=ENV)
+    return Template.from_stack(EventsStack(app, "Events", cfg=cfg, table=data.table, env=ENV))
+
+
+def test_a_sender_address_creates_its_identity_and_scoped_permission():
+    t = configured(email_from="alerts@example.org")
+    t.has_resource_properties("AWS::SES::EmailIdentity", {"EmailIdentity": "alerts@example.org"})
+    assert _notifier(t)["Environment"]["Variables"]["EMAIL_FROM"] == "alerts@example.org"
+    (statement,) = [
+        s
+        for p in t.find_resources("AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+        if s["Action"] == "ses:SendEmail"
+    ]
+    assert ":identity/" in json.dumps(statement["Resource"])
+    assert "sns:Publish" not in _actions(t)
+
+
+def test_sms_needs_to_be_switched_on():
+    t = configured(sms_enabled=True)
+    assert _notifier(t)["Environment"]["Variables"]["SMS_ENABLED"] == "true"
+    assert "sns:Publish" in _actions(t)

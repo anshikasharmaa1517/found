@@ -45,6 +45,24 @@ def modified(entity_type: str) -> events.EventPattern:
     )
 
 
+def released_alert() -> events.EventPattern:
+    """A held alert a reviewer released: HELD before the change, PENDING after it."""
+    return events.EventPattern(
+        source=[EVENT_SOURCE],
+        detail_type=[EVENT_DETAIL_TYPE],
+        detail={
+            "eventName": ["MODIFY"],
+            "dynamodb": {
+                "OldImage": {"delivery_status": {"S": ["HELD"]}},
+                "NewImage": {
+                    "entity_type": {"S": ["ALERT"]},
+                    "delivery_status": {"S": ["PENDING"]},
+                },
+            },
+        },
+    )
+
+
 def dead_letter_queue(scope: Construct, construct_id: str, queue_name: str) -> sqs.Queue:
     return sqs.Queue(
         scope,

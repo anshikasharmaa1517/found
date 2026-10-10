@@ -64,9 +64,11 @@ ALERT = AlertCreated(
     alert_id="alr_1",
     user_id="fam_1",
     subject_id="per_1",
+    subscription_id="sub_1",
     claim_id="clm_1",
     severity="info",
     message="Newer report for Maya Rawat.",
+    delivery_status="NOT_REQUIRED",
     occurred_at=NOW,
 )
 REVIEW = ReviewCreated(

@@ -1,27 +1,6 @@
 {
-  "$defs": {
-    "DeliveryStatus": {
-      "enum": [
-        "NOT_REQUIRED",
-        "HELD",
-        "PENDING",
-        "SENDING",
-        "SENT",
-        "FAILED"
-      ],
-      "title": "DeliveryStatus",
-      "type": "string"
-    },
-    "Severity": {
-      "enum": [
-        "info",
-        "high"
-      ],
-      "title": "Severity",
-      "type": "string"
-    }
-  },
   "additionalProperties": false,
+  "description": "A reviewer released a held alert, so it is now due for text or email.",
   "properties": {
     "version": {
       "const": 1,
@@ -43,8 +22,8 @@
       "type": "string"
     },
     "type": {
-      "const": "alert.created",
-      "default": "alert.created",
+      "const": "alert.released",
+      "default": "alert.released",
       "title": "Type",
       "type": "string"
     },
@@ -67,16 +46,6 @@
     "claim_id": {
       "title": "Claim Id",
       "type": "string"
-    },
-    "severity": {
-      "$ref": "#/$defs/Severity"
-    },
-    "message": {
-      "title": "Message",
-      "type": "string"
-    },
-    "delivery_status": {
-      "$ref": "#/$defs/DeliveryStatus"
     }
   },
   "required": [
@@ -87,11 +56,8 @@
     "user_id",
     "subject_id",
     "subscription_id",
-    "claim_id",
-    "severity",
-    "message",
-    "delivery_status"
+    "claim_id"
   ],
-  "title": "AlertCreated",
+  "title": "AlertReleased",
   "type": "object"
 }

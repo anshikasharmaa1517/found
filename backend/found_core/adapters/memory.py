@@ -418,6 +418,31 @@ class InMemoryFoundRepository:
             )
             return True
 
+    def transition_alert(
+        self,
+        subscription_id: str,
+        claim_id: str,
+        expected: DeliveryStatus,
+        status: DeliveryStatus,
+        *,
+        channels: tuple[str, ...] = (),
+        note: str | None = None,
+        at: datetime | None = None,
+    ) -> bool:
+        with self._lock:
+            alert = self.alerts.get((subscription_id, claim_id))
+            if alert is None or alert.delivery_status != expected:
+                return False
+            changes: dict[str, Any] = {"delivery_status": status}
+            if channels:
+                changes["delivered_channels"] = channels
+            if note is not None:
+                changes["delivery_note"] = note
+            if at is not None:
+                changes["delivered_at"] = at
+            self.alerts[(subscription_id, claim_id)] = alert.model_copy(update=changes)
+            return True
+
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
         with self._lock:
             if proposal.pair_key in self.identity_proposals:
