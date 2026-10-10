@@ -213,7 +213,9 @@ npm run build
 ```
 
 Host `web/dist` on Amplify Hosting (a manual deployment needs no Git connection) or any
-static host that rewrites unknown paths to `index.html`. Add the site's origin to
+static host that rewrites unknown paths to `index.html`. The rewrite must leave real
+files alone, including `.mjs`: the map's worker is an `.mjs` file, and if the host
+answers it with `index.html` the basemap stays blank. Add the site's origin to
 `web_origins` and deploy again.
 
 ## Trying it
