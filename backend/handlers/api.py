@@ -298,6 +298,30 @@ def recent_reports(incident_id: str) -> Response:
     )
 
 
+@app.get("/v1/incidents/<incident_id>/graph")
+def incident_graph(incident_id: str) -> Response:
+    graph = container.graph_service().graph(_caller(), incident_id)
+    return _json(
+        HTTPStatus.OK,
+        {
+            "nodes": [
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "label": n.label,
+                    "detail": n.detail,
+                    "subject_type": n.subject_type,
+                }
+                for n in graph.nodes
+            ],
+            "edges": [
+                {"source": e.source, "target": e.target, "kind": e.kind} for e in graph.edges
+            ],
+            "by_kind": graph.by_kind,
+        },
+    )
+
+
 @app.get("/v1/incidents/<incident_id>/people")
 def list_people(incident_id: str) -> Response:
     page = container.people_service().list_people(

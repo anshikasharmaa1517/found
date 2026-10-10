@@ -28,6 +28,7 @@ INVESTIGATE_ROUTE = "POST /v1/claims/{claim_id}/investigations"
 SIGNED_IN_ROUTES = (
     ("GET", "/v1/incidents/{incident_id}"),
     ("GET", "/v1/incidents/{incident_id}/recent"),
+    ("GET", "/v1/incidents/{incident_id}/graph"),
     ("GET", "/v1/incidents/{incident_id}/people"),
     ("GET", "/v1/incidents/{incident_id}/people/stats"),
     ("GET", "/v1/people/{person_id}"),

@@ -495,6 +495,26 @@ class InMemoryFoundRepository:
             self.intake_candidates[candidate.id] = candidate
             return True
 
+    def list_incident_investigations(self, incident_id: str) -> list[Investigation]:
+        return sorted(
+            (i for i in self.investigations.values() if i.incident_id == incident_id),
+            key=lambda i: (i.queued_at, i.id),
+        )
+
+    def list_incident_identity(
+        self, incident_id: str
+    ) -> tuple[list[IdentityProposal], list[IdentityDecision]]:
+        return (
+            sorted(
+                (p for p in self.identity_proposals.values() if p.incident_id == incident_id),
+                key=lambda p: p.pair_key,
+            ),
+            sorted(
+                (d for d in self.identity_decisions.values() if d.incident_id == incident_id),
+                key=lambda d: d.pair_key,
+            ),
+        )
+
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
         with self._lock:
             if proposal.pair_key in self.identity_proposals:

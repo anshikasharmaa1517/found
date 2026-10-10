@@ -1130,6 +1130,27 @@ class DynamoFoundRepository:
                 raise
             return False
 
+    def list_incident_investigations(self, incident_id: str) -> list[Investigation]:
+        items = self._query(
+            IndexName="GSI1", KeyConditionExpression=Key("GSI1PK").eq(f"INC#{incident_id}#INV")
+        )
+        return [Investigation.model_validate(_fields(i)) for i in items]
+
+    def list_incident_identity(
+        self, incident_id: str
+    ) -> tuple[list[IdentityProposal], list[IdentityDecision]]:
+        pk = Key("PK").eq(f"INC#{incident_id}")
+        proposals = self._query(
+            KeyConditionExpression=pk & Key("SK").begins_with("IDP#"), ConsistentRead=True
+        )
+        decisions = self._query(
+            KeyConditionExpression=pk & Key("SK").begins_with("IDD#"), ConsistentRead=True
+        )
+        return (
+            [IdentityProposal.model_validate(_fields(i)) for i in proposals],
+            [IdentityDecision.model_validate(_fields(i)) for i in decisions],
+        )
+
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
         return self._put_if_absent(identity_proposal_item(proposal))
 

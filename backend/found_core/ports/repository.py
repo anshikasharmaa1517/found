@@ -269,6 +269,16 @@ class FoundRepository(Protocol):
         """Store a decided candidate only if the stored one is still PENDING_REVIEW."""
         ...
 
+    def list_incident_investigations(self, incident_id: str) -> list[Investigation]:
+        """Every investigation in the incident, oldest queued first."""
+        ...
+
+    def list_incident_identity(
+        self, incident_id: str
+    ) -> tuple[list[IdentityProposal], list[IdentityDecision]]:
+        """Every identity proposal and current decision in the incident."""
+        ...
+
     def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
         """Store the proposal unless one exists for its pair. True if stored."""
         ...

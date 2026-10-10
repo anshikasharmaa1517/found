@@ -71,6 +71,7 @@ def test_signed_in_routes_require_jwt():
     for key in (
         "GET /v1/incidents/{incident_id}",
         "GET /v1/incidents/{incident_id}/recent",
+        "GET /v1/incidents/{incident_id}/graph",
         "GET /v1/incidents/{incident_id}/people",
         "GET /v1/incidents/{incident_id}/people/stats",
         "GET /v1/people/{person_id}",
