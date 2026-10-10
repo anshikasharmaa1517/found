@@ -230,6 +230,61 @@ def publish_report(incident_id: str) -> Response:
     return _json(status, {"claim": view, "replayed": result.replayed})
 
 
+@app.get("/v1/incidents/<incident_id>")
+def get_incident(incident_id: str) -> Response:
+    incident = container.incident_service().details(_caller(), incident_id)
+    return _json(
+        HTTPStatus.OK,
+        {
+            "id": incident.id,
+            "name": incident.name,
+            "area": incident.area,
+            "is_demo": incident.is_demo,
+            "started_at": _iso(incident.started_at),
+        },
+    )
+
+
+@app.get("/v1/incidents/<incident_id>/recent")
+def recent_reports(incident_id: str) -> Response:
+    limit = _query("limit")
+    if limit is not None and not limit.isdigit():
+        raise BadRequest("limit must be a whole number.")
+    reports = container.incident_service().recent_reports(
+        _caller(), incident_id, int(limit) if limit else 10
+    )
+    return _json(
+        HTTPStatus.OK,
+        {
+            "reports": [
+                {
+                    "claim_id": r.claim.id,
+                    "subject_id": r.claim.subject_id,
+                    "subject_type": r.claim.subject_type.value,
+                    "subject_name": r.subject.display_name if r.subject else None,
+                    "ingested_at": _iso(r.claim.ingested_at),
+                    "withheld": True,
+                    "notice": SENSITIVE_NOTICE,
+                }
+                if r.withheld
+                else {
+                    "claim_id": r.claim.id,
+                    "subject_id": r.claim.subject_id,
+                    "subject_type": r.claim.subject_type.value,
+                    "subject_name": r.subject.display_name if r.subject else None,
+                    "ingested_at": _iso(r.claim.ingested_at),
+                    "withheld": False,
+                    "claim_type": r.claim.claim_type,
+                    "source": r.source_name,
+                    "reported_at": _iso(r.claim.reported_at),
+                    "excerpt": excerpt(r.claim.original_text),
+                }
+                for r in reports
+            ]
+        },
+    )
+
+
 @app.get("/v1/incidents/<incident_id>/people")
 def list_people(incident_id: str) -> Response:
     page = container.people_service().list_people(

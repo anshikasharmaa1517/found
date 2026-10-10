@@ -26,6 +26,8 @@ REPORTS_ROUTE = "POST /v1/incidents/{incident_id}/reports"
 INVESTIGATE_ROUTE = "POST /v1/claims/{claim_id}/investigations"
 # Every route below needs a signed-in user; the service checks the role.
 SIGNED_IN_ROUTES = (
+    ("GET", "/v1/incidents/{incident_id}"),
+    ("GET", "/v1/incidents/{incident_id}/recent"),
     ("GET", "/v1/incidents/{incident_id}/people"),
     ("GET", "/v1/people/{person_id}"),
     ("GET", "/v1/people/{person_id}/timeline"),

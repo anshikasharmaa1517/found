@@ -23,6 +23,7 @@ OUT = Path(__file__).resolve().parents[1] / "fixtures" / VERSION
 INCIDENT = {
     "id": "inc_demo",
     "name": "Kesari Valley flood (fictional demo)",
+    "area": "Kesari valley, Uttarakhand (fictional)",
     "is_demo": True,
     "started_at": "2026-10-02T18:30:00+05:30",
 }
@@ -276,11 +277,24 @@ def climate(b: Builder) -> None:
              "2026-10-03T06:30:00+05:30", where="market_ghat")
 
 
+def duplicate(b: Builder) -> None:
+    """A second record for Maya under a shortened name (design UC-3).
+
+    Same age, same place: the resolver proposes the pair and a reviewer decides. Added
+    last so every earlier report reference stays the same.
+    """
+    maya_r = b.person("maya_r", "Maya R.", 24)
+    b.report("org_ngo", maya_r, "SEEN_AT_LOCATION",
+             "Volunteer desk: Maya R., 24, was seen near the Old Bridge asking for her family.",
+             "2026-10-03T09:30:00+05:30", where="old_bridge")
+
+
 def build(seed: int = SEED) -> dict[str, object]:
     b = Builder()
     story(b)
     background(b, random.Random(seed))
     climate(b)
+    duplicate(b)
     return {
         "incident.json": {**INCIDENT, "version": VERSION, "seed": seed},
         "organizations.json": [

@@ -902,5 +902,19 @@
       "lat": 30.7289,
       "lon": 78.4368
     }
+  },
+  {
+    "org_id": "org_ngo",
+    "external_reference": "FRD-0006",
+    "person": "maya_r",
+    "claim_type": "SEEN_AT_LOCATION",
+    "value": null,
+    "original_text": "Volunteer desk: Maya R., 24, was seen near the Old Bridge asking for her family.",
+    "reported_at": "2026-10-03T09:30:00+05:30",
+    "location": {
+      "name": "Old Bridge",
+      "lat": 30.7312,
+      "lon": 78.4328
+    }
   }
 ]

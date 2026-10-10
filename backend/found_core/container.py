@@ -10,6 +10,7 @@ from found_core.domain.investigation import InvestigationConfig
 from found_core.ports.repository import FoundRepository
 from found_core.services.climate import ClimateService
 from found_core.services.demo import DemoService
+from found_core.services.incidents import IncidentService
 from found_core.services.ingest import IngestService
 from found_core.services.intake import IntakeService
 from found_core.services.investigations import InvestigationService
@@ -125,6 +126,11 @@ def token_verifier() -> CognitoTokenVerifier:
 @cache
 def climate_service() -> ClimateService:
     return ClimateService(repository())
+
+
+@cache
+def incident_service() -> IncidentService:
+    return IncidentService(repository())
 
 
 @cache

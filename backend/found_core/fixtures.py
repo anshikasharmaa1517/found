@@ -32,6 +32,7 @@ class _Fixture(BaseModel):
 class IncidentFixture(_Fixture):
     id: str = Field(pattern=r"^inc_[A-Za-z0-9_]{1,40}$")
     name: str
+    area: str | None = None
     is_demo: bool
     started_at: datetime | None = None
     version: str
@@ -108,6 +109,7 @@ def load_dataset(dataset: Dataset, repo: FoundRepository, ingest: IngestService)
         Incident(
             id=incident.id,
             name=incident.name,
+            area=incident.area,
             is_demo=incident.is_demo,
             started_at=incident.started_at,
         )

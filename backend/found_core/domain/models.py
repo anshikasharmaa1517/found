@@ -47,6 +47,8 @@ class Incident(_Entity):
 
     id: str
     name: str
+    # Where it is, in words, for the page header (for example a valley and a state).
+    area: str | None = None
     is_demo: bool = False
     started_at: datetime | None = None
 
