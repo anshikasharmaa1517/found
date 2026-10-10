@@ -47,3 +47,12 @@ export function mainRole(user: User): Role | null {
 export function displayName(user: User): string {
   return user.name ?? user.email ?? "Signed in";
 }
+
+/** Two letters for the account button: first and last initial, or the first two letters. */
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const first = parts[0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1] ?? "") : "";
+  const letters = last ? `${first.charAt(0)}${last.charAt(0)}` : first.slice(0, 2);
+  return letters.toUpperCase();
+}

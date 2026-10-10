@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
 
 import { useAuth, useUser } from "../auth/context";
-import { displayName, hasRole, mainRole, ROLE_LABELS } from "../auth/user";
+import { displayName, hasRole, initials, mainRole, ROLE_LABELS } from "../auth/user";
 import { rememberedIncident } from "../incident";
 import type { SocketLike } from "../live/client";
 import { useLiveMessage, useLiveStatus } from "../live/context";
@@ -10,6 +10,64 @@ import { LiveProvider } from "../live/LiveProvider";
 import { Toasts } from "./Toasts";
 
 const STATUS_TEXT = { live: "Live", connecting: "Connecting", offline: "Reconnecting" } as const;
+
+/** Name, email and role, and signing out. Escape or a click outside closes it. */
+function AccountMenu({ onSignOut, leaving }: { onSignOut: () => void; leaving: boolean }) {
+  const user = useUser();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const role = mainRole(user);
+  const name = displayName(user);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    function onClick(e: MouseEvent) {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [open]);
+
+  return (
+    <div className="menu" ref={box}>
+      <button
+        type="button"
+        className="menu-button"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={`Account: ${name}`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="avatar" aria-hidden="true">
+          {initials(name)}
+        </span>
+        <span className="live-label">{role ? ROLE_LABELS[role] : name}</span>
+      </button>
+      {open && (
+        <div className="menu-panel">
+          <div className="who">
+            <strong>{name}</strong>
+            {user.email && user.email !== name && <span className="meta">{user.email}</span>}
+            <div className="meta">
+              {user.roles.map((r) => ROLE_LABELS[r]).join(", ")}
+              {user.orgId && <span className="meta-sep">{user.orgId}</span>}
+            </div>
+          </div>
+          <button type="button" onClick={onSignOut} disabled={leaving}>
+            {leaving ? "Signing out" : "Sign out"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Shell({ incidentId }: { incidentId: string | null }) {
   const user = useUser();
@@ -19,7 +77,6 @@ function Shell({ incidentId }: { incidentId: string | null }) {
   const status = useLiveStatus();
   const [leaving, setLeaving] = useState(false);
   const [unread, setUnread] = useState(0);
-  const role = mainRole(user);
   const onAlerts = pathname === "/alerts";
   const family = hasRole(user, "family");
 
@@ -41,9 +98,15 @@ function Shell({ incidentId }: { incidentId: string | null }) {
   return (
     <div className="shell">
       <header className="topbar">
-        <NavLink to="/" className="brand">
+        <NavLink to="/" className="brand" aria-label="Found, home">
+          <span className="brand-mark" aria-hidden="true" />
           Found
         </NavLink>
+        {incidentId && (
+          <span className="context" title={`Incident ${incidentId}`}>
+            <span className="mono">{incidentId}</span>
+          </span>
+        )}
         <nav aria-label="Main">
           <NavLink to="/" end>
             Home
@@ -72,16 +135,10 @@ function Shell({ incidentId }: { incidentId: string | null }) {
         <div className="account">
           {status !== "off" && (
             <span className={`live live-${status}`} title="Live updates">
-              {STATUS_TEXT[status]}
+              <span className="live-label">{STATUS_TEXT[status]}</span>
             </span>
           )}
-          <span className="who">
-            {displayName(user)}
-            {role && <span className="badge">{ROLE_LABELS[role]}</span>}
-          </span>
-          <button type="button" className="link" onClick={onSignOut} disabled={leaving}>
-            Sign out
-          </button>
+          <AccountMenu onSignOut={onSignOut} leaving={leaving} />
         </div>
       </header>
       <Toasts />

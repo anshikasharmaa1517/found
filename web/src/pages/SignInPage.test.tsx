@@ -111,7 +111,9 @@ describe("sign-in", () => {
     const gateway = new FakeGateway();
     gateway.user = REVIEWER;
     renderApp(gateway, "/");
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Sign out" }));
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /^Account:/ }));
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
     expect(gateway.user).toBeNull();
   });
