@@ -138,12 +138,24 @@ export default function PlacesMap({
           .addTo(map),
       );
     }
-    if (points.length > 1) {
+    function fit() {
+      if (points.length < 2) return;
       const bounds = new LngLatBounds();
       for (const point of points) bounds.extend(point);
       map.fitBounds(bounds, { padding: 64, maxZoom: 15, duration: 0 });
     }
+    fit();
+    // The map sizes its canvas once; redraw whenever the box it sits in changes size.
+    const resize =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(() => {
+            map.resize();
+            fit();
+          });
+    resize?.observe(container.current);
     return () => {
+      resize?.disconnect();
       for (const marker of markers) marker.remove();
       map.remove();
     };

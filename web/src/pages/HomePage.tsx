@@ -25,7 +25,13 @@ interface Destination {
 /** Where this account's work happens in the open incident, most important first. */
 function destinations(user: User, incidentId: string): Destination[] {
   const base = `/incidents/${encodeURIComponent(incidentId)}`;
-  const list: Destination[] = [];
+  const list: Destination[] = [
+    {
+      to: base,
+      title: "Incident overview",
+      text: "The map, what is new, and a guided walk through the demo.",
+    },
+  ];
   if (hasRole(user, "reviewer", "admin")) {
     list.push({
       to: `${base}/review`,

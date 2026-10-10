@@ -154,7 +154,7 @@ describe("climate layers", () => {
   it("lists conditions with disagreeing sources flagged", async () => {
     const { api } = routedApi({ [PATH]: () => body(), [CLIMATE]: climate() });
     renderMap(api);
-    expect(await screen.findByText("Sources disagree")).toBeInTheDocument();
+    expect(await screen.findByText("Sources disagree", { selector: ".status-dot" })).toBeInTheDocument();
     expect(screen.getByText(/District Police Demo says Bridge damaged/)).toBeInTheDocument();
     expect(screen.getByText(/Reported shelter full/)).toBeInTheDocument();
     expect(screen.getByText(/No place given/)).toBeInTheDocument();
@@ -164,7 +164,7 @@ describe("climate layers", () => {
     const { api } = routedApi({ [PATH]: () => body(), [CLIMATE]: climate() });
     renderMap(api, "https://tiles.example/style");
     const map = await screen.findByTestId("map");
-    await screen.findByText("Sources disagree");
+    await screen.findByText("Sources disagree", { selector: ".status-dot" });
     const user = userEvent.setup();
     await user.click(screen.getByLabelText("Reports about people"));
     expect(map).toHaveTextContent("0 pins, 2 conditions");

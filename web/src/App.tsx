@@ -11,6 +11,7 @@ import { AppShell } from "./components/AppShell";
 import type { SocketLike } from "./live/client";
 import { AlertsPage } from "./pages/AlertsPage";
 import { HomePage } from "./pages/HomePage";
+import { IncidentPage } from "./pages/IncidentPage";
 import { IntakePage } from "./pages/IntakePage";
 import { InvestigationPage } from "./pages/InvestigationPage";
 import { MapPage } from "./pages/MapPage";
@@ -62,6 +63,7 @@ export function AppRoutes({
         }
       >
         <Route index element={<HomePage defaultIncidentId={defaultIncidentId} />} />
+        <Route path="incidents/:incidentId" element={<IncidentPage mapStyleUrl={mapStyleUrl} />} />
         <Route path="incidents/:incidentId/people" element={<PeoplePage />} />
         <Route path="people/:personId" element={<PersonPage />} />
         <Route path="incidents/:incidentId/map" element={<MapPage mapStyleUrl={mapStyleUrl} />} />

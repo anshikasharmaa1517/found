@@ -112,6 +112,11 @@ function Shell({ incidentId }: { incidentId: string | null }) {
             Home
           </NavLink>
           {incidentId && (
+            <NavLink to={`/incidents/${encodeURIComponent(incidentId)}`} end>
+              Overview
+            </NavLink>
+          )}
+          {incidentId && (
             <NavLink to={`/incidents/${encodeURIComponent(incidentId)}/people`}>People</NavLink>
           )}
           {incidentId && (

@@ -23,7 +23,7 @@ function refusal(error: ApiError): string {
 }
 
 /** Starts (or reuses) an investigation of one report and opens it. */
-export function TraceButton({ claimId }: { claimId: string }) {
+export function TraceButton({ claimId, primary = false }: { claimId: string; primary?: boolean }) {
   const api = useApi();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -51,7 +51,7 @@ export function TraceButton({ claimId }: { claimId: string }) {
 
   return (
     <div className="trace">
-      <button type="button" className="link" onClick={onClick} disabled={busy}>
+      <button type="button" className={primary ? "primary" : "link"} onClick={onClick} disabled={busy}>
         {busy ? "Starting" : "Trace where this came from"}
       </button>
       {error && (

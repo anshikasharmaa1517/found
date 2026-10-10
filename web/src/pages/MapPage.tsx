@@ -11,6 +11,7 @@ import {
 import { useApi } from "../api/context";
 import { BUCKET_LABELS, BUCKETS, getIncidentMap, type IncidentMap } from "../api/map";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { MapLegend } from "../components/MapLegend";
 import { PageHeader, SkeletonRows } from "../components/ui";
 import { rememberIncident } from "../incident";
 import { claimTypeLabel, formatTime } from "../labels";
@@ -168,13 +169,16 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
           </fieldset>
           {mapStyleUrl ? (
             (state.data.places.length > 0 || features.length > 0) && (
-              <Suspense fallback={<p className="muted">Loading map</p>}>
-                <PlacesMap
-                  places={hidden.has("PEOPLE") ? [] : state.data.places}
-                  features={features}
-                  styleUrl={mapStyleUrl}
-                />
-              </Suspense>
+              <div className="map-frame">
+                <Suspense fallback={<p className="muted">Loading map</p>}>
+                  <PlacesMap
+                    places={hidden.has("PEOPLE") ? [] : state.data.places}
+                    features={features}
+                    styleUrl={mapStyleUrl}
+                  />
+                </Suspense>
+                <MapLegend />
+              </div>
             )
           ) : (
             <p className="hint">The basemap is not set up here, so places are listed below.</p>
