@@ -15,6 +15,7 @@ from found_core.services.map import MapService
 from found_core.services.people import PeopleService
 from found_core.services.realtime import ConnectionService, PushService
 from found_core.services.reports import ReportService
+from found_core.services.resolve import ResolveService
 from found_core.services.review import ReviewService
 from found_core.services.runner import InvestigationRunner
 from found_core.services.subscriptions import SubscriptionService
@@ -60,6 +61,11 @@ def people_service() -> PeopleService:
 @cache
 def watch_service() -> WatchService:
     return WatchService(repository())
+
+
+@cache
+def resolve_service() -> ResolveService:
+    return ResolveService(repository())
 
 
 @cache

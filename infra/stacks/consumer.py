@@ -24,14 +24,13 @@ TARGET_RETRIES = 5
 DLQ_RETENTION = cdk.Duration.days(14)
 
 
-def inserted(entity_type: str) -> events.EventPattern:
+def inserted(entity_type: str, **fields: str) -> events.EventPattern:
+    """Inserts of one entity type, optionally narrowed by string fields of the new item."""
+    image = {"entity_type": {"S": [entity_type]}, **{k: {"S": [v]} for k, v in fields.items()}}
     return events.EventPattern(
         source=[EVENT_SOURCE],
         detail_type=[EVENT_DETAIL_TYPE],
-        detail={
-            "eventName": ["INSERT"],
-            "dynamodb": {"NewImage": {"entity_type": {"S": [entity_type]}}},
-        },
+        detail={"eventName": ["INSERT"], "dynamodb": {"NewImage": image}},
     )
 
 

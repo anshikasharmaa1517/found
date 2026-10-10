@@ -17,6 +17,8 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    IdentityDecision,
+    IdentityProposal,
     Incident,
     Investigation,
     InvestigationStep,
@@ -223,6 +225,25 @@ class FoundRepository(Protocol):
         self, subscription_id: str, claim_id: str, status: DeliveryStatus
     ) -> bool:
         """Move a HELD alert to `status`. False if it is not held (any more)."""
+        ...
+
+    def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
+        """Store the proposal unless one exists for its pair. True if stored."""
+        ...
+
+    def get_identity_proposal(self, incident_id: str, pair_key: str) -> IdentityProposal | None: ...
+
+    def get_identity_decision(self, incident_id: str, pair_key: str) -> IdentityDecision | None: ...
+
+    def save_identity_decision(self, decision: IdentityDecision, expected_version: int) -> bool:
+        """Store the decision only if the stored version is `expected_version` (0: none yet).
+
+        False if another decision was stored first.
+        """
+        ...
+
+    def list_identity_decisions(self, incident_id: str, person_id: str) -> list[IdentityDecision]:
+        """Current decisions on every pair that includes the person."""
         ...
 
     def put_activity(self, activity: Activity) -> None: ...

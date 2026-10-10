@@ -17,7 +17,14 @@ from found_core.domain.enums import FindingReview, ReviewItemType, ReviewStatus
 from found_core.domain.errors import BadRequest, Forbidden, NotFound, VersionConflict
 from found_core.domain.ids import review_item_id
 from found_core.domain.investigation import TERMINAL_STATUSES
-from found_core.domain.models import Claim, Investigation, ReviewItem, Source, Subject
+from found_core.domain.models import (
+    Claim,
+    IdentityProposal,
+    Investigation,
+    ReviewItem,
+    Source,
+    Subject,
+)
 from found_core.domain.rules import released_delivery
 from found_core.ports.clock import Clock, SystemClock
 from found_core.ports.repository import FoundRepository
@@ -32,6 +39,9 @@ class ReviewEntry:
     subject: Subject | None = None
     source: Source | None = None
     investigation: Investigation | None = None
+    # Identity items: the proposal and both people, person_a first.
+    proposal: IdentityProposal | None = None
+    people: tuple[Subject, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -109,6 +119,16 @@ class ReviewService:
         )
 
     def _entry(self, item: ReviewItem, sources: dict[str, Source]) -> ReviewEntry:
+        if item.item_type == ReviewItemType.IDENTITY:
+            proposal = self._repo.get_identity_proposal(item.incident_id, item.ref_id)
+            ids = [proposal.person_a_id, proposal.person_b_id] if proposal else []
+            found = {s.id: s for s in self._repo.get_subjects(ids)}
+            return ReviewEntry(
+                item=item,
+                subject=self._repo.get_subject(item.subject_id) if item.subject_id else None,
+                proposal=proposal,
+                people=tuple(found[i] for i in ids if i in found),
+            )
         if item.item_type == ReviewItemType.FINDING:
             investigation = self._repo.get_investigation(item.ref_id)
             claim = self._repo.get_claim(investigation.claim_id) if investigation else None
@@ -139,7 +159,8 @@ class ReviewService:
             raise VersionConflict("This item was already resolved.", review_id=review_id)
         if item.item_type not in (ReviewItemType.CONFLICT, ReviewItemType.HELD_ALERT):
             raise BadRequest(
-                "Findings are reviewed on their investigation; this item cannot be closed here.",
+                "Findings and identity proposals are decided on their own routes; "
+                "this item cannot be closed here.",
                 item_type=item.item_type.value,
             )
         released = 0

@@ -79,6 +79,7 @@ def test_signed_in_routes_require_jwt():
         "POST /v1/investigations/{investigation_id}/review",
         "GET /v1/incidents/{incident_id}/review-queue",
         "POST /v1/incidents/{incident_id}/review-items/{review_id}/resolve",
+        "POST /v1/identity-proposals/{pair_key}/decision",
         "GET /v1/incidents/{incident_id}/activity",
         "POST /v1/admin/incidents/{incident_id}/reset",
         "GET /v1/admin/investigations/{investigation_id}/recording",

@@ -207,3 +207,36 @@ def test_watcher_can_query_and_write_the_table():
         for a in (s["Action"] if isinstance(s["Action"], list) else [s["Action"]])
     }
     assert {"dynamodb:Query", "dynamodb:PutItem", "dynamodb:GetItem"} <= actions
+
+
+def test_person_inserted_rule_targets_the_resolver_with_its_own_dlq():
+    t = template()
+    (rule,) = t.find_resources(
+        "AWS::Events::Rule", {"Properties": {"Name": "found-dev-person-inserted"}}
+    ).values()
+    props = rule["Properties"]
+    # Subjects of every type are stored as SUBJECT; only people reach the resolver.
+    assert props["EventPattern"]["detail"] == {
+        "eventName": ["INSERT"],
+        "dynamodb": {
+            "NewImage": {"entity_type": {"S": ["SUBJECT"]}, "subject_type": {"S": ["PERSON"]}}
+        },
+    }
+    (target,) = props["Targets"]
+    assert target["RetryPolicy"] == {"MaximumRetryAttempts": 5, "MaximumEventAgeInSeconds": 3600}
+    assert "ResolverDlq" in json.dumps(target["DeadLetterConfig"])
+    assert "ResolverFunction" in json.dumps(target["Arn"])
+    t.has_resource_properties("AWS::SQS::Queue", {"QueueName": "found-dev-resolver-dlq"})
+    t.has_resource_properties(
+        "AWS::Lambda::Function",
+        {"FunctionName": "found-dev-resolver", "Handler": "handlers.resolver.handler"},
+    )
+
+
+def test_the_pipe_already_forwards_subject_inserts():
+    assert "SUBJECT" in events_stack.INSERTED_ENTITIES
+
+
+def test_no_consumer_reserves_concurrency():
+    functions = template().find_resources("AWS::Lambda::Function")
+    assert all("ReservedConcurrentExecutions" not in f["Properties"] for f in functions.values())

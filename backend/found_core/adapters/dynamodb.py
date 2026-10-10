@@ -25,6 +25,8 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    IdentityDecision,
+    IdentityProposal,
     Incident,
     Investigation,
     InvestigationStep,
@@ -110,6 +112,14 @@ def alert_key(subscription_id: str, claim_id: str) -> dict[str, str]:
 
 def review_item_key(incident_id: str, review_id: str) -> dict[str, str]:
     return {"PK": f"INC#{incident_id}", "SK": f"REV#{review_id}"}
+
+
+def identity_proposal_key(incident_id: str, pair_key: str) -> dict[str, str]:
+    return {"PK": f"INC#{incident_id}", "SK": f"IDP#{pair_key}"}
+
+
+def identity_decision_key(incident_id: str, pair_key: str) -> dict[str, str]:
+    return {"PK": f"INC#{incident_id}", "SK": f"IDD#{pair_key}"}
 
 
 def marker_key(org_id: str, external_reference: str) -> dict[str, str]:
@@ -298,6 +308,24 @@ def review_item_item(item: ReviewItem) -> dict[str, Any]:
         "entity_type": "REVIEW_ITEM",
         "schema_version": SCHEMA_VERSION,
         **attrs,
+    }
+
+
+def identity_proposal_item(proposal: IdentityProposal) -> dict[str, Any]:
+    return {
+        **identity_proposal_key(proposal.incident_id, proposal.pair_key),
+        "entity_type": "IDENTITY_PROPOSAL",
+        "schema_version": SCHEMA_VERSION,
+        **_attrs(proposal),
+    }
+
+
+def identity_decision_item(decision: IdentityDecision) -> dict[str, Any]:
+    return {
+        **identity_decision_key(decision.incident_id, decision.pair_key),
+        "entity_type": "IDENTITY_DECISION",
+        "schema_version": SCHEMA_VERSION,
+        **_attrs(decision),
     }
 
 
@@ -966,6 +994,45 @@ class DynamoFoundRepository:
 
     def put_investigation_step(self, step: InvestigationStep) -> bool:
         return self._put_if_absent(investigation_step_item(step))
+
+    def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
+        return self._put_if_absent(identity_proposal_item(proposal))
+
+    def get_identity_proposal(self, incident_id: str, pair_key: str) -> IdentityProposal | None:
+        item = self._get(identity_proposal_key(incident_id, pair_key))
+        return IdentityProposal.model_validate(_fields(item)) if item else None
+
+    def get_identity_decision(self, incident_id: str, pair_key: str) -> IdentityDecision | None:
+        item = self._get(identity_decision_key(incident_id, pair_key))
+        return IdentityDecision.model_validate(_fields(item)) if item else None
+
+    def save_identity_decision(self, decision: IdentityDecision, expected_version: int) -> bool:
+        if expected_version == 0:
+            condition: dict[str, Any] = {"ConditionExpression": "attribute_not_exists(PK)"}
+        else:
+            condition = {
+                "ConditionExpression": "#version = :expected",
+                "ExpressionAttributeNames": {"#version": "version"},
+                "ExpressionAttributeValues": {":expected": expected_version},
+            }
+        try:
+            self._table.put_item(Item=identity_decision_item(decision), **condition)
+            return True
+        except ClientError as err:
+            if _error_code(err) != "ConditionalCheckFailedException":
+                raise
+            return False
+
+    def list_identity_decisions(self, incident_id: str, person_id: str) -> list[IdentityDecision]:
+        # Pair keys start with the smaller id, so a person's pairs are not one key range.
+        # An incident holds few decisions; the filter keeps the read to one partition.
+        items = self._query(
+            KeyConditionExpression=Key("PK").eq(f"INC#{incident_id}")
+            & Key("SK").begins_with("IDD#"),
+            FilterExpression=Attr("person_a_id").eq(person_id) | Attr("person_b_id").eq(person_id),
+            ConsistentRead=True,
+        )
+        return [IdentityDecision.model_validate(_fields(i)) for i in items]
 
     def put_activity(self, activity: Activity) -> None:
         self._table.put_item(Item=activity_item(activity))

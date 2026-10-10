@@ -51,6 +51,11 @@ class ReviewItemType(StrEnum):
     HELD_ALERT = "held_alert"
 
 
+class IdentityVerdict(StrEnum):
+    CONFIRMED = "CONFIRMED"
+    REJECTED = "REJECTED"
+
+
 class ReviewStatus(StrEnum):
     OPEN = "OPEN"
     DONE = "DONE"

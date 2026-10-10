@@ -3,6 +3,7 @@
 import json
 from http import HTTPStatus
 from typing import Any
+from urllib.parse import unquote
 
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver, Response
@@ -11,7 +12,7 @@ from aws_lambda_powertools.logging import correlation_paths
 from found_core import container
 from found_core.domain.auth import Caller
 from found_core.domain.errors import BadRequest, FoundError
-from found_core.domain.models import Alert, Claim, Subject, Subscription
+from found_core.domain.models import Alert, Claim, IdentityDecision, Subject, Subscription
 from found_core.domain.normalize import excerpt
 from found_core.domain.visibility import SENSITIVE_NOTICE
 from found_core.services.investigations import InvestigationDetail
@@ -104,6 +105,47 @@ def summary_view(profile: PersonProfile) -> dict[str, Any]:
             for c in profile.conflicts
         ],
         "needs_review": summary.needs_review,
+    }
+
+
+def identity_view(profile: PersonProfile) -> list[dict[str, Any]]:
+    """Decisions that link this person to another record. The records stay separate."""
+    person_id = profile.person.id
+    return [
+        {
+            "pair_key": d.pair_key,
+            "other_person_id": d.person_b_id if d.person_a_id == person_id else d.person_a_id,
+            "decision": d.decision.value,
+            "reviewer": d.reviewer_id,
+            "decided_at": _iso(d.decided_at),
+        }
+        for d in profile.identity
+    ]
+
+
+def decision_view(decision: IdentityDecision) -> dict[str, Any]:
+    data = decision.model_dump(mode="json")
+    return {
+        "pair_key": decision.pair_key,
+        "person_a_id": decision.person_a_id,
+        "person_b_id": decision.person_b_id,
+        "decision": data["decision"],
+        "reviewer": decision.reviewer_id,
+        "note": decision.note,
+        "evidence_claim_ids": data["evidence_claim_ids"],
+        "version": decision.version,
+        "decided_at": data["decided_at"],
+        "history": [
+            {
+                "decision": h["decision"],
+                "reviewer": h["reviewer_id"],
+                "note": h["note"],
+                "evidence_claim_ids": h["evidence_claim_ids"],
+                "version": h["version"],
+                "decided_at": h["decided_at"],
+            }
+            for h in data["history"]
+        ],
     }
 
 
@@ -207,8 +249,7 @@ def get_person(person_id: str) -> Response:
                 "report_count": profile.claim_count,
             },
             "summary": summary_view(profile),
-            # Identity decisions arrive with the resolver; until then there are none.
-            "identity": [],
+            "identity": identity_view(profile),
         },
     )
 
@@ -228,7 +269,7 @@ def get_timeline(person_id: str) -> Response:
         {
             "person": person_view(profile.person),
             "summary": summary_view(profile),
-            "identity": [],
+            "identity": identity_view(profile),
             "entries": [entry_view(profile, e) for e in timeline.entries],
             "next_cursor": timeline.next_cursor,
         },
@@ -421,7 +462,17 @@ def review_entry_view(entry: ReviewEntry) -> dict[str, Any]:
         "person": person_view(entry.subject) if entry.subject else None,
         "claim": None,
         "investigation": None,
+        "proposal": None,
     }
+    if entry.proposal is not None:
+        proposal = entry.proposal
+        view["proposal"] = {
+            "pair_key": proposal.pair_key,
+            "people": [{**person_view(p), "incident_id": p.incident_id} for p in entry.people],
+            "reasons": list(proposal.reasons),
+            "score": proposal.score,
+            "proposed_by": proposal.proposed_by,
+        }
     if entry.claim is not None:
         claim = entry.claim
         view["claim"] = {
@@ -487,6 +538,14 @@ def review_investigation(investigation_id: str) -> Response:
     container.review_service().review_finding(caller, investigation_id, body)
     detail = container.investigation_service().get(caller, investigation_id)
     return _json(HTTPStatus.OK, investigation_view(detail))
+
+
+@app.post("/v1/identity-proposals/<pair_key>/decision")
+def decide_identity(pair_key: str) -> Response:
+    caller = _caller()
+    body = _body()
+    decision = container.resolve_service().decide(caller, unquote(pair_key), body)
+    return _json(HTTPStatus.OK, {"decision": decision_view(decision)})
 
 
 @app.get("/v1/incidents/<incident_id>/activity")

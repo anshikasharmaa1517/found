@@ -10,6 +10,7 @@ from found_core.domain.enums import (
     DeliveryStatus,
     ExtractionMethod,
     FindingReview,
+    IdentityVerdict,
     InvestigationMode,
     InvestigationStatus,
     Relation,
@@ -159,6 +160,47 @@ class ReviewItem(_Entity):
     resolved_by: str | None = None
     resolved_at: datetime | None = None
     note: str | None = None
+
+
+class IdentityProposal(_Entity):
+    """Two person records that may be the same person. Only a reviewer decides."""
+
+    pair_key: str
+    incident_id: str
+    person_a_id: str
+    person_b_id: str
+    reasons: tuple[str, ...]
+    score: int
+    proposed_by: str
+    cited_claim_ids: tuple[str, ...] = ()
+    created_at: datetime
+
+
+class IdentityDecisionRecord(_Entity):
+    """One decision on a pair, as it was when taken."""
+
+    decision: IdentityVerdict
+    reviewer_id: str
+    note: str
+    evidence_claim_ids: tuple[str, ...] = ()
+    version: int = Field(ge=1)
+    decided_at: datetime
+
+
+class IdentityDecision(IdentityDecisionRecord):
+    """The current decision on a pair. Both records and their claims stay as they are."""
+
+    pair_key: str
+    incident_id: str
+    person_a_id: str
+    person_b_id: str
+    # Every earlier decision, complete, oldest first (FR-26).
+    history: tuple[IdentityDecisionRecord, ...] = ()
+
+    def record(self) -> IdentityDecisionRecord:
+        return IdentityDecisionRecord.model_validate(
+            self.model_dump(include=set(IdentityDecisionRecord.model_fields))
+        )
 
 
 class Connection(_Entity):

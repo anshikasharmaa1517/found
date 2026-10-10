@@ -116,5 +116,17 @@ class EventsStack(cdk.Stack):
             table=table,
         )
 
+        # Proposes possible same-person pairs for each new person record (design 6.3).
+        self.resolver = event_consumer(
+            self,
+            "Resolver",
+            env_name=cfg.name,
+            retention=cfg.retention,
+            handler="handlers.resolver.handler",
+            rules=[("person-inserted", inserted("SUBJECT", subject_type="PERSON"))],
+            bus=self.bus,
+            table=table,
+        )
+
         cdk.CfnOutput(self, "EventBusName", value=self.bus.event_bus_name)
         cdk.CfnOutput(self, "PipeDlqUrl", value=self.pipe_dlq.queue_url)

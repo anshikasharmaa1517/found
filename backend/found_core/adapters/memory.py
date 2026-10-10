@@ -23,6 +23,8 @@ from found_core.domain.models import (
     Claim,
     Connection,
     IdemMarker,
+    IdentityDecision,
+    IdentityProposal,
     Incident,
     Investigation,
     InvestigationStep,
@@ -64,6 +66,8 @@ class InMemoryFoundRepository:
         self.investigations: dict[str, Investigation] = {}
         self.run_locks: dict[str, tuple[str, datetime]] = {}
         self.steps: dict[tuple[str, int], InvestigationStep] = {}
+        self.identity_proposals: dict[str, IdentityProposal] = {}
+        self.identity_decisions: dict[str, IdentityDecision] = {}
 
     def add_incident(self, incident_id: str) -> None:
         self.incidents.add(incident_id)
@@ -414,6 +418,39 @@ class InMemoryFoundRepository:
             )
             return True
 
+    def put_identity_proposal_if_absent(self, proposal: IdentityProposal) -> bool:
+        with self._lock:
+            if proposal.pair_key in self.identity_proposals:
+                return False
+            self.identity_proposals[proposal.pair_key] = proposal
+            return True
+
+    def get_identity_proposal(self, incident_id: str, pair_key: str) -> IdentityProposal | None:
+        proposal = self.identity_proposals.get(pair_key)
+        return proposal if proposal and proposal.incident_id == incident_id else None
+
+    def get_identity_decision(self, incident_id: str, pair_key: str) -> IdentityDecision | None:
+        decision = self.identity_decisions.get(pair_key)
+        return decision if decision and decision.incident_id == incident_id else None
+
+    def save_identity_decision(self, decision: IdentityDecision, expected_version: int) -> bool:
+        with self._lock:
+            current = self.identity_decisions.get(decision.pair_key)
+            if (current.version if current else 0) != expected_version:
+                return False
+            self.identity_decisions[decision.pair_key] = decision
+            return True
+
+    def list_identity_decisions(self, incident_id: str, person_id: str) -> list[IdentityDecision]:
+        return sorted(
+            (
+                d
+                for d in self.identity_decisions.values()
+                if d.incident_id == incident_id and person_id in (d.person_a_id, d.person_b_id)
+            ),
+            key=lambda d: d.pair_key,
+        )
+
     def put_activity(self, activity: Activity) -> None:
         self.activity.append(activity)
 
@@ -467,6 +504,10 @@ class InMemoryFoundRepository:
                 [k for k, v in self.review_items.items() if v.incident_id == incident_id],
             )
             removed += drop(self.run_locks, [k for k in self.run_locks if k in claims])
+            for store in (self.identity_proposals, self.identity_decisions):
+                removed += drop(
+                    store, [k for k, v in store.items() if v.incident_id == incident_id]
+                )
             for token in list(self.name_tokens):
                 self.name_tokens[token] -= subjects
                 if not self.name_tokens[token]:
