@@ -766,6 +766,17 @@ tbody th {
   font-weight: 500;
 }
 
+td a,
+th a {
+  font-weight: 500;
+  text-decoration: none;
+}
+
+td a:hover,
+th a:hover {
+  text-decoration: underline;
+}
+
 .cell-sub {
   display: block;
   font-size: var(--fs-12);
@@ -984,6 +995,13 @@ blockquote {
   display: none;
 }
 
+/* On phones the nav scrolls inside the bar; a soft edge says there is more. */
+@media (max-width: 640px) {
+  .topbar nav {
+    mask-image: linear-gradient(90deg, #000 85%, transparent);
+  }
+}
+
 .topbar nav a {
   display: inline-flex;
   align-items: center;
@@ -1148,6 +1166,87 @@ button.menu-button[aria-expanded="true"] {
   padding: var(--s-12) var(--s-4);
   text-align: center;
   color: var(--text-2);
+}
+
+/* A link that does a button's job. */
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-2);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease);
+}
+
+.button-link:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.button-link.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.button-link.primary:hover {
+  background: var(--accent-hover);
+  color: var(--accent-text);
+}
+
+.crumb {
+  font-size: var(--fs-13);
+  margin-bottom: var(--s-3);
+}
+
+.crumb a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.crumb a::before {
+  content: "90";
+  margin-right: var(--s-1);
+}
+
+.crumb a:hover {
+  color: var(--text);
+}
+
+/* Main column and a side column for secondary panels on wide screens. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 var(--s-8);
+}
+
+@media (min-width: 1024px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+
+  .split-side {
+    padding-top: var(--s-4);
+  }
+}
+
+.split-side > section {
+  margin-bottom: var(--s-6);
+}
+
+.split-side h2 {
+  margin-top: 0;
+}
+
+.skeleton-title {
+  width: 30%;
+  height: 20px;
+  margin: var(--s-6) 0;
 }
 
 .actions {

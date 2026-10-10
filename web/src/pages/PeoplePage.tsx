@@ -4,18 +4,23 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../api/context";
 import { listPeople, type PersonRow } from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { Empty, PageHeader, SkeletonRows } from "../components/ui";
 import { rememberIncident } from "../incident";
 import { useLoad } from "../useLoad";
 import { usePager } from "../usePager";
 
-function PersonList({ people }: { people: PersonRow[] }) {
+function PersonRows({ people }: { people: PersonRow[] }) {
   return (
     <>
       {people.map((person) => (
-        <li key={person.id}>
-          <Link to={`/people/${encodeURIComponent(person.id)}`}>{person.name}</Link>
-          <span className="muted">{person.age === null ? "Age not reported" : `Age ${person.age}`}</span>
-        </li>
+        <tr key={person.id}>
+          <th scope="row">
+            <Link to={`/people/${encodeURIComponent(person.id)}`}>{person.name}</Link>
+          </th>
+          <td className="num">
+            {person.age === null ? <span className="muted">Not reported</span> : person.age}
+          </td>
+        </tr>
       ))}
     </>
   );
@@ -53,8 +58,10 @@ export function PeoplePage() {
 
   return (
     <section className="page">
-      <h1>People</h1>
-      <p className="muted">Incident {incidentId}</p>
+      <PageHeader
+        title="People"
+        description="Everyone reported in this incident. Open a person to see each report and who made it."
+      />
 
       <form className="search" role="search" onSubmit={onSearch} key={key}>
         <label>
@@ -72,25 +79,58 @@ export function PeoplePage() {
       {age && <p className="hint">Ages match within 2 years. People with no reported age are included.</p>}
 
       <div id={resultsId} aria-live="polite">
-        {first.status === "loading" && <p className="muted">Loading people</p>}
+        {first.status === "loading" && <SkeletonRows label="Loading people" rows={8} />}
         {first.status === "error" && (
           <ErrorNotice error={first.error} notFound="This incident does not exist." onRetry={retry} />
         )}
         {first.status === "ready" && first.data.people.length === 0 && (
-          <p className="muted">{searching ? "No people match this search." : "No people reported yet."}</p>
+          <Empty
+            title={searching ? "No people match this search." : "No people reported yet."}
+            action={
+              searching ? (
+                <button type="button" onClick={() => setParams(new URLSearchParams())}>
+                  Clear search
+                </button>
+              ) : undefined
+            }
+          >
+            {searching
+              ? "Try part of a name or leave the age empty. Ages match within 2 years."
+              : "People appear here as soon as an organization publishes a report about them."}
+          </Empty>
         )}
         {first.status === "ready" && first.data.people.length > 0 && (
-          <ul className="people">
-            <PersonList people={first.data.people} />
-            <PersonList people={pager.items} />
-          </ul>
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col" className="num">
+                      Age
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <PersonRows people={first.data.people} />
+                  <PersonRows people={pager.items} />
+                </tbody>
+              </table>
+            </div>
+            <div className="table-foot">
+              <span>
+                Showing {first.data.people.length + pager.items.length}
+                {pager.hasMore ? " so far" : ""}
+              </span>
+              {pager.hasMore && (
+                <button type="button" onClick={pager.loadMore} disabled={pager.busy}>
+                  {pager.busy ? "Loading" : "Load more"}
+                </button>
+              )}
+            </div>
+          </>
         )}
         {pager.error && <ErrorNotice error={pager.error} onRetry={pager.loadMore} />}
-        {pager.hasMore && (
-          <button type="button" onClick={pager.loadMore} disabled={pager.busy}>
-            {pager.busy ? "Loading" : "Load more"}
-          </button>
-        )}
       </div>
     </section>
   );

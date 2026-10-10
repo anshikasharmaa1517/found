@@ -24,7 +24,7 @@ describe("people page", () => {
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     const link = await screen.findByRole("link", { name: "Maya Rawat" });
     expect(link).toHaveAttribute("href", "/people/per_1");
-    expect(screen.getByText("Age not reported")).toBeInTheDocument();
+    expect(screen.getByText("Not reported")).toBeInTheDocument();
     expect(localStorage.getItem("found.incidentId")).toBe("inc_1");
     expect(screen.getByRole("link", { name: "People" })).toBeInTheDocument();
   });
@@ -54,9 +54,9 @@ describe("people page", () => {
     });
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     await userEvent.setup().click(await screen.findByRole("button", { name: "Load more" }));
-    const list = await screen.findByRole("list");
+    const list = await screen.findByRole("table");
     await within(list).findByRole("link", { name: "Ravi Kumar" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(list).getAllByRole("row")).toHaveLength(4); // header and three people
     expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
     expect(calls.at(-1)?.query.cursor).toBe("c2");
   });

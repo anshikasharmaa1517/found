@@ -143,7 +143,7 @@ describe("person page", () => {
     expect(within(hospital).getByText("Newer report")).toBeInTheDocument();
     expect(within(hospital).getByText("Used for summary")).toBeInTheDocument();
     expect(within(hospital).getByText("Admitted, stable condition")).toBeInTheDocument();
-    expect(within(hospital).getByText(/Central Hospital Demo,/)).toBeInTheDocument();
+    expect(within(hospital).getByText(/Central Hospital Demo/)).toBeInTheDocument();
     const undated = items.find((li) => li.id === "entry-clm_3")!;
     expect(within(undated).getByText(/Reported time unknown/)).toBeInTheDocument();
     expect(within(undated).getByText("Other information", { selector: ".tag" })).toBeInTheDocument();

@@ -14,6 +14,7 @@ import {
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FollowPanel } from "../components/FollowPanel";
 import { TraceButton } from "../components/TraceButton";
+import { PageHeader, SkeletonRows } from "../components/ui";
 import { rememberedIncident } from "../incident";
 import {
   claimTypeLabel,
@@ -106,7 +107,7 @@ function Entries({
               <strong>Sensitive report</strong>
               {entry.claim_id === citedId && <span className="tag tag-cited">Used for summary</span>}
             </div>
-            <p className="muted">{formatTime(entry.reported_at)}</p>
+            <p className="meta">{formatTime(entry.reported_at)}</p>
             <p>{entry.notice}</p>
           </li>
         ) : (
@@ -122,8 +123,9 @@ function Entries({
             </span>
             {entry.claim_id === citedId && <span className="tag tag-cited">Used for summary</span>}
           </div>
-          <p className="muted">
-            {entry.source}, {formatTime(entry.reported_at)}
+          <p className="meta">
+            {entry.source}
+            <span className="meta-sep">{formatTime(entry.reported_at)}</span>
           </p>
           {entry.value && <p>{entry.value}</p>}
           <blockquote>{entry.excerpt}</blockquote>
@@ -163,7 +165,14 @@ export function PersonPage() {
   });
   useLiveReconnect(reload);
 
-  if (first.status === "loading") return <p className="page-status">Loading timeline</p>;
+  if (first.status === "loading") {
+    return (
+      <section className="page">
+        <div className="skeleton-title skeleton-bar" aria-hidden="true" />
+        <SkeletonRows label="Loading timeline" rows={4} />
+      </section>
+    );
+  }
   if (first.status === "error") {
     return (
       <section className="page">
@@ -177,29 +186,32 @@ export function PersonPage() {
   return (
     <section className="page">
       {incidentId && (
-        <p>
+        <p className="crumb">
           <Link to={`/incidents/${encodeURIComponent(incidentId)}/people`}>Back to people</Link>
         </p>
       )}
-      <h1>{person.name}</h1>
-      <p className="muted">{person.age === null ? "Age not reported" : `Age ${person.age}`}</p>
-      {incidentId && hasRole(user, "publisher") && (
-        <p>
-          <Link
-            to={`/incidents/${encodeURIComponent(incidentId)}/report?${new URLSearchParams({
-              person: person.id,
-              name: person.name,
-            })}`}
-          >
-            Publish a report about this person
-          </Link>
-        </p>
-      )}
+      <PageHeader
+        title={person.name}
+        description={person.age === null ? "Age not reported" : `Age ${person.age}`}
+        actions={
+          incidentId &&
+          hasRole(user, "publisher") && (
+            <Link
+              className="button-link primary"
+              to={`/incidents/${encodeURIComponent(incidentId)}/report?${new URLSearchParams({
+                person: person.id,
+                name: person.name,
+              })}`}
+            >
+              Publish a report about this person
+            </Link>
+          )
+        }
+      />
 
+      <div className="split">
+        <div className="split-main">
       <SummaryCard summary={summary} />
-      <IdentityLinks links={identity} />
-
-      {hasRole(user, "family") && <FollowPanel personId={person.id} personName={person.name} />}
 
       <div className="timeline-head">
         <h2>Timeline</h2>
@@ -217,7 +229,7 @@ export function PersonPage() {
       <p className="hint">Ordered by when each report says it happened, not when it arrived.</p>
 
       {entries.length === 0 ? (
-        <p className="muted">No reports yet.</p>
+        <p className="empty">No reports yet.</p>
       ) : (
         <ol className="timeline">
           <Entries entries={entries} citedId={summary.cited_claim_id} canTrace={canTrace} />
@@ -230,6 +242,12 @@ export function PersonPage() {
           {pager.busy ? "Loading" : "Load more"}
         </button>
       )}
+        </div>
+        <aside className="split-side">
+          {hasRole(user, "family") && <FollowPanel personId={person.id} personName={person.name} />}
+          <IdentityLinks links={identity} />
+        </aside>
+      </div>
     </section>
   );
 }
