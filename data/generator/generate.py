@@ -38,16 +38,18 @@ ORGANIZATIONS = [
 ]
 ORG = {o[0]: o for o in ORGANIZATIONS}
 
-# Invented places along the valley; coordinates are only for the map.
+# Invented places along the valley. The names are fictional; the coordinates put each one
+# on a sensible spot of the real terrain under the map (a bridge on the river, a ghat on
+# the bank by the market road), so pins do not land on empty hillsides.
 PLACES = {
-    "old_bridge": ("Old Bridge", 30.7268, 78.4354),
-    "upper_village": ("Upper Village", 30.7412, 78.4471),
-    "market_ghat": ("Market Ghat", 30.7231, 78.4302),
-    "temple_steps": ("Temple Steps", 30.7305, 78.4389),
-    "school": ("Valley School Building", 30.7189, 78.4265),
-    "shelter": ("Riverside Shelter", 30.7156, 78.4228),
-    "hospital": ("Central Hospital Demo grounds", 30.7102, 78.4187),
-    "footbridge": ("Upper Footbridge", 30.7357, 78.4420),
+    "old_bridge": ("Old Bridge", 30.7312, 78.4328),
+    "upper_village": ("Upper Village", 30.7334, 78.4275),
+    "market_ghat": ("Market Ghat", 30.7289, 78.4368),
+    "temple_steps": ("Temple Steps", 30.7286, 78.4388),
+    "school": ("Valley School Building", 30.7234, 78.4316),
+    "shelter": ("Riverside Shelter", 30.7267, 78.4353),
+    "hospital": ("Central Hospital Demo grounds", 30.7298, 78.4426),
+    "footbridge": ("Upper Footbridge", 30.7290, 78.4471),
 }
 
 FIRST_NAMES = [

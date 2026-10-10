@@ -9,8 +9,8 @@
     "reported_at": "2026-10-02T21:10:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -23,8 +23,8 @@
     "reported_at": "2026-10-03T07:40:00+05:30",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 30.7102,
-      "lon": 78.4187
+      "lat": 30.7298,
+      "lon": 78.4426
     }
   },
   {
@@ -47,8 +47,8 @@
     "reported_at": "2026-10-02T22:05:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -61,8 +61,8 @@
     "reported_at": "2026-10-03T06:15:00+05:30",
     "location": {
       "name": "Upper Footbridge",
-      "lat": 30.7357,
-      "lon": 78.442
+      "lat": 30.729,
+      "lon": 78.4471
     }
   },
   {
@@ -75,8 +75,8 @@
     "reported_at": "2026-10-03T11:20:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -89,8 +89,8 @@
     "reported_at": "2026-10-03T05:50:00+05:30",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 30.7102,
-      "lon": 78.4187
+      "lat": 30.7298,
+      "lon": 78.4426
     }
   },
   {
@@ -133,8 +133,8 @@
     "reported_at": "2026-10-02T23:40:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -147,8 +147,8 @@
     "reported_at": "2026-10-03T10:00:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -161,8 +161,8 @@
     "reported_at": "2026-10-02T20:30:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -175,8 +175,8 @@
     "reported_at": null,
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -189,8 +189,8 @@
     "reported_at": "2026-10-02T21:55:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -203,8 +203,8 @@
     "reported_at": "2026-10-03T03:20:00+05:30",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 30.7102,
-      "lon": 78.4187
+      "lat": 30.7298,
+      "lon": 78.4426
     }
   },
   {
@@ -217,8 +217,8 @@
     "reported_at": "2026-10-03T09:30:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -231,8 +231,8 @@
     "reported_at": "2026-10-03T12:45:00+05:30",
     "location": {
       "name": "Valley School Building",
-      "lat": 30.7189,
-      "lon": 78.4265
+      "lat": 30.7234,
+      "lon": 78.4316
     }
   },
   {
@@ -245,8 +245,8 @@
     "reported_at": "2026-10-02T22:40:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -269,8 +269,8 @@
     "reported_at": "2026-10-02T22:35:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -283,8 +283,8 @@
     "reported_at": "2026-10-03T15:20:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -297,8 +297,8 @@
     "reported_at": "2026-10-02T21:15:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -311,8 +311,8 @@
     "reported_at": "2026-10-02T23:05:00+05:30",
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -325,8 +325,8 @@
     "reported_at": "2026-10-03T05:00:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -339,8 +339,8 @@
     "reported_at": "2026-10-02T21:15:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -353,8 +353,8 @@
     "reported_at": "2026-10-02T22:10:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -367,8 +367,8 @@
     "reported_at": "2026-10-03T12:45:00+05:30",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 30.7102,
-      "lon": 78.4187
+      "lat": 30.7298,
+      "lon": 78.4426
     }
   },
   {
@@ -381,8 +381,8 @@
     "reported_at": "2026-10-02T23:05:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -395,8 +395,8 @@
     "reported_at": "2026-10-02T21:40:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -409,8 +409,8 @@
     "reported_at": "2026-10-03T10:45:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -423,8 +423,8 @@
     "reported_at": "2026-10-02T22:10:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -437,8 +437,8 @@
     "reported_at": "2026-10-03T11:20:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -451,8 +451,8 @@
     "reported_at": "2026-10-02T21:15:00+05:30",
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -465,8 +465,8 @@
     "reported_at": "2026-10-03T06:00:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -479,8 +479,8 @@
     "reported_at": "2026-10-02T23:50:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -493,8 +493,8 @@
     "reported_at": "2026-10-02T22:35:00+05:30",
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -507,8 +507,8 @@
     "reported_at": "2026-10-02T22:35:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -521,8 +521,8 @@
     "reported_at": "2026-10-03T09:20:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -535,8 +535,8 @@
     "reported_at": "2026-10-02T23:50:00+05:30",
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -549,8 +549,8 @@
     "reported_at": "2026-10-02T21:15:00+05:30",
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -563,8 +563,8 @@
     "reported_at": "2026-10-02T22:35:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -577,8 +577,8 @@
     "reported_at": "2026-10-03T11:00:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -591,8 +591,8 @@
     "reported_at": "2026-10-02T22:35:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -605,8 +605,8 @@
     "reported_at": "2026-10-03T10:20:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -619,8 +619,8 @@
     "reported_at": "2026-10-02T23:50:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -633,8 +633,8 @@
     "reported_at": "2026-10-03T15:45:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -647,8 +647,8 @@
     "reported_at": "2026-10-02T21:40:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -661,8 +661,8 @@
     "reported_at": "2026-10-02T22:35:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -675,8 +675,8 @@
     "reported_at": "2026-10-03T10:00:00+05:30",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 30.7102,
-      "lon": 78.4187
+      "lat": 30.7298,
+      "lon": 78.4426
     }
   },
   {
@@ -689,8 +689,8 @@
     "reported_at": "2026-10-02T22:35:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -703,8 +703,8 @@
     "reported_at": "2026-10-03T13:20:00+05:30",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 30.7102,
-      "lon": 78.4187
+      "lat": 30.7298,
+      "lon": 78.4426
     }
   },
   {
@@ -717,8 +717,8 @@
     "reported_at": "2026-10-02T21:15:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -731,8 +731,8 @@
     "reported_at": "2026-10-03T10:20:00+05:30",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 30.7102,
-      "lon": 78.4187
+      "lat": 30.7298,
+      "lon": 78.4426
     }
   },
   {
@@ -745,8 +745,8 @@
     "reported_at": "2026-10-02T23:05:00+05:30",
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -759,8 +759,8 @@
     "reported_at": "2026-10-03T12:20:00+05:30",
     "location": {
       "name": "Temple Steps",
-      "lat": 30.7305,
-      "lon": 78.4389
+      "lat": 30.7286,
+      "lon": 78.4388
     }
   },
   {
@@ -773,8 +773,8 @@
     "reported_at": "2026-10-02T20:10:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -787,8 +787,8 @@
     "reported_at": "2026-10-03T08:15:00+05:30",
     "location": {
       "name": "Old Bridge",
-      "lat": 30.7268,
-      "lon": 78.4354
+      "lat": 30.7312,
+      "lon": 78.4328
     }
   },
   {
@@ -801,8 +801,8 @@
     "reported_at": "2026-10-02T23:30:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -815,8 +815,8 @@
     "reported_at": "2026-10-03T15:00:00+05:30",
     "location": {
       "name": "Upper Village",
-      "lat": 30.7412,
-      "lon": 78.4471
+      "lat": 30.7334,
+      "lon": 78.4275
     }
   },
   {
@@ -829,8 +829,8 @@
     "reported_at": "2026-10-02T22:00:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -843,8 +843,8 @@
     "reported_at": "2026-10-03T11:00:00+05:30",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 30.7156,
-      "lon": 78.4228
+      "lat": 30.7267,
+      "lon": 78.4353
     }
   },
   {
@@ -857,8 +857,8 @@
     "reported_at": "2026-10-03T11:30:00+05:30",
     "location": {
       "name": "Valley School Building",
-      "lat": 30.7189,
-      "lon": 78.4265
+      "lat": 30.7234,
+      "lon": 78.4316
     }
   },
   {
@@ -871,8 +871,8 @@
     "reported_at": "2026-10-03T07:00:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -885,8 +885,8 @@
     "reported_at": "2026-10-02T19:45:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   },
   {
@@ -899,8 +899,8 @@
     "reported_at": "2026-10-03T06:30:00+05:30",
     "location": {
       "name": "Market Ghat",
-      "lat": 30.7231,
-      "lon": 78.4302
+      "lat": 30.7289,
+      "lon": 78.4368
     }
   }
 ]
