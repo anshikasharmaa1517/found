@@ -188,17 +188,17 @@ class ApiStack(cdk.Stack):
         )
         integration = integrations.HttpLambdaIntegration("Api", self.function)
 
-        self.http_api.add_routes(
+        routes = self.http_api.add_routes(
             path="/v1/health", methods=[apigw.HttpMethod.GET], integration=integration
         )
-        self.http_api.add_routes(
+        routes += self.http_api.add_routes(
             path="/v1/incidents/{incident_id}/reports",
             methods=[apigw.HttpMethod.POST],
             integration=integration,
             authorizer=jwt,
         )
         for method, path in SIGNED_IN_ROUTES:
-            self.http_api.add_routes(
+            routes += self.http_api.add_routes(
                 path=path,
                 methods=[apigw.HttpMethod(method)],
                 integration=integration,
@@ -208,5 +208,8 @@ class ApiStack(cdk.Stack):
         stage = self.http_api.default_stage.node.default_child
         stage.add_property_override("DefaultRouteSettings", DEFAULT_THROTTLE)
         stage.add_property_override("RouteSettings", ROUTE_THROTTLES)
+        # Route settings name routes by key, so every route must exist before the stage.
+        for route in routes:
+            stage.node.add_dependency(route)
 
         cdk.CfnOutput(self, "ApiUrl", value=self.http_api.api_endpoint)

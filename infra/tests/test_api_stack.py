@@ -226,3 +226,10 @@ def test_demo_reset_runs_in_its_own_worker_with_the_fixtures():
             }
         },
     )
+
+
+def test_stage_waits_for_the_routes_its_throttles_name():
+    t = template()
+    stage = next(iter(t.find_resources("AWS::ApiGatewayV2::Stage").values()))
+    routes = set(t.find_resources("AWS::ApiGatewayV2::Route"))
+    assert routes and routes <= set(stage.get("DependsOn", []))
