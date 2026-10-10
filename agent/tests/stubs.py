@@ -13,8 +13,11 @@ TARGET = "found-tools___"
 class ScriptedModel(Model):
     """Plays one scripted turn per call: a list of ("tool", name, input) or ("text", str)."""
 
-    def __init__(self, turns: list[list[tuple]], fail_on: int | None = None) -> None:
+    def __init__(
+        self, turns: list[list[tuple]], fail_on: int | None = None, prefix: str = TARGET
+    ) -> None:
         self.turns = turns
+        self.prefix = prefix
         self.calls = 0
         self.fail_on = fail_on
         self.seen_messages: list[list[dict]] = []
@@ -34,11 +37,11 @@ class ScriptedModel(Model):
         if self.fail_on == self.calls:
             raise RuntimeError("model unavailable")
         turn = self.turns[self.calls - 1] if self.calls <= len(self.turns) else [("text", "Done.")]
-        async for event in _events(turn, self.calls):
+        async for event in _events(turn, self.calls, self.prefix):
             yield event
 
 
-async def _events(turn: list[tuple], call: int) -> AsyncIterator[dict[str, Any]]:
+async def _events(turn: list[tuple], call: int, prefix: str) -> AsyncIterator[dict[str, Any]]:
     yield {"messageStart": {"role": "assistant"}}
     uses_tool = False
     for n, block in enumerate(turn):
@@ -47,7 +50,7 @@ async def _events(turn: list[tuple], call: int) -> AsyncIterator[dict[str, Any]]
             _, name, tool_input = block
             yield {
                 "contentBlockStart": {
-                    "start": {"toolUse": {"name": TARGET + name, "toolUseId": f"t{call}_{n}"}}
+                    "start": {"toolUse": {"name": prefix + name, "toolUseId": f"t{call}_{n}"}}
                 }
             }
             yield {"contentBlockDelta": {"delta": {"toolUse": {"input": json.dumps(tool_input)}}}}

@@ -21,12 +21,13 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_lambda_event_sources as sources
 from aws_cdk import aws_logs as logs
+from aws_cdk import aws_secretsmanager as secretsmanager
 from aws_cdk import aws_sqs as sqs
 from constructs import Construct
 
 from config import EnvConfig
 from stacks.consumer import dead_letter_queue
-from stacks.lambda_code import BACKEND, agent_code, backend_code
+from stacks.lambda_code import BACKEND, agent_code, agent_layer_code, backend_code
 
 TOOL_SPECS = BACKEND / "found_core" / "tools" / "specs.json"
 GATEWAY_TARGET = "found-tools"
@@ -93,6 +94,78 @@ class AgentStack(cdk.Stack):
             ),
         )
 
+        if cfg.agent_host == "lambda":
+            self._lambda_host(cfg, table, name)
+        else:
+            self._agentcore_host(cfg, table, name)
+        self.runner.add_event_source(
+            sources.SqsEventSource(
+                self.run_queue,
+                batch_size=1,
+                max_concurrency=MAX_CONCURRENT_RUNS,
+                report_batch_item_failures=True,
+            )
+        )
+
+        cdk.CfnOutput(self, "RunQueueUrl", value=self.run_queue.queue_url)
+        cdk.CfnOutput(self, "RunDlqUrl", value=self.run_dlq.queue_url)
+
+    def _lambda_host(self, cfg: EnvConfig, table: ddb.ITableV2, name: str) -> None:
+        """The runner runs the agent itself, with the tools in process.
+
+        For accounts where AgentCore Runtime is not available. Models are reached
+        through the bedrock-mantle endpoint with a Bedrock API key kept in Secrets
+        Manager; the key is put there after deploy, never in the template.
+        """
+        self.api_key_secret = secretsmanager.Secret(
+            self,
+            "BedrockApiKey",
+            secret_name=f"{name}/bedrock-api-key",
+            description="Bedrock API key for the bedrock-mantle endpoint. Set after deploy.",
+        )
+        layer = lambda_.LayerVersion(
+            self,
+            "AgentLayer",
+            code=agent_layer_code(),
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_12],
+            compatible_architectures=[lambda_.Architecture.ARM_64],
+            description="The provenance agent and its libraries.",
+        )
+        self.runner = lambda_.Function(
+            self,
+            "RunnerFunction",
+            function_name=f"{name}-investigation-runner",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            architecture=lambda_.Architecture.ARM_64,
+            handler="handlers.investigation_runner.handler",
+            code=backend_code(),
+            layers=[layer],
+            memory_size=1024,
+            timeout=RUNNER_TIMEOUT,
+            tracing=lambda_.Tracing.ACTIVE,
+            environment={
+                "TABLE_NAME": table.table_name,
+                "MODEL_ID": self.model_id,
+                "AGENT_HOST": "lambda",
+                "BEDROCK_API_KEY_SECRET_ARN": self.api_key_secret.secret_arn,
+                "MAX_TOOL_CALLS": str(MAX_TOOL_CALLS),
+                **cfg.cap_environment(),
+                "POWERTOOLS_SERVICE_NAME": "investigation_runner",
+                "LOG_LEVEL": "INFO",
+            },
+            log_group=logs.LogGroup(
+                self,
+                "RunnerLogs",
+                retention=cfg.retention,
+                removal_policy=cdk.RemovalPolicy.DESTROY,
+            ),
+        )
+        table.grant_read_write_data(self.runner)
+        self.api_key_secret.grant_read(self.runner)
+        cdk.CfnOutput(self, "BedrockApiKeySecretArn", value=self.api_key_secret.secret_arn)
+
+    def _agentcore_host(self, cfg: EnvConfig, table: ddb.ITableV2, name: str) -> None:
+        """The design's host: AgentCore Runtime, with the tools behind Gateway."""
         self.tools_function = lambda_.Function(
             self,
             "ToolsFunction",
@@ -304,16 +377,5 @@ class AgentStack(cdk.Stack):
                 ],
             )
         )
-        self.runner.add_event_source(
-            sources.SqsEventSource(
-                self.run_queue,
-                batch_size=1,
-                max_concurrency=MAX_CONCURRENT_RUNS,
-                report_batch_item_failures=True,
-            )
-        )
-
         cdk.CfnOutput(self, "RuntimeArn", value=self.runtime.attr_agent_runtime_arn)
         cdk.CfnOutput(self, "GatewayUrl", value=self.gateway.attr_gateway_url)
-        cdk.CfnOutput(self, "RunQueueUrl", value=self.run_queue.queue_url)
-        cdk.CfnOutput(self, "RunDlqUrl", value=self.run_dlq.queue_url)

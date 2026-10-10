@@ -24,6 +24,7 @@ from found_core.tools.service import AgentToolService
 if TYPE_CHECKING:
     from found_core.adapters.apigw_connections import ApiGatewayConnections
     from found_core.adapters.dynamodb import DynamoBudgetLedger
+    from found_core.adapters.local_agent import LocalAgentInvoker
 
 
 @cache
@@ -148,6 +149,10 @@ def investigation_runner() -> InvestigationRunner:
     from found_core.adapters.agentcore import AgentCoreInvoker
 
     config = investigation_config()
+    if os.environ.get("AGENT_HOST") == "lambda":
+        return InvestigationRunner(
+            repository(), budget_ledger(), local_agent_invoker(config), config
+        )
     client = boto3.client(
         "bedrock-agentcore",
         config=Config(
@@ -179,3 +184,28 @@ def demo_service() -> DemoService:
     worker = os.environ.get("RESET_FUNCTION_NAME")
     trigger = LambdaResetTrigger(boto3.client("lambda"), worker) if worker else None
     return DemoService(repo, IngestService(repo), fixtures, trigger)
+
+
+def local_agent_invoker(config: InvestigationConfig) -> "LocalAgentInvoker":
+    """The agent in this process, reaching the model with the stored Bedrock API key."""
+    import boto3
+    from found_agent.config import AgentConfig
+    from found_agent.models import build_model
+
+    from found_core.adapters.local_agent import LocalAgentInvoker
+
+    secret = boto3.client("secretsmanager").get_secret_value(
+        SecretId=os.environ["BEDROCK_API_KEY_SECRET_ARN"]
+    )
+    agent_config = AgentConfig(
+        model_id=config.model_id,
+        gateway_url="",
+        region=os.environ.get("AWS_REGION", "ap-south-1"),
+        api_key=secret["SecretString"].strip().strip("<>").strip() or None,
+    )
+    return LocalAgentInvoker(
+        agent_tool_service(),
+        lambda: build_model(agent_config, config.max_output_tokens),
+        model_id=config.model_id,
+        read_timeout=config.wall_clock_seconds + 10,
+    )

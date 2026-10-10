@@ -41,13 +41,16 @@ class _LocalBundling:
         requirements: str = "requirements-lambda.txt",
         packages: tuple[str, ...] = PACKAGES,
         files: tuple[str, ...] = (),
+        subdir: str = "",
     ) -> None:
         self._source = source
         self._requirements = requirements
         self._packages = packages
         self._files = files
+        self._subdir = subdir
 
     def try_bundle(self, output_dir: str, _options: object = None) -> bool:
+        output_dir = str(Path(output_dir) / self._subdir) if self._subdir else output_dir
         cmd = [
             sys.executable, "-m", "pip", "install", "--quiet",
             "-r", str(self._source / self._requirements),
@@ -105,4 +108,27 @@ def agent_code(scope: Construct, construct_id: str) -> s3_assets.Asset:
         path=str(AGENT),
         exclude=ASSET_EXCLUDE,
         bundling=_bundling(local, "requirements.txt", AGENT_PACKAGES + AGENT_FILES),
+    )
+
+
+AGENT_LAYER_REQUIREMENTS = "requirements-lambda.txt"
+
+
+def agent_layer_code() -> lambda_.Code:
+    """The agent package and its libraries as a Lambda layer (under `python/`)."""
+    local = _LocalBundling(AGENT, AGENT_LAYER_REQUIREMENTS, AGENT_PACKAGES, subdir="python")
+    return lambda_.Code.from_asset(
+        str(AGENT),
+        exclude=ASSET_EXCLUDE,
+        bundling=cdk.BundlingOptions(
+            image=lambda_.Runtime.PYTHON_3_12.bundling_image,
+            platform="linux/arm64",
+            local=local,
+            command=[
+                "bash",
+                "-c",
+                f"pip install -r {AGENT_LAYER_REQUIREMENTS} -t /asset-output/python"
+                " && cp -r found_agent /asset-output/python/",
+            ],
+        ),
     )

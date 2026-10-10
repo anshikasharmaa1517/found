@@ -6,6 +6,7 @@ from typing import Any
 from aws_cdk import aws_logs as logs
 
 REGION = "ap-south-1"
+AGENT_HOSTS = ("agentcore", "lambda")
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,9 @@ class EnvConfig:
     log_retention: str = "ONE_MONTH"
     run_cap: int = 200
     model_call_cap: int = 1200
+    # Where the agent runs: "agentcore" (the design) or "lambda" (inside the runner,
+    # for accounts without AgentCore Runtime).
+    agent_host: str = "agentcore"
 
     @property
     def retention(self) -> logs.RetentionDays:
@@ -31,6 +35,9 @@ def load(name: str, envs: dict[str, Any]) -> EnvConfig:
     if name not in envs:
         raise ValueError(f"unknown env {name!r}, expected one of {sorted(envs)}")
     raw = envs[name]
+    agent_host = str(raw.get("agent_host", "agentcore"))
+    if agent_host not in AGENT_HOSTS:
+        raise ValueError(f"agent_host must be one of {AGENT_HOSTS}, not {agent_host!r}")
     return EnvConfig(
         name=name,
         deletion_protection=bool(raw["deletion_protection"]),
@@ -38,4 +45,5 @@ def load(name: str, envs: dict[str, Any]) -> EnvConfig:
         log_retention=str(raw.get("log_retention", "ONE_MONTH")),
         run_cap=int(raw.get("run_cap", 200)),
         model_call_cap=int(raw.get("model_call_cap", 1200)),
+        agent_host=agent_host,
     )

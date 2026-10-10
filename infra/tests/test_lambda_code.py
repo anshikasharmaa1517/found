@@ -41,3 +41,17 @@ def test_agent_bundle_holds_the_package_and_entry_point(tmp_path, monkeypatch):
     assert (tmp_path / "main.py").exists()
     assert (tmp_path / "found_agent" / "app.py").exists()
     assert not (tmp_path / "tests").exists()
+
+
+def test_agent_layer_installs_under_python(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        lambda_code.subprocess, "run", lambda cmd, check: calls.append(cmd) or _Result(0)
+    )
+    local = lambda_code._LocalBundling(
+        lambda_code.AGENT, "requirements-lambda.txt", lambda_code.AGENT_PACKAGES, subdir="python"
+    )
+    assert local.try_bundle(str(tmp_path), None) is True
+    cmd = calls[0]
+    assert cmd[cmd.index("--target") + 1] == str(tmp_path / "python")
+    assert (tmp_path / "python" / "found_agent" / "run.py").exists()

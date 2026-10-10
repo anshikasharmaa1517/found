@@ -181,3 +181,50 @@ def test_runner_may_invoke_only_the_agent_runtime():
     ]
     assert len(statements) == 1
     assert "AgentRuntimeArn" in json.dumps(statements[0]["Resource"])
+
+
+def lambda_host_template() -> Template:
+    app = cdk.App(context={"aws:cdk:bundling-stacks": []})
+    envs = {"dev": {**ENVS["dev"], "agent_host": "lambda"}}
+    cfg = load("dev", envs)
+    data = DataStack(app, "Data", cfg=cfg, env=ENV)
+    return Template.from_stack(AgentStack(app, "Agent", cfg=cfg, table=data.table, env=ENV))
+
+
+def test_lambda_host_runs_the_agent_in_the_runner_without_agentcore():
+    t = lambda_host_template()
+    for kind in (
+        "AWS::BedrockAgentCore::Runtime",
+        "AWS::BedrockAgentCore::Gateway",
+        "AWS::BedrockAgentCore::GatewayTarget",
+    ):
+        t.resource_count_is(kind, 0)
+    t.resource_count_is("AWS::Lambda::LayerVersion", 1)
+    t.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "found-dev/bedrock-api-key"})
+    runner = next(
+        r["Properties"]
+        for r in t.find_resources("AWS::Lambda::Function").values()
+        if r["Properties"].get("FunctionName") == "found-dev-investigation-runner"
+    )
+    env = runner["Environment"]["Variables"]
+    assert env["AGENT_HOST"] == "lambda" and "BEDROCK_API_KEY_SECRET_ARN" in env
+    assert "RUNTIME_ARN" not in env and len(runner["Layers"]) == 1
+    assert runner["MemorySize"] == 1024 and runner["Timeout"] == 180
+    t.has_resource_properties(
+        "AWS::Lambda::EventSourceMapping",
+        {"BatchSize": 1, "ScalingConfig": {"MaximumConcurrency": 2}},
+    )
+    statements = [
+        s
+        for p in t.find_resources("AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+    ]
+    assert any("secretsmanager:GetSecretValue" in s["Action"] for s in statements)
+    assert "BedrockApiKeySecretArn" in t.find_outputs("*")
+
+
+def test_unknown_agent_host_is_refused():
+    import pytest
+
+    with pytest.raises(ValueError):
+        load("dev", {"dev": {**ENVS["dev"], "agent_host": "laptop"}})
