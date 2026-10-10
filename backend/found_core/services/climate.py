@@ -1,31 +1,32 @@
-"""Map place counts with a short in-memory cache (design Sections 7.3 and 11).
+"""The climate picture for an incident: one sourced feature per non-person subject.
 
-Counts read every claim in the incident, so each Lambda environment keeps the result for
-30 seconds and the page says how fresh it is. Access is checked on every call; only the
-counts are shared between callers.
+Design UC-7 and FR-10. Like the place counts, the layer reads the whole incident, so
+each Lambda environment keeps it for 30 seconds and says how fresh it is. Access is
+checked on every call.
 """
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from found_core.domain.auth import Caller
-from found_core.domain.enums import SubjectType
+from found_core.domain.climate import CLIMATE_TYPES, ClimateFeature, build_feature
 from found_core.domain.errors import NotFound
-from found_core.domain.places import PlaceCounts, place_counts
 from found_core.ports.clock import Clock, SystemClock
 from found_core.ports.repository import FoundRepository
 from found_core.services.access import ensure_can_read
 
 CACHE_SECONDS = 30
+# Enough for a district; the layer is a picture, not an inventory.
+MAX_PER_TYPE = 200
 
 
 @dataclass(frozen=True)
-class IncidentMap:
-    counts: PlaceCounts
+class ClimateLayer:
+    features: list[ClimateFeature]
     updated_at: datetime
 
 
-class MapService:
+class ClimateService:
     def __init__(
         self,
         repo: FoundRepository,
@@ -35,9 +36,9 @@ class MapService:
         self._repo = repo
         self._clock = clock or SystemClock()
         self._ttl = timedelta(seconds=cache_seconds)
-        self._cache: dict[str, IncidentMap] = {}
+        self._cache: dict[str, ClimateLayer] = {}
 
-    def incident_map(self, caller: Caller, incident_id: str) -> IncidentMap:
+    def layer(self, caller: Caller, incident_id: str) -> ClimateLayer:
         if not self._repo.incident_exists(incident_id):
             raise NotFound("Incident not found.", incident_id=incident_id)
         ensure_can_read(self._repo, caller, incident_id)
@@ -46,13 +47,13 @@ class MapService:
         cached = self._cache.get(incident_id)
         if cached is not None and now - cached.updated_at < self._ttl:
             return cached
-        # People only: climate reports have their own layer and are not people counts.
-        claims = [
-            c
-            for c in self._repo.list_incident_claims(incident_id)
-            if c.subject_type == SubjectType.PERSON
+        locations = {loc.id: loc for loc in self._repo.list_locations(incident_id)}
+        sources = {s.id: s for s in self._repo.list_sources(incident_id)}
+        features = [
+            build_feature(subject, self._repo.list_subject_claims(subject.id), locations, sources)
+            for subject_type in CLIMATE_TYPES
+            for subject in self._repo.list_subjects(incident_id, subject_type, MAX_PER_TYPE)
         ]
-        counts = place_counts(claims, self._repo.list_locations(incident_id))
-        fresh = IncidentMap(counts=counts, updated_at=now)
+        fresh = ClimateLayer(features=features, updated_at=now)
         self._cache[incident_id] = fresh
         return fresh

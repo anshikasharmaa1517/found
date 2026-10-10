@@ -8,6 +8,7 @@ from found_core.adapters.cognito_jwt import CognitoTokenVerifier
 from found_core.domain.cursor import CursorCodec
 from found_core.domain.investigation import InvestigationConfig
 from found_core.ports.repository import FoundRepository
+from found_core.services.climate import ClimateService
 from found_core.services.demo import DemoService
 from found_core.services.ingest import IngestService
 from found_core.services.intake import IntakeService
@@ -119,6 +120,11 @@ def token_verifier() -> CognitoTokenVerifier:
     return CognitoTokenVerifier(
         os.environ["AWS_REGION"], os.environ["USER_POOL_ID"], os.environ["USER_POOL_CLIENT_ID"]
     )
+
+
+@cache
+def climate_service() -> ClimateService:
+    return ClimateService(repository())
 
 
 @cache

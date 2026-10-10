@@ -76,6 +76,11 @@ class Builder:
         self.people.append({"key": key, "name": name, "age": age, "notes": notes})
         return key
 
+    def thing(self, key: str, kind: str, name: str) -> str:
+        """A road, bridge, shelter, aid point, hazard or place (climate layers)."""
+        self.people.append({"key": key, "name": name, "type": kind, "age": None, "notes": None})
+        return key
+
     def report(
         self,
         org: str,
@@ -220,10 +225,60 @@ def background(b: Builder, rng: random.Random, count: int = 22) -> None:
                      where=spot or where)
 
 
+def climate(b: Builder) -> None:
+    """Roads, bridges, shelters, aid and hazards along the valley (design UC-7).
+
+    Added after the people so their report references stay the same. The bridge has
+    two sources that disagree, and both must stay visible.
+    """
+    bridge = b.thing("c_old_bridge", "INFRASTRUCTURE", "Old Bridge")
+    b.report("org_police", bridge, "BRIDGE_DAMAGED",
+             "Old Bridge closed to all traffic after the collapse of its eastern span.",
+             "2026-10-02T20:10:00+05:30", where="old_bridge")
+    b.report("org_volunteers", bridge, "BRIDGE_OPEN",
+             "Old Bridge open on foot, our team crossed it this morning.",
+             "2026-10-03T08:15:00+05:30", where="old_bridge")
+
+    road = b.thing("c_village_road", "INFRASTRUCTURE", "Upper Village road")
+    b.report("org_police", road, "ROAD_BLOCKED",
+             "Upper Village road blocked by a landslide above the temple bend.",
+             "2026-10-02T23:30:00+05:30", where="upper_village")
+    b.report("org_police", road, "ROAD_OPEN",
+             "Upper Village road reopened for light vehicles after clearing.",
+             "2026-10-03T15:00:00+05:30", where="upper_village")
+
+    shelter = b.thing("c_riverside_shelter", "SHELTER", "Riverside Shelter")
+    b.report("org_shelter", shelter, "SHELTER_OPEN",
+             "Riverside Shelter open, 120 places, blankets and hot meals available.",
+             "2026-10-02T22:00:00+05:30", where="shelter")
+    b.report("org_shelter", shelter, "SHELTER_FULL",
+             "Riverside Shelter full; new arrivals sent to the school building.",
+             "2026-10-03T11:00:00+05:30", where="shelter")
+
+    school = b.thing("c_school_shelter", "SHELTER", "Valley School Building")
+    b.report("org_ngo", school, "SHELTER_OPEN",
+             "Valley School Building opened as an overflow shelter with 60 places.",
+             "2026-10-03T11:30:00+05:30", where="school")
+
+    aid = b.thing("c_ghat_aid", "AID_POINT", "Market Ghat aid point")
+    b.report("org_ngo", aid, "AID_AVAILABLE",
+             "Drinking water and dry rations available at the Market Ghat aid point.",
+             "2026-10-03T07:00:00+05:30", where="market_ghat")
+
+    river = b.thing("c_river_ghat", "HAZARD", "Kesari river at Market Ghat")
+    b.report("org_police", river, "WATER_RISING",
+             "Kesari river rising fast at Market Ghat, residents moved uphill.",
+             "2026-10-02T19:45:00+05:30", where="market_ghat")
+    b.report("org_volunteers", river, "WATER_RECEDING",
+             "Water at Market Ghat has gone down by about a metre since midnight.",
+             "2026-10-03T06:30:00+05:30", where="market_ghat")
+
+
 def build(seed: int = SEED) -> dict[str, object]:
     b = Builder()
     story(b)
     background(b, random.Random(seed))
+    climate(b)
     return {
         "incident.json": {**INCIDENT, "version": VERSION, "seed": seed},
         "organizations.json": [

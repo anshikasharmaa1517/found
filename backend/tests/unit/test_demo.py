@@ -90,10 +90,10 @@ def world():
 
 def test_reset_loads_the_demo_and_logs_it(world):
     assert world.repo.get_incident("inc_demo").is_demo
-    assert len(world.repo.list_incident_claims("inc_demo")) == 56
+    assert len(world.repo.list_incident_claims("inc_demo")) == 66
     (entry,) = world.repo.list_activity("inc_demo", 10)
     assert entry.component == "admin" and entry.actor == "adm_1"
-    assert entry.message == "Demo reset: 56 reports loaded, 0 recorded runs restored as REPLAYED"
+    assert entry.message == "Demo reset: 66 reports loaded, 0 recorded runs restored as REPLAYED"
 
 
 def test_reset_removes_demo_changes_and_keeps_everything_else(world):
@@ -108,9 +108,9 @@ def test_reset_removes_demo_changes_and_keeps_everything_else(world):
 
     world.clock.at += timedelta(hours=1)
     result = world.demo.reset("inc_demo", "adm_2")
-    assert result.removed > 56 and result.published == 56
+    assert result.removed > 66 and result.published == 66
     after = {c.id for c in repo.list_incident_claims("inc_demo")}
-    assert len(after) == 56 and not (before & after)
+    assert len(after) == 66 and not (before & after)
     assert repo.subscriptions == {} and repo.get_investigation(inv.id) is None
     assert repo.run_locks == {}
     assert repo.incident_exists("inc_other")

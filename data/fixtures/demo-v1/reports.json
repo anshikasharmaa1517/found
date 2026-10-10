@@ -762,5 +762,145 @@
       "lat": 30.7305,
       "lon": 78.4389
     }
+  },
+  {
+    "org_id": "org_police",
+    "external_reference": "DPD-0029",
+    "person": "c_old_bridge",
+    "claim_type": "BRIDGE_DAMAGED",
+    "value": null,
+    "original_text": "Old Bridge closed to all traffic after the collapse of its eastern span.",
+    "reported_at": "2026-10-02T20:10:00+05:30",
+    "location": {
+      "name": "Old Bridge",
+      "lat": 30.7268,
+      "lon": 78.4354
+    }
+  },
+  {
+    "org_id": "org_volunteers",
+    "external_reference": "VVD-0008",
+    "person": "c_old_bridge",
+    "claim_type": "BRIDGE_OPEN",
+    "value": null,
+    "original_text": "Old Bridge open on foot, our team crossed it this morning.",
+    "reported_at": "2026-10-03T08:15:00+05:30",
+    "location": {
+      "name": "Old Bridge",
+      "lat": 30.7268,
+      "lon": 78.4354
+    }
+  },
+  {
+    "org_id": "org_police",
+    "external_reference": "DPD-0030",
+    "person": "c_village_road",
+    "claim_type": "ROAD_BLOCKED",
+    "value": null,
+    "original_text": "Upper Village road blocked by a landslide above the temple bend.",
+    "reported_at": "2026-10-02T23:30:00+05:30",
+    "location": {
+      "name": "Upper Village",
+      "lat": 30.7412,
+      "lon": 78.4471
+    }
+  },
+  {
+    "org_id": "org_police",
+    "external_reference": "DPD-0031",
+    "person": "c_village_road",
+    "claim_type": "ROAD_OPEN",
+    "value": null,
+    "original_text": "Upper Village road reopened for light vehicles after clearing.",
+    "reported_at": "2026-10-03T15:00:00+05:30",
+    "location": {
+      "name": "Upper Village",
+      "lat": 30.7412,
+      "lon": 78.4471
+    }
+  },
+  {
+    "org_id": "org_shelter",
+    "external_reference": "RSD-0009",
+    "person": "c_riverside_shelter",
+    "claim_type": "SHELTER_OPEN",
+    "value": null,
+    "original_text": "Riverside Shelter open, 120 places, blankets and hot meals available.",
+    "reported_at": "2026-10-02T22:00:00+05:30",
+    "location": {
+      "name": "Riverside Shelter",
+      "lat": 30.7156,
+      "lon": 78.4228
+    }
+  },
+  {
+    "org_id": "org_shelter",
+    "external_reference": "RSD-0010",
+    "person": "c_riverside_shelter",
+    "claim_type": "SHELTER_FULL",
+    "value": null,
+    "original_text": "Riverside Shelter full; new arrivals sent to the school building.",
+    "reported_at": "2026-10-03T11:00:00+05:30",
+    "location": {
+      "name": "Riverside Shelter",
+      "lat": 30.7156,
+      "lon": 78.4228
+    }
+  },
+  {
+    "org_id": "org_ngo",
+    "external_reference": "FRD-0004",
+    "person": "c_school_shelter",
+    "claim_type": "SHELTER_OPEN",
+    "value": null,
+    "original_text": "Valley School Building opened as an overflow shelter with 60 places.",
+    "reported_at": "2026-10-03T11:30:00+05:30",
+    "location": {
+      "name": "Valley School Building",
+      "lat": 30.7189,
+      "lon": 78.4265
+    }
+  },
+  {
+    "org_id": "org_ngo",
+    "external_reference": "FRD-0005",
+    "person": "c_ghat_aid",
+    "claim_type": "AID_AVAILABLE",
+    "value": null,
+    "original_text": "Drinking water and dry rations available at the Market Ghat aid point.",
+    "reported_at": "2026-10-03T07:00:00+05:30",
+    "location": {
+      "name": "Market Ghat",
+      "lat": 30.7231,
+      "lon": 78.4302
+    }
+  },
+  {
+    "org_id": "org_police",
+    "external_reference": "DPD-0032",
+    "person": "c_river_ghat",
+    "claim_type": "WATER_RISING",
+    "value": null,
+    "original_text": "Kesari river rising fast at Market Ghat, residents moved uphill.",
+    "reported_at": "2026-10-02T19:45:00+05:30",
+    "location": {
+      "name": "Market Ghat",
+      "lat": 30.7231,
+      "lon": 78.4302
+    }
+  },
+  {
+    "org_id": "org_volunteers",
+    "external_reference": "VVD-0009",
+    "person": "c_river_ghat",
+    "claim_type": "WATER_RECEDING",
+    "value": null,
+    "original_text": "Water at Market Ghat has gone down by about a metre since midnight.",
+    "reported_at": "2026-10-03T06:30:00+05:30",
+    "location": {
+      "name": "Market Ghat",
+      "lat": 30.7231,
+      "lon": 78.4302
+    }
   }
 ]

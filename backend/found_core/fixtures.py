@@ -15,7 +15,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from found_core.domain.commands import PublishCommand
-from found_core.domain.enums import ExtractionMethod, SourceType
+from found_core.domain.enums import ExtractionMethod, SourceType, SubjectType
 from found_core.domain.models import Claim, Incident, Organization
 from found_core.domain.normalize import normalize_text
 from found_core.ports.repository import FoundRepository
@@ -45,8 +45,11 @@ class OrganizationFixture(_Fixture):
 
 
 class PersonFixture(_Fixture):
+    """A subject in the dataset: a person, or a road, shelter, hazard and so on (FR-10)."""
+
     key: str
     name: str
+    type: SubjectType = SubjectType.PERSON
     age: int | None = None
     notes: str | None = None
 
@@ -128,10 +131,10 @@ def load_dataset(dataset: Dataset, repo: FoundRepository, ingest: IngestService)
         org = orgs[report.org_id]
         person = people[report.person]
         if report.person in subjects:
-            subject: dict[str, Any] = {"type": "PERSON", "id": subjects[report.person]}
+            subject: dict[str, Any] = {"type": person.type, "id": subjects[report.person]}
         else:
             new = {"name": person.name, "age": person.age, "notes": person.notes}
-            subject = {"type": "PERSON", "new": {k: v for k, v in new.items() if v is not None}}
+            subject = {"type": person.type, "new": {k: v for k, v in new.items() if v is not None}}
         result = ingest.publish(
             PublishCommand.parse(
                 {

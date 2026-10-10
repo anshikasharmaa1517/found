@@ -184,5 +184,47 @@
     "name": "Kamla Nautiyal",
     "age": 68,
     "notes": null
+  },
+  {
+    "key": "c_old_bridge",
+    "name": "Old Bridge",
+    "type": "INFRASTRUCTURE",
+    "age": null,
+    "notes": null
+  },
+  {
+    "key": "c_village_road",
+    "name": "Upper Village road",
+    "type": "INFRASTRUCTURE",
+    "age": null,
+    "notes": null
+  },
+  {
+    "key": "c_riverside_shelter",
+    "name": "Riverside Shelter",
+    "type": "SHELTER",
+    "age": null,
+    "notes": null
+  },
+  {
+    "key": "c_school_shelter",
+    "name": "Valley School Building",
+    "type": "SHELTER",
+    "age": null,
+    "notes": null
+  },
+  {
+    "key": "c_ghat_aid",
+    "name": "Market Ghat aid point",
+    "type": "AID_POINT",
+    "age": null,
+    "notes": null
+  },
+  {
+    "key": "c_river_ghat",
+    "name": "Kesari river at Market Ghat",
+    "type": "HAZARD",
+    "age": null,
+    "notes": null
   }
 ]

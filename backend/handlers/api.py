@@ -11,6 +11,8 @@ from aws_lambda_powertools.logging import correlation_paths
 
 from found_core import container
 from found_core.domain.auth import Caller
+from found_core.domain.climate import CAVEAT as CLIMATE_CAVEAT
+from found_core.domain.climate import FeatureReport
 from found_core.domain.errors import BadRequest, FoundError
 from found_core.domain.intake import MAX_BYTES, UPLOAD_EXPIRES_SECONDS
 from found_core.domain.models import (
@@ -307,6 +309,52 @@ def incident_map(incident_id: str) -> Response:
             "unlocated_reports": counts.unlocated_reports,
             "caveat": counts.caveat,
             "updated_at": result.updated_at.isoformat().replace("+00:00", "Z"),
+        },
+    )
+
+
+def _report_view(report: FeatureReport) -> dict[str, Any]:
+    claim = report.claim
+    return {
+        "claim_id": claim.id,
+        "claim_type": claim.claim_type,
+        "source": report.source_name,
+        "reported_at": _iso(claim.reported_at),
+        "excerpt": excerpt(claim.original_text),
+    }
+
+
+@app.get("/v1/incidents/<incident_id>/climate")
+def climate_layer(incident_id: str) -> Response:
+    layer = container.climate_service().layer(_caller(), incident_id)
+    return _json(
+        HTTPStatus.OK,
+        {
+            "features": [
+                {
+                    "subject_id": f.subject.id,
+                    "subject_type": f.subject.subject_type.value,
+                    "name": f.subject.display_name,
+                    "label": f.label,
+                    "basis": f.basis,
+                    "cited_claim_id": f.cited_claim_id,
+                    "needs_review": f.needs_review,
+                    "report_count": f.report_count,
+                    "location": None
+                    if f.location is None
+                    else {
+                        "location_id": f.location.id,
+                        "name": f.location.name,
+                        "lat": f.location.lat,
+                        "lon": f.location.lon,
+                    },
+                    "conflicts": [_report_view(r) for r in f.conflicts],
+                    "recent": [_report_view(r) for r in f.recent],
+                }
+                for f in layer.features
+            ],
+            "caveat": CLIMATE_CAVEAT,
+            "updated_at": _iso(layer.updated_at),
         },
     )
 

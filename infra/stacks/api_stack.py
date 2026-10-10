@@ -30,6 +30,7 @@ SIGNED_IN_ROUTES = (
     ("GET", "/v1/people/{person_id}"),
     ("GET", "/v1/people/{person_id}/timeline"),
     ("GET", "/v1/incidents/{incident_id}/map"),
+    ("GET", "/v1/incidents/{incident_id}/climate"),
     ("POST", "/v1/people/{person_id}/subscriptions"),
     ("DELETE", "/v1/subscriptions/{subscription_id}"),
     ("GET", "/v1/me/subscriptions"),
