@@ -494,6 +494,27 @@ label.inline input[type="checkbox"] {
   background: var(--warn);
 }
 
+/* Climate features are square so they never read as people counts. */
+.pin-climate {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--muted);
+}
+
+.pin-shelter {
+  background: #2f7d4f;
+}
+
+.pin-hazard {
+  background: var(--danger);
+}
+
+.pin-disputed {
+  outline: 3px dashed var(--warn);
+  outline-offset: 1px;
+}
+
 .maplibregl-popup-content {
   color: #1b1f24;
 }
@@ -813,4 +834,23 @@ button.link-button {
 
 .intake-status {
   margin-top: 1rem;
+}
+
+.layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  border: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.conditions {
+  list-style: none;
+  padding: 0;
+}
+
+.condition {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0;
 }

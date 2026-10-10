@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import type { ClimateFeature } from "../api/climate";
 import type { MapPlace } from "../api/map";
 import PlacesMap from "./PlacesMap";
 
@@ -105,5 +106,49 @@ describe("PlacesMap", () => {
     const popup = made.markers[0]!.popup!;
     expect(popup.querySelector("img")).toBeNull();
     expect(popup).toHaveTextContent('<img src=x onerror="alert(1)">');
+  });
+
+  it("adds a square pin per located condition and flags disagreement", () => {
+    made.markers.length = 0;
+    const bridge: ClimateFeature = {
+      subject_id: "inf_1",
+      subject_type: "INFRASTRUCTURE",
+      name: "Old Bridge",
+      label: "Reported bridge open",
+      basis: "Latest dated status report",
+      cited_claim_id: "clm_2",
+      needs_review: false,
+      report_count: 2,
+      location: { location_id: "loc_b", name: "Old Bridge", lat: 30.72, lon: 78.43 },
+      conflicts: [
+        {
+          claim_id: "clm_1",
+          claim_type: "BRIDGE_DAMAGED",
+          source: "District Police Demo",
+          reported_at: null,
+          excerpt: "<b>Closed</b>",
+        },
+      ],
+      recent: [
+        {
+          claim_id: "clm_1",
+          claim_type: "BRIDGE_DAMAGED",
+          source: "District Police Demo",
+          reported_at: null,
+          excerpt: "<b>Closed</b>",
+        },
+      ],
+    };
+    const unplaced = { ...bridge, subject_id: "shl_1", subject_type: "SHELTER" as const, location: null, conflicts: [] };
+    render(<PlacesMap styleUrl="s" places={[]} features={[bridge, unplaced]} />);
+    expect(made.markers).toHaveLength(1);
+    const marker = made.markers[0]!;
+    expect(marker.at).toEqual([78.43, 30.72]);
+    expect(marker.element).toHaveClass("pin-climate", "pin-infrastructure", "pin-disputed");
+    expect(marker.element).toHaveAccessibleName(
+      "Old Bridge: Reported bridge open, sources disagree",
+    );
+    expect(marker.popup).toHaveTextContent("District Police Demo says Bridge damaged");
+    expect(marker.popup!.querySelector("b")).toBeNull();
   });
 });
