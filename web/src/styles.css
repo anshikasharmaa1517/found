@@ -936,7 +936,7 @@ blockquote {
   gap: var(--s-4);
   height: 52px;
   padding: 0 var(--s-5);
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
 
