@@ -283,6 +283,13 @@ button.link-button {
   font-weight: 500;
 }
 
+/* Text buttons that reveal more read as links. */
+button.link-button {
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
 button.link:hover,
 button.link-button:hover {
   background: none;
@@ -1637,6 +1644,27 @@ button.menu-button[aria-expanded="true"] {
 
 .review-item.priority-1 {
   box-shadow: inset 3px 0 0 var(--warn);
+}
+
+.review-body {
+  min-width: 0;
+}
+
+/* Evidence on the left, the decision on the right, on wide screens. */
+@media (min-width: 1024px) {
+  .review-item.with-decision {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: var(--s-8);
+  }
+
+  .review-item.with-decision > .decision {
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: var(--s-6);
+    border-top: 0;
+    border-left: 1px dashed var(--line);
+  }
 }
 
 .decision {

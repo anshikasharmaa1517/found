@@ -11,6 +11,7 @@ import {
   type ReviewType,
 } from "../api/review";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { Empty, PageHeader, SkeletonRows } from "../components/ui";
 import { IdentityReview } from "../components/IdentityReview";
 import { IntakeReview } from "../components/IntakeReview";
 import {
@@ -85,7 +86,7 @@ function Decision({
           after the family has been contacted.
         </p>
       )}
-      <button type="button" onClick={submit} disabled={busy}>
+      <button type="button" className="primary" onClick={submit} disabled={busy}>
         {busy ? "Saving" : release ? "Release report" : "Mark resolved"}
       </button>
       {error && (
@@ -110,57 +111,67 @@ function Items({
 }) {
   return (
     <>
-      {items.map((item) => (
-        <li key={item.id} className={`review-item priority-${item.priority}`}>
-          <div className="entry-head">
-            <strong>{labelFor(TYPE_LABELS, item.type)}</strong>
-            <span className="tag">Priority {item.priority}</span>
-            {item.person && (
-              <Link to={`/people/${encodeURIComponent(item.person.id)}`}>{item.person.name}</Link>
-            )}
-          </div>
-          {item.claim && (
-            <>
-              <p className="muted">
-                {claimTypeLabel(item.claim.claim_type)} from {item.claim.source},{" "}
-                {formatTime(item.claim.reported_at)}
-              </p>
-              <blockquote>{item.claim.excerpt}</blockquote>
-            </>
-          )}
-          {item.investigation && (
-            <p>
-              {labelFor(INVESTIGATION_STATUS_LABELS, item.investigation.status)}.{" "}
-              {item.investigation.outcome_reasons
-                .map((r) => labelFor(REASON_LABELS, r))
-                .join(" ")}{" "}
-              <Link to={`/investigations/${encodeURIComponent(item.investigation.id)}`}>
-                Open the investigation
-              </Link>
-            </p>
-          )}
-          {item.intake && (
-            <IntakeReview intake={item.intake} incidentId={incidentId} onChange={onChange} />
-          )}
-          {item.proposal && (
-            <IdentityReview
-              proposal={item.proposal}
-              open={item.status === "OPEN"}
-              onDone={onChange}
-            />
-          )}
-          {item.status === "DONE" ? (
-            <p className="muted">
-              Resolved {formatTime(item.resolved_at)}
-              {item.note && `: ${item.note}`}
-            </p>
-          ) : (
-            (item.type === "held_alert" || item.type === "conflict") && (
-              <Decision item={item} incidentId={incidentId} onDone={onChange} />
-            )
-          )}
-        </li>
-      ))}
+      {items.map((item) => {
+        const decides =
+          item.status !== "DONE" && (item.type === "held_alert" || item.type === "conflict");
+        return (
+          <li
+            key={item.id}
+            className={`review-item priority-${item.priority}${decides ? " with-decision" : ""}`}
+          >
+            <div className="review-body">
+              <div className="entry-head">
+                <strong>{labelFor(TYPE_LABELS, item.type)}</strong>
+                <span className={`status-dot${item.priority === 1 ? " warn" : ""}`}>
+                  Priority {item.priority}
+                </span>
+                {item.person && (
+                  <Link to={`/people/${encodeURIComponent(item.person.id)}`}>
+                    {item.person.name}
+                  </Link>
+                )}
+              </div>
+              {item.claim && (
+                <>
+                  <p className="meta">
+                    {claimTypeLabel(item.claim.claim_type)} from {item.claim.source}
+                    <span className="meta-sep">{formatTime(item.claim.reported_at)}</span>
+                  </p>
+                  <blockquote>{item.claim.excerpt}</blockquote>
+                </>
+              )}
+              {item.investigation && (
+                <p>
+                  {labelFor(INVESTIGATION_STATUS_LABELS, item.investigation.status)}.{" "}
+                  {item.investigation.outcome_reasons
+                    .map((r) => labelFor(REASON_LABELS, r))
+                    .join(" ")}{" "}
+                  <Link to={`/investigations/${encodeURIComponent(item.investigation.id)}`}>
+                    Open the investigation
+                  </Link>
+                </p>
+              )}
+              {item.intake && (
+                <IntakeReview intake={item.intake} incidentId={incidentId} onChange={onChange} />
+              )}
+              {item.proposal && (
+                <IdentityReview
+                  proposal={item.proposal}
+                  open={item.status === "OPEN"}
+                  onDone={onChange}
+                />
+              )}
+              {item.status === "DONE" && (
+                <p className="meta">
+                  Resolved {formatTime(item.resolved_at)}
+                  {item.note && `: ${item.note}`}
+                </p>
+              )}
+            </div>
+            {decides && <Decision item={item} incidentId={incidentId} onDone={onChange} />}
+          </li>
+        );
+      })}
     </>
   );
 }
@@ -203,9 +214,12 @@ export function ReviewPage() {
 
   return (
     <section className="page">
-      <h1>Review queue</h1>
-      <p className="muted">Most urgent first. Every decision is recorded with your name.</p>
-      <div className="filters" role="group" aria-label="Item type">
+      <PageHeader
+        title="Review queue"
+        description="Most urgent first. Every decision is recorded with your name."
+      />
+      <div className="filters">
+        <div className="segmented" role="group" aria-label="Item type">
         {FILTERS.map((f) => (
           <button
             key={f.label}
@@ -217,6 +231,7 @@ export function ReviewPage() {
             {f.label}
           </button>
         ))}
+        </div>
         <label className="inline">
           Show
           <select
@@ -229,12 +244,16 @@ export function ReviewPage() {
         </label>
       </div>
 
-      {first.status === "loading" && <p className="muted">Loading the queue</p>}
+      {first.status === "loading" && <SkeletonRows label="Loading the queue" rows={4} />}
       {first.status === "error" && (
         <ErrorNotice error={first.error} notFound="This incident was not found." onRetry={retry} />
       )}
       {first.status === "ready" && first.data.items.length === 0 && (
-        <p className="muted">{status === "OPEN" ? "Nothing waits for review." : "Nothing resolved yet."}</p>
+        <Empty title={status === "OPEN" ? "Nothing waits for review." : "Nothing resolved yet."}>
+          {status === "OPEN"
+            ? "New conflicts, findings, possible duplicates and extracted reports appear here as they arrive."
+            : "Items you and other reviewers resolve are listed here with their notes."}
+        </Empty>
       )}
       {first.status === "ready" && first.data.items.length > 0 && (
         <ul className="review-list">

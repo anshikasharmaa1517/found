@@ -113,6 +113,7 @@ function Candidate({
           <div className="actions">
             <button
               type="button"
+              className="primary"
               onClick={() => decide("CONFIRMED")}
               disabled={busy || (attach && !picked)}
             >

@@ -152,7 +152,12 @@ export function IdentityReview({
             </p>
           )}
           <div className="actions">
-            <button type="button" onClick={() => decide("CONFIRMED")} disabled={busy}>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => decide("CONFIRMED")}
+              disabled={busy}
+            >
               Same person
             </button>
             <button

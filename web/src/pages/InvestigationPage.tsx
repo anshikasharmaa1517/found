@@ -10,6 +10,7 @@ import {
   type Step,
 } from "../api/investigations";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { PageHeader, SkeletonRows } from "../components/ui";
 import {
   ATTRIBUTION_LABELS,
   COMPARISON_LABELS,
@@ -22,6 +23,14 @@ import {
 } from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
 import { asApiError, useLoad } from "../useLoad";
+
+const STATUS_TONE: Record<string, string> = {
+  QUEUED: "accent pulse",
+  RUNNING: "accent pulse",
+  COMPLETED: "ok",
+  NEEDS_REVIEW: "warn",
+  FAILED: "bad",
+};
 
 const KIND_LABELS: Record<string, string> = {
   MODEL: "Model",
@@ -54,7 +63,7 @@ function Finding({ investigation }: { investigation: Investigation }) {
         {finding.citations.map((c) => (
           <li key={`${c.claim_id}|${c.excerpt}`}>
             <blockquote>{c.excerpt}</blockquote>
-            <p className="muted">Report {c.claim_id}</p>
+            <p className="meta mono">Report {c.claim_id}</p>
           </li>
         ))}
       </ul>
@@ -152,7 +161,7 @@ function FindingReview({
         onChange={(e) => setNote(e.target.value)}
       />
       <div className="actions">
-        <button type="button" onClick={() => decide("ACCEPTED")} disabled={busy}>
+        <button type="button" className="primary" onClick={() => decide("ACCEPTED")} disabled={busy}>
           Accept finding
         </button>
         <button type="button" className="secondary" onClick={() => decide("DISPUTED")} disabled={busy}>
@@ -187,7 +196,14 @@ export function InvestigationPage() {
   });
   useLiveReconnect(refresh);
 
-  if (state.status === "loading") return <p className="page-status">Loading investigation</p>;
+  if (state.status === "loading") {
+    return (
+      <section className="page">
+        <div className="skeleton-title skeleton-bar" aria-hidden="true" />
+        <SkeletonRows label="Loading investigation" rows={4} />
+      </section>
+    );
+  }
   if (state.status === "error") {
     return (
       <section className="page">
@@ -202,20 +218,28 @@ export function InvestigationPage() {
   const running = RUNNING_STATUSES.has(inv.status);
   return (
     <section className="page">
-      <h1>Where did this report come from?</h1>
-      <p>
-        <span className={`tag tag-mode-${mode.toLowerCase()}`}>{mode}</span>{" "}
-        <span className="muted">{labelFor(MODE_LABELS, mode)}</span>
+      <PageHeader
+        title="Where did this report come from?"
+        description={
+          <>
+            <span className={`tag tag-mode-${mode.toLowerCase()}`}>{mode}</span>{" "}
+            {labelFor(MODE_LABELS, mode)}
+          </>
+        }
+        actions={
+          running && (
+            <button type="button" className="small" onClick={refresh}>
+              Refresh
+            </button>
+          )
+        }
+      />
+      <p role="status">
+        <span className={`status-dot ${STATUS_TONE[inv.status] ?? ""}`}>
+          Status: {labelFor(INVESTIGATION_STATUS_LABELS, inv.status)}
+          {running && " (this page updates as steps arrive)"}
+        </span>
       </p>
-      <p className="status" role="status">
-        Status: {labelFor(INVESTIGATION_STATUS_LABELS, inv.status)}
-        {running && " (this page updates as steps arrive)"}
-      </p>
-      {running && (
-        <button type="button" onClick={refresh}>
-          Refresh
-        </button>
-      )}
       {inv.failure_reason && (
         <p className="error" role="alert">
           {labelFor(FAILURE_LABELS, inv.failure_reason)}
@@ -229,11 +253,11 @@ export function InvestigationPage() {
       <Steps steps={inv.steps} />
 
       <h2>Run details</h2>
-      <dl className="facts">
+      <dl className="facts panel">
         <dt>Report investigated</dt>
-        <dd>{inv.claim_id}</dd>
+        <dd className="mono">{inv.claim_id}</dd>
         <dt>Model</dt>
-        <dd>{inv.model_id}</dd>
+        <dd className="mono">{inv.model_id}</dd>
         <dt>Prompt and agent</dt>
         <dd>
           {inv.prompt_version}, agent {inv.agent_version}
