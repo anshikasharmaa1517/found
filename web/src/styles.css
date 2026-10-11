@@ -1,43 +1,59 @@
-/* Found design system: warm paper, ink text, one teal accent.
-   Every color, size, space and radius below comes from these tokens. */
+/* Found design system, after Trace: cool neutrals, one blue accent, status colors
+   that only mean status, and a serif for headlines. Every color, size, space and
+   radius below comes from these tokens. data-theme on <html> picks light or dark;
+   without it the system setting decides. */
 
 :root {
-  /* Neutrals: paper, from page to strongest rule. */
-  --bg: #f7f5f0;
-  --surface: #fffefb;
-  --sunken: #f0ede6;
-  --hover: #ebe7de;
-  --line: #e2ddd2;
-  --line-strong: #cfc8ba;
+  /* Neutrals, from page to strongest rule. */
+  --bg: oklch(1 0 0);
+  --surface: oklch(1 0 0);
+  --sunken: oklch(0.967 0.001 286.375);
+  --hover: oklch(0.955 0.002 286.3);
+  --line: oklch(0.92 0.004 286.32);
+  --line-strong: oklch(0.87 0.006 286.2);
 
   /* Ink. */
-  --text: #1f1d19;
-  --text-2: #57524a;
-  --text-3: #7d766b;
+  --text: oklch(0.141 0.005 285.823);
+  --text-2: oklch(0.44 0.014 285.9);
+  --text-3: oklch(0.552 0.016 285.938);
 
   /* The one accent: primary actions, links, focus. */
-  --accent: #1d5c63;
-  --accent-hover: #164a50;
-  --accent-text: #fffefb;
-  --accent-soft: #e3eeee;
+  --accent: oklch(0.488 0.243 264.376);
+  --accent-hover: oklch(0.43 0.22 265);
+  --accent-text: oklch(0.97 0.014 254.604);
+  --accent-soft: oklch(0.488 0.243 264.376 / 10%);
 
-  /* Status only. */
-  --ok: #2f6b3a;
-  --ok-soft: #e6efe3;
-  --bad: #a3342b;
-  --bad-soft: #f6e4e0;
-  --warn: #85560f;
-  --warn-soft: #f6ead3;
+  /* Status only: missing, safe, needs a look, nothing yet. */
+  --ok: oklch(0.52 0.14 155);
+  --ok-soft: oklch(0.55 0.14 155 / 12%);
+  --bad: oklch(0.55 0.21 25);
+  --bad-soft: oklch(0.58 0.21 25 / 12%);
+  --warn: oklch(0.55 0.13 70);
+  --warn-soft: oklch(0.66 0.15 70 / 14%);
+  --neutral: oklch(0.55 0.01 260);
+  --neutral-soft: oklch(0.55 0.01 260 / 12%);
+
+  /* Graph: one hue per record kind. */
+  --g-incident: oklch(0.51 0.22 300);
+  --g-person: oklch(0.63 0.11 235);
+  --g-claim: oklch(0.61 0.12 65);
+  --g-source: oklch(0.65 0.16 145);
+  --g-location: oklch(0.55 0.2 345);
+  --g-investigation: oklch(0.51 0.2 320);
+  --g-subject: oklch(0.71 0.12 90);
 
   /* Type. */
-  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
   --fs-12: 0.75rem;
   --fs-13: 0.8125rem;
   --fs-14: 0.875rem;
   --fs-16: 1rem;
   --fs-20: 1.25rem;
+  --fs-24: 1.5rem;
   --fs-28: 1.75rem;
+  --fs-36: 2.25rem;
 
   /* Space: a 4px scale. */
   --s-1: 4px;
@@ -55,10 +71,13 @@
   --r-1: 4px;
   --r-2: 6px;
   --r-3: 8px;
+  --r-4: 12px;
+  --r-full: 999px;
 
-  /* Only floating things cast a shadow. */
-  --shadow-float: 0 1px 2px rgb(31 29 25 / 6%), 0 8px 24px rgb(31 29 25 / 12%);
-  --ring: 0 0 0 3px rgb(29 92 99 / 22%);
+  /* Cards sit on a hairline shadow; floating things cast a real one. */
+  --shadow-card: 0 1px 2px oklch(0.141 0.005 285.823 / 5%);
+  --shadow-float: 0 1px 2px rgb(20 20 30 / 6%), 0 8px 24px rgb(20 20 30 / 12%);
+  --ring: 0 0 0 3px oklch(0.488 0.243 264.376 / 22%);
 
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --fast: 120ms;
@@ -68,35 +87,93 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* Warm charcoal, not inverted: same hue family, lower saturation. */
-    --bg: #171614;
-    --surface: #1e1d1a;
-    --sunken: #141311;
-    --hover: #2a2825;
-    --line: #2f2d29;
-    --line-strong: #44413b;
+  :root:not([data-theme="light"]) {
+    --bg: oklch(0.141 0.005 285.823);
+    --surface: oklch(0.21 0.006 285.885);
+    --sunken: oklch(0.175 0.005 285.9);
+    --hover: oklch(0.274 0.006 286.033);
+    --line: oklch(1 0 0 / 10%);
+    --line-strong: oklch(1 0 0 / 18%);
 
-    --text: #ece8e0;
-    --text-2: #b5afa4;
-    --text-3: #8f897e;
+    --text: oklch(0.985 0 0);
+    --text-2: oklch(0.8 0.012 286);
+    --text-3: oklch(0.705 0.015 286.067);
 
-    --accent: #6fb3ba;
-    --accent-hover: #8cc5cb;
-    --accent-text: #10201f;
-    --accent-soft: #1d3133;
+    --accent: oklch(0.68 0.16 262);
+    --accent-hover: oklch(0.74 0.14 262);
+    --accent-text: oklch(0.17 0.03 265);
+    --accent-soft: oklch(0.68 0.16 262 / 16%);
 
-    --ok: #8cc49a;
-    --ok-soft: #1f2e22;
-    --bad: #ec9a90;
-    --bad-soft: #3a2220;
-    --warn: #e2b46a;
-    --warn-soft: #362a17;
+    --ok: oklch(0.72 0.15 155);
+    --ok-soft: oklch(0.72 0.15 155 / 16%);
+    --bad: oklch(0.7 0.19 25);
+    --bad-soft: oklch(0.68 0.2 25 / 16%);
+    --warn: oklch(0.8 0.14 75);
+    --warn-soft: oklch(0.8 0.14 75 / 16%);
+    --neutral: oklch(0.7 0.01 260);
+    --neutral-soft: oklch(0.7 0.01 260 / 14%);
 
+    --g-incident: oklch(0.58 0.22 300);
+    --g-person: oklch(0.7 0.11 235);
+    --g-claim: oklch(0.68 0.12 65);
+    --g-source: oklch(0.72 0.16 145);
+    --g-location: oklch(0.62 0.2 345);
+    --g-investigation: oklch(0.58 0.2 320);
+    --g-subject: oklch(0.78 0.12 90);
+
+    --shadow-card: none;
     --shadow-float: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 45%);
-    --ring: 0 0 0 3px rgb(111 179 186 / 28%);
+    --ring: 0 0 0 3px oklch(0.68 0.16 262 / 30%);
 
     color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: oklch(0.141 0.005 285.823);
+  --surface: oklch(0.21 0.006 285.885);
+  --sunken: oklch(0.175 0.005 285.9);
+  --hover: oklch(0.274 0.006 286.033);
+  --line: oklch(1 0 0 / 10%);
+  --line-strong: oklch(1 0 0 / 18%);
+
+  --text: oklch(0.985 0 0);
+  --text-2: oklch(0.8 0.012 286);
+  --text-3: oklch(0.705 0.015 286.067);
+
+  --accent: oklch(0.68 0.16 262);
+  --accent-hover: oklch(0.74 0.14 262);
+  --accent-text: oklch(0.17 0.03 265);
+  --accent-soft: oklch(0.68 0.16 262 / 16%);
+
+  --ok: oklch(0.72 0.15 155);
+  --ok-soft: oklch(0.72 0.15 155 / 16%);
+  --bad: oklch(0.7 0.19 25);
+  --bad-soft: oklch(0.68 0.2 25 / 16%);
+  --warn: oklch(0.8 0.14 75);
+  --warn-soft: oklch(0.8 0.14 75 / 16%);
+  --neutral: oklch(0.7 0.01 260);
+  --neutral-soft: oklch(0.7 0.01 260 / 14%);
+
+  --g-incident: oklch(0.58 0.22 300);
+  --g-person: oklch(0.7 0.11 235);
+  --g-claim: oklch(0.68 0.12 65);
+  --g-source: oklch(0.72 0.16 145);
+  --g-location: oklch(0.62 0.2 345);
+  --g-investigation: oklch(0.58 0.2 320);
+  --g-subject: oklch(0.78 0.12 90);
+
+  --shadow-card: none;
+  --shadow-float: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 45%);
+  --ring: 0 0 0 3px oklch(0.68 0.16 262 / 30%);
+
+  color-scheme: dark;
+}
+
+/* Wide screens and projectors: slightly larger type; everything scales with rem. */
+@media (min-width: 1280px) {
+  html {
+    font-size: 17px;
   }
 }
 
@@ -119,7 +196,6 @@ body {
   font-family: var(--font);
   font-size: var(--fs-14);
   line-height: 1.55;
-  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
 }
 
@@ -132,13 +208,21 @@ h3 {
   text-wrap: balance;
 }
 
+/* Headlines are set in the serif, as in Trace; h3 and below stay in the sans. */
+h1,
+h2 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
 h1 {
-  font-size: var(--fs-20);
+  font-size: var(--fs-28);
   margin: 0;
 }
 
 h2 {
-  font-size: var(--fs-16);
+  font-size: var(--fs-20);
   margin: 0 0 var(--s-2);
 }
 
@@ -301,6 +385,22 @@ button.link-button:hover {
 button.link:focus-visible,
 button.link-button:focus-visible {
   border-radius: var(--r-1);
+}
+
+/* A square button holding one icon; its name is in aria-label. */
+button.icon-button {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  color: var(--text-2);
+}
+
+button.icon-button:hover {
+  color: var(--text);
+}
+
+.icon {
+  flex: none;
 }
 
 button.small {
@@ -2491,36 +2591,36 @@ tbody tr.selected {
 }
 
 .g-person {
-  fill: var(--accent);
+  fill: var(--g-person);
   stroke: var(--surface);
   stroke-width: 2;
 }
 
 .g-subject {
-  fill: var(--text-2);
+  fill: var(--g-subject);
   stroke: var(--surface);
   stroke-width: 1.5;
 }
 
 .g-report {
-  fill: var(--text-3);
+  fill: var(--g-claim);
 }
 
 .g-source {
-  fill: var(--text);
+  fill: var(--g-source);
   stroke: var(--surface);
   stroke-width: 1.5;
 }
 
 .g-place {
   fill: var(--surface);
-  stroke: var(--text-2);
+  stroke: var(--g-location);
   stroke-width: 2;
 }
 
 .g-investigation {
   fill: var(--surface);
-  stroke: var(--accent);
+  stroke: var(--g-investigation);
   stroke-width: 2;
 }
 

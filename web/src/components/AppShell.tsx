@@ -7,6 +7,8 @@ import { rememberedIncident } from "../incident";
 import type { SocketLike } from "../live/client";
 import { useLiveMessage, useLiveStatus } from "../live/context";
 import { LiveProvider } from "../live/LiveProvider";
+import { useTheme } from "../theme";
+import { MoonIcon, SunIcon } from "./icons";
 import { Toasts } from "./Toasts";
 
 const STATUS_TEXT = { live: "Live", connecting: "Connecting", offline: "Reconnecting" } as const;
@@ -66,6 +68,17 @@ function AccountMenu({ onSignOut, leaving }: { onSignOut: () => void; leaving: b
         </div>
       )}
     </div>
+  );
+}
+
+/** Light or dark; remembered in this browser. */
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  const label = theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
+  return (
+    <button type="button" className="icon-button" onClick={toggle} aria-label={label} title={label}>
+      {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+    </button>
   );
 }
 
@@ -143,6 +156,7 @@ function Shell({ incidentId }: { incidentId: string | null }) {
               <span className="live-label">{STATUS_TEXT[status]}</span>
             </span>
           )}
+          <ThemeToggle />
           <AccountMenu onSignOut={onSignOut} leaving={leaving} />
         </div>
       </header>

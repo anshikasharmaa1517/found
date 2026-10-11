@@ -8,6 +8,7 @@ import { AuthProvider } from "../auth/AuthProvider";
 import type { AuthGateway, SignInStep } from "../auth/gateway";
 import { userFromClaims, type User } from "../auth/user";
 import type { SocketLike } from "../live/client";
+import { ThemeProvider } from "../ThemeProvider";
 
 export const REVIEWER: User = userFromClaims({
   sub: "u1",
@@ -147,12 +148,14 @@ export function renderApp(
   settings: AppSettings = {},
 ) {
   return render(
-    <AuthProvider gateway={gateway}>
-      <ApiContext.Provider value={api}>
-        <MemoryRouter initialEntries={[path]}>
-          <AppRoutes {...settings} />
-        </MemoryRouter>
-      </ApiContext.Provider>
-    </AuthProvider>,
+    <ThemeProvider>
+      <AuthProvider gateway={gateway}>
+        <ApiContext.Provider value={api}>
+          <MemoryRouter initialEntries={[path]}>
+            <AppRoutes {...settings} />
+          </MemoryRouter>
+        </ApiContext.Provider>
+      </AuthProvider>
+    </ThemeProvider>,
   );
 }

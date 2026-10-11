@@ -20,6 +20,8 @@ import { PersonPage } from "./pages/PersonPage";
 import { ReportPage } from "./pages/ReportPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { SignInPage } from "./pages/SignInPage";
+import { useTheme } from "./theme";
+import { ThemeProvider } from "./ThemeProvider";
 
 function NotFound() {
   return (
@@ -41,6 +43,8 @@ function WithApi({ apiUrl, children }: { apiUrl: string; children: ReactNode }) 
 export interface AppSettings {
   defaultIncidentId?: string;
   mapStyleUrl?: string;
+  /** The basemap in dark colors; the light one is used when this is missing. */
+  darkMapStyleUrl?: string;
   wsUrl?: string;
   /** Tests pass a fake socket. */
   createSocket?: (url: string) => SocketLike;
@@ -48,10 +52,13 @@ export interface AppSettings {
 
 export function AppRoutes({
   defaultIncidentId,
-  mapStyleUrl,
+  mapStyleUrl: lightStyle,
+  darkMapStyleUrl,
   wsUrl,
   createSocket,
 }: AppSettings = {}) {
+  const { theme } = useTheme();
+  const mapStyleUrl = theme === "dark" && darkMapStyleUrl ? darkMapStyleUrl : lightStyle;
   return (
     <Routes>
       <Route path="/sign-in" element={<SignInPage />} />
@@ -118,22 +125,26 @@ export function App({
   apiUrl,
   defaultIncidentId,
   mapStyleUrl,
+  darkMapStyleUrl,
   wsUrl,
 }: AppSettings & {
   gateway: AuthGateway;
   apiUrl: string;
 }) {
   return (
-    <AuthProvider gateway={gateway}>
-      <WithApi apiUrl={apiUrl}>
-        <BrowserRouter>
-          <AppRoutes
-            defaultIncidentId={defaultIncidentId}
-            mapStyleUrl={mapStyleUrl}
-            wsUrl={wsUrl}
-          />
-        </BrowserRouter>
-      </WithApi>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider gateway={gateway}>
+        <WithApi apiUrl={apiUrl}>
+          <BrowserRouter>
+            <AppRoutes
+              defaultIncidentId={defaultIncidentId}
+              mapStyleUrl={mapStyleUrl}
+              darkMapStyleUrl={darkMapStyleUrl}
+              wsUrl={wsUrl}
+            />
+          </BrowserRouter>
+        </WithApi>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -5,14 +5,17 @@ import { App } from "./App";
 import { mapStyleUrl } from "./api/map";
 import { cognitoGateway } from "./auth/cognito";
 import { readConfig } from "./config";
+import { applyTheme, initialTheme } from "./theme";
 import "./styles.css";
+
+// Before the first paint, so a saved dark theme never flashes light.
+applyTheme(initialTheme());
 
 const root = createRoot(document.getElementById("root")!);
 const result = readConfig(import.meta.env);
 
 if (result.ok) {
   const { config } = result;
-  const dark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
   root.render(
     <StrictMode>
       <App
@@ -20,8 +23,9 @@ if (result.ok) {
         apiUrl={result.config.apiUrl}
         defaultIncidentId={result.config.defaultIncidentId}
         wsUrl={config.wsUrl}
-        mapStyleUrl={
-          config.mapApiKey ? mapStyleUrl(config.region, config.mapApiKey, dark) : undefined
+        mapStyleUrl={config.mapApiKey ? mapStyleUrl(config.region, config.mapApiKey) : undefined}
+        darkMapStyleUrl={
+          config.mapApiKey ? mapStyleUrl(config.region, config.mapApiKey, true) : undefined
         }
       />
     </StrictMode>,

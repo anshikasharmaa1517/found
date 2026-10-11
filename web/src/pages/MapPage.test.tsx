@@ -125,6 +125,20 @@ describe("map page", () => {
     expect(map).toHaveTextContent("1 pins, 2 conditions");
   });
 
+  it("switches to the dark basemap with the theme", async () => {
+    const { api } = routedApi({ [PATH]: () => body(), [CLIMATE]: climate() });
+    const gateway = new FakeGateway();
+    gateway.user = REVIEWER;
+    renderApp(gateway, "/incidents/inc_1/map", api, {
+      mapStyleUrl: "https://tiles.example/light",
+      darkMapStyleUrl: "https://tiles.example/dark",
+    });
+    const map = await screen.findByTestId("map");
+    expect(map).toHaveAttribute("data-style", "https://tiles.example/light");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    expect(screen.getByTestId("map")).toHaveAttribute("data-style", "https://tiles.example/dark");
+  });
+
   it("says when no report has coordinates yet", async () => {
     const { api } = routedApi({ [PATH]: () => body({ places: [], located_reports: 0 }), [CLIMATE]: climate([]) });
     renderMap(api, "https://tiles.example/style");
