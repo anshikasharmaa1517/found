@@ -7,13 +7,16 @@ import { listPeople } from "../api/people";
 import { ActivityRail } from "../components/ActivityRail";
 import { DemoStory } from "../components/DemoStory";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { GraphView } from "../components/GraphView";
 import { IncidentMap } from "../components/IncidentMap";
 import { SkeletonRows } from "../components/ui";
 import { rememberIncident } from "../incident";
 import { formatTime } from "../labels";
 import { useLoad } from "../useLoad";
 
-type Tab = "map" | "people";
+type Tab = "map" | "people" | "graph";
+
+const TAB_LABELS: Record<Tab, string> = { map: "Map", people: "People", graph: "Graph" };
 
 function PeoplePreview({ incidentId }: { incidentId: string }) {
   const api = useApi();
@@ -100,7 +103,7 @@ export function IncidentPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
       <div className="overview-grid">
         <div className="overview-main">
           <div className="segmented tabs" role="tablist" aria-label="Incident views">
-            {(["map", "people"] as const).map((t) => (
+            {(["map", "people", "graph"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -111,7 +114,7 @@ export function IncidentPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
                 className={tab === t ? "chip active" : "chip"}
                 onClick={() => setTab(t)}
               >
-                {t === "map" ? "Map" : "People"}
+                {TAB_LABELS[t]}
               </button>
             ))}
           </div>
@@ -121,8 +124,10 @@ export function IncidentPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
                 <p className="meta">Tap a pin to see who reported what there, and when.</p>
                 <IncidentMap incidentId={incidentId} mapStyleUrl={mapStyleUrl} />
               </>
-            ) : (
+            ) : tab === "people" ? (
               <PeoplePreview incidentId={incidentId} />
+            ) : (
+              <GraphView incidentId={incidentId} />
             )}
           </div>
         </div>

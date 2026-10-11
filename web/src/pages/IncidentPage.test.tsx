@@ -93,6 +93,21 @@ function routes(overrides: Record<string, () => unknown> = {}) {
       ],
       next_cursor: null,
     }),
+    [`${BASE}/graph`]: () => ({
+      nodes: [
+        { id: "per_1", kind: "person", label: "Maya Rawat", detail: "Age 24", subject_type: "PERSON" },
+        { id: "per_2", kind: "person", label: "Maya R.", detail: "Age 24", subject_type: "PERSON" },
+        { id: "clm_2", kind: "report", label: "Found safe", detail: "Central Hospital Demo", subject_type: null },
+        { id: "src_h", kind: "source", label: "Central Hospital Demo", detail: null, subject_type: null },
+        { id: "per_3", kind: "person", label: "Arjun Negi", detail: null, subject_type: "PERSON" },
+      ],
+      edges: [
+        { source: "clm_2", target: "per_1", kind: "about" },
+        { source: "clm_2", target: "src_h", kind: "from" },
+        { source: "per_1", target: "per_2", kind: "possibly_same" },
+      ],
+      by_kind: { person: 3, report: 1, source: 1 },
+    }),
     ...overrides,
   });
 }
@@ -179,5 +194,25 @@ describe("incident overview", () => {
 
     renderApp(as(), "/incidents/inc_x", routedApi({}).api);
     expect((await screen.findAllByRole("alert"))[0]).toHaveTextContent("This incident does not exist.");
+  });
+
+  it("draws the graph focused on Maya and explains a selected record", async () => {
+    const { api } = routes();
+    renderApp(as(), "/incidents/inc_demo", api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("tab", { name: "Graph" }));
+    // Focused on Maya: her report, its source and the possible match, not Arjun.
+    expect(await screen.findByRole("img", { name: "Graph of 4 records and 3 links" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Focus on")).toHaveValue("per_1");
+    expect(screen.getByText("Records").closest(".stat")).toHaveTextContent("5");
+
+    await user.click(screen.getByRole("button", { name: "Central Hospital Demo" }));
+    const details = screen.getByText("Source", { selector: ".eyebrow" }).closest(".graph-details") as HTMLElement;
+    expect(within(details).getByText("1 link")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Focus on"), "");
+    expect(screen.getByRole("img", { name: "Graph of 5 records and 3 links" })).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Reports"));
+    expect(screen.getByRole("img", { name: "Graph of 4 records and 1 links" })).toBeInTheDocument();
   });
 });
