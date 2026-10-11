@@ -102,17 +102,19 @@ export function layout(
   }
 
   // Fit the result into the box with a margin.
-  const margin = 40;
+  // Wider at the sides, where labels run past their node.
+  const mx = Math.min(110, width / 6);
+  const my = Math.min(40, height / 6);
   const minX = Math.min(...xs);
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
-  const sx = (width - 2 * margin) / Math.max(maxX - minX, 1);
-  const sy = (height - 2 * margin) / Math.max(maxY - minY, 1);
+  const sx = (width - 2 * mx) / Math.max(maxX - minX, 1);
+  const sy = (height - 2 * my) / Math.max(maxY - minY, 1);
   nodes.forEach((node, i) => {
     pos.set(node.id, {
-      x: n === 1 ? width / 2 : margin + (xs[i]! - minX) * sx,
-      y: n === 1 ? height / 2 : margin + (ys[i]! - minY) * sy,
+      x: n === 1 ? width / 2 : mx + (xs[i]! - minX) * sx,
+      y: n === 1 ? height / 2 : my + (ys[i]! - minY) * sy,
     });
   });
   return pos;

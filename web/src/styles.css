@@ -2398,14 +2398,28 @@ tbody tr.selected {
   overflow: hidden;
 }
 
-.graph-frame svg {
+.graph-frame > svg {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.graph-legend {
-  bottom: var(--s-3);
+/* The key sits under the graph, so it never hides a record. */
+.graph-legend ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-5);
+  margin: var(--s-3) 0 0;
+  padding: 0;
+  font-size: var(--fs-12);
+  color: var(--text-2);
+}
+
+.graph-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
 }
 
 .graph-legend svg {
@@ -2460,6 +2474,8 @@ tbody tr.selected {
   transition: opacity var(--fast) var(--ease);
 }
 
+/* The node's own ring shows keyboard focus; skip the browser's box around it. */
+.g-node:focus,
 .g-node:focus-visible {
   outline: none;
 }

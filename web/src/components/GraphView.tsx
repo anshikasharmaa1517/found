@@ -233,8 +233,8 @@ export function GraphView({ incidentId }: { incidentId: string }) {
             })}
           </g>
         </svg>
-        <details className="map-legend graph-legend" open>
-          <summary>Legend</summary>
+      </div>
+      <div className="graph-legend" aria-label="Legend">
           <ul>
             <li><svg width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6" className="g-person" /></svg>Person</li>
             <li><svg width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="2" className="g-subject" /></svg>Road, shelter or hazard</li>
@@ -250,7 +250,6 @@ export function GraphView({ incidentId }: { incidentId: string }) {
               </li>
             ))}
           </ul>
-        </details>
       </div>
       {chosen ? (
         <Details node={chosen} graph={graph} />
