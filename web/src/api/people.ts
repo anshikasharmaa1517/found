@@ -93,11 +93,27 @@ export interface IdentityLink {
   decided_at: string;
 }
 
+/** A source check run on one of the person's reports. Reviewers and admins only. */
+export interface TimelineInvestigation {
+  id: string;
+  claim_id: string;
+  mode: "LIVE" | "REPLAYED";
+  status: string;
+  attribution: string | null;
+  comparison: string | null;
+  summary: string | null;
+  review_status: string | null;
+  queued_at: string;
+  finished_at: string | null;
+}
+
 export interface Timeline {
   person: PersonRow;
   summary: Summary;
   identity: IdentityLink[];
   entries: TimelineEntry[];
+  /** Empty, or missing, for roles that do not review. */
+  investigations?: TimelineInvestigation[];
   next_cursor: string | null;
 }
 

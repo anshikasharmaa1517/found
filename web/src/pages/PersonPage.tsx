@@ -4,14 +4,29 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../api/context";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
-import { getTimeline, type IdentityLink, type Order, type Summary } from "../api/people";
+import {
+  getTimeline,
+  type IdentityLink,
+  type Order,
+  type Summary,
+  type TimelineEntry,
+  type TimelineInvestigation,
+  type VisibleEntry,
+} from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FollowPanel } from "../components/FollowPanel";
 import { ReportTimeline } from "../components/ReportTimeline";
+import { WhatChanged } from "../components/WhatChanged";
 import { TraceButton } from "../components/TraceButton";
 import { PageHeader, SkeletonRows } from "../components/ui";
 import { rememberedIncident } from "../incident";
-import { claimTypeLabel, formatTime, IDENTITY_DECISION_LABELS, labelFor } from "../labels";
+import {
+  claimTypeLabel,
+  formatTime,
+  IDENTITY_DECISION_LABELS,
+  INVESTIGATION_STATUS_LABELS,
+  labelFor,
+} from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
 import { entryAnchor } from "../timeline";
 import { useLoad } from "../useLoad";
@@ -75,6 +90,66 @@ function SummaryCard({ summary }: { summary: Summary }) {
   );
 }
 
+/**
+ * Where each report came from, as in Trace: the source checks already run, and for
+ * reviewers a way to start one. The model only labels; code decides, and a person
+ * makes the final call.
+ */
+function SourceChecks({
+  entries,
+  investigations,
+  canTrace,
+}: {
+  entries: TimelineEntry[];
+  investigations: TimelineInvestigation[];
+  canTrace: boolean;
+}) {
+  const visible = entries.filter((e): e is VisibleEntry => !e.withheld);
+  return (
+    <section className="source-checks" aria-labelledby="source-checks-title">
+      <h2 id="source-checks-title">Where did this report come from?</h2>
+      <p className="meta">
+        A source check asks who a report is quoting, then compares it with that source&apos;s own
+        reports. A relay is never treated as independent confirmation.
+      </p>
+      {canTrace ? (
+        <ul className="check-list">
+          {visible.map((entry) => {
+            const runs = investigations.filter((i) => i.claim_id === entry.claim_id);
+            const latest = runs[runs.length - 1];
+            return (
+              <li key={entry.claim_id}>
+                <div className="change-head">
+                  <strong>{entry.source}</strong>
+                  <span className="meta">{claimTypeLabel(entry.claim_type)}</span>
+                </div>
+                <p className="meta">{entry.excerpt}</p>
+                {latest ? (
+                  <p>
+                    <Link to={`/investigations/${encodeURIComponent(latest.id)}`}>
+                      See the source check
+                    </Link>{" "}
+                    <span className="pill accent">
+                      {latest.mode} · {labelFor(INVESTIGATION_STATUS_LABELS, latest.status)}
+                    </span>
+                  </p>
+                ) : (
+                  <TraceButton claimId={entry.claim_id} />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="meta">
+          Reviewers check where reports came from. Their findings appear here once a reviewer
+          has accepted them.
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function PersonPage() {
   const personId = useParams().personId ?? "";
   const api = useApi();
@@ -120,6 +195,7 @@ export function PersonPage() {
   }
 
   const { person, summary, identity, entries } = first.data;
+  const investigations = first.data.investigations ?? [];
   const canTrace = hasRole(user, "reviewer", "admin");
   return (
     <section className="page">
@@ -183,6 +259,20 @@ export function PersonPage() {
         <button type="button" onClick={pager.loadMore} disabled={pager.busy}>
           {pager.busy ? "Loading" : "Load more"}
         </button>
+      )}
+      {entries.length > 0 && (
+        <>
+          <WhatChanged
+            entries={[...entries, ...pager.items]}
+            newestFirst={order === "desc"}
+            investigations={investigations}
+          />
+          <SourceChecks
+            entries={[...entries, ...pager.items]}
+            investigations={investigations}
+            canTrace={canTrace}
+          />
+        </>
       )}
         </div>
         <aside className="split-side">

@@ -3375,6 +3375,48 @@ tbody tr.selected {
   font-size: var(--fs-12);
 }
 
+.change-log li.change-check::before {
+  background: var(--g-investigation);
+}
+
+/* Where reports came from: checks already run, and a way to start one. */
+
+.source-checks {
+  margin: var(--s-5) 0;
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere;
+}
+
+.source-checks h2 {
+  margin: 0 0 var(--s-1);
+}
+
+.check-list {
+  list-style: none;
+  display: grid;
+  gap: var(--s-3);
+  margin: var(--s-3) 0 0;
+  padding: 0;
+}
+
+.check-list li {
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+}
+
+.check-list li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.check-list p {
+  margin: var(--s-1) 0 0;
+}
+
 /* People: a big search box, then the list and the person side by side. */
 
 .people-search {

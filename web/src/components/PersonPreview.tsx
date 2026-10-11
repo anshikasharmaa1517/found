@@ -26,7 +26,7 @@ export function PersonPreview({
   );
   if (state.status === "loading") return <SkeletonRows label="Loading the person" rows={4} />;
   if (state.status === "error") return <ErrorNotice error={state.error} onRetry={retry} />;
-  const { person, summary, entries, next_cursor } = state.data;
+  const { person, summary, entries, investigations, next_cursor } = state.data;
   const full = `/people/${encodeURIComponent(person.id)}`;
   return (
     <section className="preview" aria-labelledby="preview-title" aria-live="polite">
@@ -65,7 +65,7 @@ export function PersonPreview({
       ) : (
         <ReportTimeline entries={entries} incidentId={incidentId} citedId={summary.cited_claim_id} />
       )}
-      {entries.length > 0 && <WhatChanged entries={entries} />}
+      {entries.length > 0 && <WhatChanged entries={entries} investigations={investigations} />}
       <Link className="button-link primary" to={full}>
         {next_cursor ? "Open the full timeline, with more reports" : "Open the full timeline"}
       </Link>

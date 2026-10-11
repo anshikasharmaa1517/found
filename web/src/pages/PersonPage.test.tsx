@@ -195,7 +195,7 @@ describe("person page", () => {
     const user = userEvent.setup();
     await user.selectOptions(await screen.findByLabelText("Order"), "desc");
     await user.click(await screen.findByRole("button", { name: "Load more" }));
-    await screen.findByText("Family reports Sita Tamang missing.");
+    await screen.findAllByText("Family reports Sita Tamang missing.");
     expect(calls.at(-1)?.query).toMatchObject({ order: "desc", cursor: "next" });
     expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
   });
@@ -274,7 +274,7 @@ describe("person page", () => {
       { "/v1/claims/clm_2/investigations": () => started },
     );
     renderApp(signedIn(), "/people/per_1", api);
-    const hospital = (await screen.findByText("Admitted, stable condition")).closest("li")!;
+    const hospital = (await screen.findAllByText("Admitted, stable condition"))[0]!.closest("li")!;
     await userEvent.setup().click(
       within(hospital).getByRole("button", { name: "Trace where this came from" }),
     );
@@ -297,7 +297,7 @@ describe("person page", () => {
     );
     renderApp(signedIn(), "/people/per_1", api);
     const user = userEvent.setup();
-    const police = (await screen.findByText("Family reports Sita Tamang missing.")).closest("li")!;
+    const police = (await screen.findAllByText("Family reports Sita Tamang missing."))[0]!.closest("li")!;
     await user.click(within(police).getByRole("button", { name: "Trace where this came from" }));
     await waitFor(() =>
       expect(calls.some((c) => c.path === "/v1/investigations/inv_3")).toBe(true),
@@ -323,5 +323,53 @@ describe("person page", () => {
     renderApp(publisher, "/people/per_1", api);
     await screen.findByRole("heading", { name: "Sita Tamang" });
     expect(screen.queryByRole("button", { name: /Trace where/ })).not.toBeInTheDocument();
+  });
+
+  it("shows what changed, with source checks under their report, for reviewers", async () => {
+    const run = {
+      id: "inv_9",
+      claim_id: "clm_2",
+      mode: "REPLAYED" as const,
+      status: "NEEDS_REVIEW",
+      attribution: "RELAY",
+      comparison: null,
+      summary: "The report appears to relay another source.",
+      review_status: null,
+      queued_at: "2026-10-03T04:00:00Z",
+      finished_at: "2026-10-03T04:01:00Z",
+    };
+    const { api } = routedApi({ [PATH]: () => timeline({ investigations: [run] }) });
+    renderApp(signedIn(), "/people/per_1", api);
+    const changed = await screen.findByRole("region", { name: "What changed?" });
+    // Two reports and one check on the second.
+    expect(within(changed).getByText("3 stored entries.")).toBeInTheDocument();
+    expect(within(changed).getByText("Investigation · REPLAYED · NEEDS_REVIEW")).toBeInTheDocument();
+    expect(within(changed).getByText("The report appears to relay another source.")).toBeInTheDocument();
+    expect(within(changed).getByRole("link", { name: "inv_9" })).toHaveAttribute(
+      "href",
+      "/investigations/inv_9",
+    );
+    expect(within(changed).getByText("status changed")).toBeInTheDocument();
+
+    const checks = screen.getByRole("region", { name: "Where did this report come from?" });
+    expect(within(checks).getByRole("link", { name: "See the source check" })).toHaveAttribute(
+      "href",
+      "/investigations/inv_9",
+    );
+    // The police report has no check yet, so a reviewer can start one.
+    expect(within(checks).getByRole("button", { name: "Trace where this came from" })).toBeInTheDocument();
+  });
+
+  it("tells other roles that reviewers check sources", async () => {
+    const gateway = new FakeGateway();
+    gateway.user = userFromClaims({ sub: "f", "cognito:groups": ["family"] });
+    const { api } = routedApi({
+      [PATH]: () => timeline(),
+      "/v1/me/subscriptions": () => ({ subscriptions: [] }),
+    });
+    renderApp(gateway, "/people/per_1", api);
+    const checks = await screen.findByRole("region", { name: "Where did this report come from?" });
+    expect(within(checks).getByText(/Reviewers check where reports came from/)).toBeInTheDocument();
+    expect(within(checks).queryByRole("button")).toBeNull();
   });
 });
