@@ -7,7 +7,13 @@ import { listReviewQueue } from "../api/review";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
 import { ErrorNotice } from "../components/ErrorNotice";
-import { AlertIcon, CheckIcon, PeopleIcon, PersonSearchIcon } from "../components/icons";
+import {
+  AlertIcon,
+  CheckIcon,
+  PeopleIcon,
+  PersonSearchIcon,
+  SearchIcon,
+} from "../components/icons";
 import { PersonPreview } from "../components/PersonPreview";
 import { PersonStatusDot } from "../components/PersonStatusDot";
 import { Empty, PageHeader, SkeletonRows } from "../components/ui";
@@ -242,19 +248,30 @@ export function PeoplePage() {
   }
 
   const searching = Boolean(q || age);
+  // On wide screens the first person is open beside the list until someone is chosen.
+  const firstId = first.status === "ready" ? (first.data.people[0]?.id ?? null) : null;
+  const shown = selected ?? (wideScreen() ? firstId : null);
 
   return (
     <section className="page">
       <PageHeader
         title="People"
-        description="Everyone reported in this incident. Open a person to see each report and who made it."
+        description="Find someone, see every report about them, and check possible matches."
       />
       <Stats incidentId={incidentId} />
 
-      <form className="search" role="search" onSubmit={onSearch} key={key}>
-        <label>
-          Name
-          <input name="q" type="search" defaultValue={q} placeholder="For example: Tamang" />
+      <form className="search people-search" role="search" onSubmit={onSearch} key={key}>
+        <label className="search-field">
+          <span>Search people</span>
+          <span className="search-input">
+            <SearchIcon />
+            <input
+              name="q"
+              type="search"
+              defaultValue={q}
+              placeholder="Type a name, for example Sita"
+            />
+          </span>
         </label>
         <label className="narrow">
           Age
@@ -264,11 +281,18 @@ export function PeoplePage() {
           Search
         </button>
       </form>
+      {first.status === "ready" && (
+        <p className="meta shown-count">
+          {first.data.people.length + pager.items.length}
+          {pager.hasMore ? "+" : ""} {searching ? "people match" : "people shown"}
+        </p>
+      )}
       {age && <p className="hint">Ages match within 2 years. People with no reported age are included.</p>}
 
       <div className="people-layout">
       <div id={resultsId} aria-live="polite" className="people-list">
-        {hasRole(user, "reviewer", "admin") && <PossibleMatches incidentId={incidentId} />}
+        <h2>People</h2>
+        <p className="meta">Select someone to see every report about them.</p>
         {first.status === "loading" && <SkeletonRows label="Loading people" rows={8} />}
         {first.status === "error" && (
           <ErrorNotice error={first.error} notFound="This incident does not exist." onRetry={retry} />
@@ -292,8 +316,8 @@ export function PeoplePage() {
         {first.status === "ready" && first.data.people.length > 0 && (
           <>
             <ul className="person-cards" aria-label="People">
-              <PersonCards people={first.data.people} selected={selected} onSelect={setSelected} />
-              <PersonCards people={pager.items} selected={selected} onSelect={setSelected} />
+              <PersonCards people={first.data.people} selected={shown} onSelect={setSelected} />
+              <PersonCards people={pager.items} selected={shown} onSelect={setSelected} />
             </ul>
             <div className="table-foot">
               <span>
@@ -309,10 +333,11 @@ export function PeoplePage() {
           </>
         )}
         {pager.error && <ErrorNotice error={pager.error} onRetry={pager.loadMore} />}
+        {hasRole(user, "reviewer", "admin") && <PossibleMatches incidentId={incidentId} />}
       </div>
       <aside className="people-side">
-        {selected ? (
-          <PersonPreview personId={selected} incidentId={incidentId} />
+        {shown ? (
+          <PersonPreview personId={shown} incidentId={incidentId} />
         ) : (
           <div className="empty empty-small">
             <h3>Pick someone to see what is known</h3>

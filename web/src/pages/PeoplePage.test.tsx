@@ -37,7 +37,7 @@ describe("people page", () => {
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     await screen.findByRole("link", { name: "Ravi Kumar" });
     const user = userEvent.setup();
-    await user.type(screen.getByLabelText("Name"), "tamang");
+    await user.type(screen.getByLabelText("Search people"), "tamang");
     await user.type(screen.getByLabelText("Age"), "25");
     await user.click(screen.getByRole("button", { name: "Search" }));
     await screen.findByText(/Ages match within 2 years/);
@@ -224,15 +224,23 @@ describe("people overview", () => {
     wide(true);
     const { api } = overviewRoutes();
     renderApp(signedIn(), "/incidents/inc_1/people", api);
-    expect(await screen.findByText("Pick someone to see what is known")).toBeInTheDocument();
+    // The first person opens beside the list without a click.
     const list = await screen.findByRole("list", { name: "People" });
-    await userEvent.setup().click(within(list).getByRole("link", { name: "Sita Tamang" }));
+    expect(await screen.findByText("2 people shown")).toBeInTheDocument();
+    expect(within(list).getByRole("link", { name: "Sita Tamang" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
     const preview = (
       await screen.findByRole("heading", { name: "What we know about Sita Tamang", level: 2 })
     ).closest("section")!;
     expect(within(preview).getByText(/say different things/)).toBeInTheDocument();
+    const changed = within(preview).getByRole("region", { name: "What changed?" });
+    expect(within(changed).getByText("1 stored entry.")).toBeInTheDocument();
+    expect(within(changed).getByText("Central Hospital Demo")).toBeInTheDocument();
     expect(within(preview).getByText(/District Police Demo, Missing/)).toBeInTheDocument();
-    expect(within(preview).getByText("Sita Tamang, 24, admitted to ward 3.")).toBeInTheDocument();
+    // Once on its card and once in the plain record below.
+    expect(within(preview).getAllByText("Sita Tamang, 24, admitted to ward 3.")).toHaveLength(2);
     expect(within(preview).getByRole("link", { name: "Open the full timeline" })).toHaveAttribute(
       "href",
       "/people/per_1",
