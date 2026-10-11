@@ -62,6 +62,6 @@ def test_payload_ignores_actor():
 def test_ids_are_sortable_and_sources_deterministic():
     assert len(ulid()) == 26
     assert ulid(now_ms=1, randomness=bytes(10)) < ulid(now_ms=2, randomness=bytes(10))
-    name = "central hospital demo"
+    name = "central hospital"
     assert source_id("inc_1", name) == source_id("inc_1", name)
     assert source_id("inc_1", "a b c d") != source_id("inc_2", "a b c d")

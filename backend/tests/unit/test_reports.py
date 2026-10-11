@@ -19,7 +19,7 @@ HOSPITAL = Organization(
     id="org_h",
     incident_id="inc_1",
     name="Central Hospital",
-    name_norm="central hospital demo",
+    name_norm="central hospital",
     org_type="HOSPITAL",
 )
 PUBLISHER = Caller(user_id="user_1", groups=frozenset({"publisher"}), org_id="org_h")

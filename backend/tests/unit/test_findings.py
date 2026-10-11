@@ -68,7 +68,7 @@ def test_unknown_or_out_of_incident_claim_is_refused():
         ("short", "EXCERPT_LENGTH"),
         ("x" * 301, "EXCERPT_LENGTH"),
         ("According to the Central Hospital", "EXCERPT_NOT_FOUND"),
-        ("according to central hospital demo", "EXCERPT_NOT_FOUND"),
+        ("according to central hospital", "EXCERPT_NOT_FOUND"),
     ],
 )
 def test_excerpts_must_be_verbatim_and_sized(excerpt, code):

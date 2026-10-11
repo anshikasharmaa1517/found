@@ -80,7 +80,7 @@ def repo(monkeypatch):
             id="org_h",
             incident_id="inc_1",
             name="Central Hospital",
-            name_norm="central hospital demo",
+            name_norm="central hospital",
             org_type="HOSPITAL",
         )
     )

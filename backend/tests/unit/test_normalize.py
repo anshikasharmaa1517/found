@@ -13,7 +13,7 @@ def _src(sid: str, name: str) -> Source:
 
 
 def test_normalize_text_folds_case_punctuation_and_spaces():
-    assert normalize_text("  Central-Hospital,  DEMO!! ") == "central hospital demo"
+    assert normalize_text("  Central-Hospital,  ADMITTED!! ") == "central hospital admitted"
 
 
 def test_name_tokens_are_unique_and_skip_single_letters():
@@ -23,7 +23,7 @@ def test_name_tokens_are_unique_and_skip_single_letters():
 def test_detect_mentions_matches_whole_words_in_order():
     hospital = _src("src_h", "Central Hospital")
     police = _src("src_p", "District Police")
-    text = "Per District Police and, later, CENTRAL hospital demo: admitted."
+    text = "Per District Police and, later, CENTRAL hospital: admitted."
     assert detect_mentions(text, [hospital, police]) == [police, hospital]
 
 

@@ -40,7 +40,7 @@ SOURCE = Source(
     id="src_police",
     incident_id="inc_1",
     name="District Police",
-    name_norm="district police demo",
+    name_norm="district police",
     source_type="POLICE",
     organization_id="org_p",
 )
@@ -129,7 +129,7 @@ def test_get_organization_is_scoped_to_incident(repo, table):
         id="org_h",
         incident_id="inc_1",
         name="Central Hospital",
-        name_norm="central hospital demo",
+        name_norm="central hospital",
         org_type="HOSPITAL",
     )
     table.put_item(Item=organization_item(org))
