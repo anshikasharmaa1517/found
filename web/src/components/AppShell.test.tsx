@@ -299,10 +299,19 @@ describe("app shell", () => {
     expect(screen.getByText("Records").closest(".stat")).toHaveTextContent("5");
 
     await user.click(screen.getByRole("button", { name: "Central Hospital" }));
-    const details = screen
-      .getByText("Source", { selector: ".eyebrow" })
-      .closest(".graph-details") as HTMLElement;
-    expect(within(details).getByText("1 link")).toBeInTheDocument();
+    const details = screen.getByRole("article", { name: "Record: Central Hospital" });
+    expect(within(details).getByText("Source", { selector: ".eyebrow" })).toBeInTheDocument();
+    expect(within(details).getByText("Outgoing links (0)")).toBeInTheDocument();
+    expect(within(details).getByText("Incoming links (1)")).toBeInTheDocument();
+    // A link selects the record at its other end.
+    await user.click(within(details).getByRole("button", { name: /is from/ }));
+    expect(screen.getByRole("article", { name: "Record: Found safe" })).toBeInTheDocument();
+    // The finder lists every record by kind and searches by name, kind or id.
+    const finder = screen.getByRole("navigation", { name: "Graph records" });
+    expect(within(finder).getByText("People (3)")).toBeInTheDocument();
+    await user.type(within(finder).getByRole("searchbox", { name: "Find a record" }), "src_h");
+    await user.click(within(finder).getByRole("button", { name: /src_h/ }));
+    expect(screen.getByRole("article", { name: "Record: Central Hospital" })).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Focus on"), "");
     expect(screen.getByRole("img", { name: "Graph of 5 records and 3 links" })).toBeInTheDocument();

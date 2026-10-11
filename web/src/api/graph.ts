@@ -64,6 +64,19 @@ export const EDGE_LABELS: Record<EdgeKind, string> = {
   not_same: "checked: not the same person",
 };
 
+/** A link read in its stored direction: "<record> is about <other record>". */
+export const EDGE_PHRASES: Record<EdgeKind, string> = {
+  about: "is about",
+  from: "is from",
+  at: "names the place",
+  mentions: "names the source",
+  traced: "investigates",
+  relays: "found it relays",
+  possibly_same: "may be the same person as",
+  same_person: "is the same person as",
+  not_same: "is not the same person as",
+};
+
 export function getIncidentGraph(api: ApiClient, incidentId: string): Promise<IncidentGraph> {
   return api.get<IncidentGraph>(`/v1/incidents/${encodeURIComponent(incidentId)}/graph`);
 }
