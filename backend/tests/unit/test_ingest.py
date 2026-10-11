@@ -14,9 +14,9 @@ class FixedClock:
         return datetime(2026, 10, 5, 10, 15, tzinfo=UTC)
 
 
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-NGO = {"org_id": "org_n", "org_name": "Flood Relief Demo", "org_type": "NGO"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+NGO = {"org_id": "org_n", "org_name": "Flood Relief", "org_type": "NGO"}
 
 
 def cmd(org=POLICE, ref="REF-1", subject=None, **overrides) -> PublishCommand:
@@ -58,7 +58,7 @@ def test_first_report_creates_subject_source_and_claim(service, repo):
     subject = repo.get_subject(claim.subject_id)
     assert subject.claim_seq == 1 and subject.display_name == "Sita Tamang"
     assert not hasattr(subject, "status")
-    assert repo.sources[claim.source_id].name == "District Police Demo"
+    assert repo.sources[claim.source_id].name == "District Police"
     assert repo.name_tokens["tamang"] == {subject.id}
 
 
@@ -106,7 +106,7 @@ def test_mentions_are_detected_and_exclude_own_source(service):
             ref="NGO-1",
             subject=person(hospital_claim.subject_id),
             claim_type="FOUND_SAFE",
-            original_text="According to Central Hospital Demo, Sita T. was admitted.",
+            original_text="According to Central Hospital, Sita T. was admitted.",
         )
     ).claim
     assert relay.mentioned_source_ids == (hospital_claim.source_id,)

@@ -20,7 +20,7 @@ Attribution labels:
 - DIRECT: the source of the report saw or handled the facts itself.
   Example: a hospital reports a patient it admitted.
 - RELAY: the report passes on what another source said.
-  Example: "According to Central Hospital Demo, she was admitted."
+  Example: "According to Central Hospital, she was admitted."
 - UNCLEAR: the text does not show where the information came from.
 
 Comparison labels, for a relay of a source that has reports:

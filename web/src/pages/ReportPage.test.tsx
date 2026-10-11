@@ -29,7 +29,7 @@ function stored(replayed = false) {
       id: "clm_9",
       incident_id: "inc_1",
       subject_id: "per_9",
-      source: { id: "src_h", name: "Central Hospital Demo", type: "HOSPITAL" },
+      source: { id: "src_h", name: "Central Hospital", type: "HOSPITAL" },
       seq: 2,
       claim_type: "FOUND_SAFE",
       reported_at: "2026-10-03T02:10:00Z",
@@ -59,7 +59,7 @@ describe("report page", () => {
     await user.click(screen.getByRole("button", { name: "Publish report" }));
 
     expect(await screen.findByRole("heading", { name: "Report stored" })).toBeInTheDocument();
-    expect(screen.getByText(/Found safe from Central Hospital Demo, report 2/)).toBeInTheDocument();
+    expect(screen.getByText(/Found safe from Central Hospital, report 2/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "View the timeline" })).toHaveAttribute(
       "href",
       "/people/per_9",

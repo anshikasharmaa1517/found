@@ -79,7 +79,7 @@ def repo(monkeypatch):
         Organization(
             id="org_h",
             incident_id="inc_1",
-            name="Central Hospital Demo",
+            name="Central Hospital",
             name_norm="central hospital demo",
             org_type="HOSPITAL",
         )
@@ -115,7 +115,7 @@ def test_publish_returns_201_with_claim_view(repo):
     assert body["replayed"] is False
     claim = body["claim"]
     assert claim["seq"] == 1
-    assert claim["source"]["name"] == "Central Hospital Demo"
+    assert claim["source"]["name"] == "Central Hospital"
     assert claim["source"]["type"] == "HOSPITAL"
     assert claim["reported_at"] == "2026-10-02T15:40:00Z"
     assert claim["reported_at_raw"] == "2026-10-02T21:10:00+05:30"
@@ -289,7 +289,7 @@ def test_timeline_matches_design_shape(sita):
     assert summary["needs_review"] is False
     first, second = body["entries"]
     assert first["relation"] == "FIRST" and second["relation"] == "UPDATE"
-    assert second["source"] == "Central Hospital Demo"
+    assert second["source"] == "Central Hospital"
     assert second["reported_at"] == "2026-10-03T02:10:00Z"
     assert second["excerpt"].endswith("...") and len(second["excerpt"]) <= 163
     assert "original_text" not in second

@@ -15,8 +15,8 @@ class FixedClock:
         return datetime(2026, 10, 5, 10, 15, tzinfo=UTC)
 
 
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
 T1 = "2026-10-02T21:10:00+05:30"
 T2 = "2026-10-03T07:40:00+05:30"
 T0 = "2026-10-02T09:00:00+05:30"
@@ -87,7 +87,7 @@ def test_first_report_alerts_each_active_follower(world):
     assert alerts["sub_b"].delivery_status == DeliveryStatus.NOT_REQUIRED
     alert = alerts["sub_a"]
     assert alert.user_id == "user_sub_a" and alert.incident_id == "inc_1"
-    expected = "First report for Sita Tamang: District Police Demo says missing"
+    expected = "First report for Sita Tamang: District Police says missing"
     assert alert.message.startswith(expected)
     assert "Earlier reports are retained." in alert.message
 
@@ -106,7 +106,7 @@ def test_newer_different_status_is_an_update(world):
     result = world.run(found)
     assert result.relation == Relation.UPDATE and result.alerts_created == 2
     message = world.alerts_for(found)[0].message
-    assert message.startswith("Newer report for Sita Tamang: Central Hospital Demo says found safe")
+    assert message.startswith("Newer report for Sita Tamang: Central Hospital says found safe")
 
 
 def test_repeat_of_same_status_does_not_alert(world):

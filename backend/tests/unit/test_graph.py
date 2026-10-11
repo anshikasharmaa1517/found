@@ -62,8 +62,8 @@ SUBJECTS = [
     subject("inf_1", "Old Bridge", "INFRASTRUCTURE"),
 ]
 SOURCES = [
-    source("src_h", "Central Hospital Demo"),
-    source("src_n", "Flood Relief Demo"),
+    source("src_h", "Central Hospital"),
+    source("src_n", "Flood Relief"),
     source("src_x", "Unused Desk"),
 ]
 PLACES = [Location(id="loc_1", incident_id="inc_1", name="Old Bridge", name_norm="old bridge")]

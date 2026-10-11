@@ -38,7 +38,7 @@ class World:
         self.refs = 0
         self.person_id = self.report("MISSING", "2026-10-02T21:10:00+05:30", new=True)
 
-    def report(self, claim_type, reported_at, new=False, org="District Police Demo"):
+    def report(self, claim_type, reported_at, new=False, org="District Police"):
         self.refs += 1
         subject = (
             {"type": "PERSON", "new": {"name": "Sita Tamang"}}
@@ -141,11 +141,11 @@ def test_cannot_unfollow_someone_elses_subscription(world):
 
 def test_followers_get_alerts_in_their_feed_and_nobody_elses(world):
     world.service.follow(FAMILY, world.person_id, {})
-    world.report("FOUND_SAFE", "2026-10-03T07:40:00+05:30", org="Central Hospital Demo")
+    world.report("FOUND_SAFE", "2026-10-03T07:40:00+05:30", org="Central Hospital")
     page = world.service.alert_feed(FAMILY)
     assert len(page.alerts) == 1
     alert = page.alerts[0]
-    assert alert.message.startswith("Newer report for Sita Tamang: Central Hospital Demo")
+    assert alert.message.startswith("Newer report for Sita Tamang: Central Hospital")
     assert alert.delivery_status == DeliveryStatus.NOT_REQUIRED
     assert page.next_cursor is None
     assert world.service.alert_feed(OTHER_FAMILY).alerts == []

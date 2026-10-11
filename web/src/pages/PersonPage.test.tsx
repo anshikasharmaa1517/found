@@ -23,7 +23,7 @@ function entry(overrides: Partial<VisibleEntry>): VisibleEntry {
     claim_type: "MISSING",
     value: null,
     source_id: "src_p",
-    source: "District Police Demo",
+    source: "District Police",
     reported_at: "2026-10-02T15:40:00Z",
     relation: "FIRST",
     excerpt: "Family reports Sita Tamang missing.",
@@ -37,7 +37,7 @@ const HOSPITAL = entry({
   seq: 2,
   claim_type: "FOUND_SAFE",
   source_id: "src_h",
-  source: "Central Hospital Demo",
+  source: "Central Hospital",
   reported_at: "2026-10-03T02:10:00Z",
   relation: "UPDATE",
   value: "Admitted, stable condition",
@@ -45,7 +45,7 @@ const HOSPITAL = entry({
   source_type: "HOSPITAL",
   ingested_at: "2026-10-03T03:00:00Z",
   external_reference: "CHD-0001",
-  location: { id: "loc_h", name: "Central Hospital Demo grounds" },
+  location: { id: "loc_h", name: "Central Hospital grounds" },
 });
 const UNDATED = entry({
   claim_id: "clm_3",
@@ -67,7 +67,7 @@ function timeline(overrides: Partial<Timeline> = {}): Timeline {
         {
           claim_id: "clm_1",
           claim_type: "MISSING",
-          source: "District Police Demo",
+          source: "District Police",
           withheld: false,
         },
       ],
@@ -132,7 +132,7 @@ describe("person page", () => {
       within(summary).getByRole("link", { name: "See the report this is based on" }),
     ).toHaveAttribute("href", "#entry-clm_2");
     expect(
-      within(summary).getByRole("link", { name: "District Police Demo: Missing" }),
+      within(summary).getByRole("link", { name: "District Police: Missing" }),
     ).toHaveAttribute("href", "#entry-clm_1");
     expect(within(summary).getByText(/does not decide which report is true/)).toBeInTheDocument();
   });
@@ -149,7 +149,7 @@ describe("person page", () => {
     expect(within(hospital).getByText("Admitted, stable condition")).toBeInTheDocument();
     // Who said it, what kind of source it is, when it arrived and its own reference.
     expect(within(hospital).getByText(/^From/)).toHaveTextContent(
-      "From Central Hospital Demo (Hospital)",
+      "From Central Hospital (Hospital)",
     );
     expect(within(hospital).getByText(/^Received/)).toHaveTextContent("Reference CHD-0001");
     // What changed since the report before it, which stays on the page too.
@@ -169,7 +169,7 @@ describe("person page", () => {
     const { api } = routedApi({ [PATH]: () => timeline() });
     renderApp(signedIn(), "/people/per_1", api);
     expect(
-      await screen.findByRole("link", { name: "Show Central Hospital Demo grounds on the map" }),
+      await screen.findByRole("link", { name: "Show Central Hospital grounds on the map" }),
     ).toHaveAttribute("href", "/incidents/inc_1/map?place=loc_h");
     localStorage.clear();
   });

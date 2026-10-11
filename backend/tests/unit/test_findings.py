@@ -12,7 +12,7 @@ from found_core.domain.findings import (
 )
 from tests.unit.factories import claim
 
-RELAY_TEXT = "According to Central Hospital Demo, Sita T. was admitted to ward 3."
+RELAY_TEXT = "According to Central Hospital, Sita T. was admitted to ward 3."
 SOURCE_TEXT = "Sita Tamang admitted to ward 3 at 07:40, stable."
 
 
@@ -29,7 +29,7 @@ def source_claim():
 
 
 CITED = {"clm_relay": relay_claim(), "clm_src": source_claim()}
-RELAY_CITE = {"claim_id": "clm_relay", "excerpt": "According to Central Hospital Demo"}
+RELAY_CITE = {"claim_id": "clm_relay", "excerpt": "According to Central Hospital"}
 SOURCE_CITE = {"claim_id": "clm_src", "excerpt": "admitted to ward 3 at 07:40"}
 
 

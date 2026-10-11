@@ -16,8 +16,8 @@ from found_core.services.runner import InvestigationRunner, session_id
 from found_core.tools.service import AgentToolService
 
 REVIEWER = Caller(user_id="rev_1", groups=frozenset({"reviewer"}))
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
-NGO = {"org_id": "org_n", "org_name": "Flood Relief Demo", "org_type": "NGO"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
+NGO = {"org_id": "org_n", "org_name": "Flood Relief", "org_type": "NGO"}
 
 
 class FixedClock:
@@ -67,7 +67,7 @@ class World:
         ingest = IngestService(self.repo, clock=self.clock, sleep=lambda _: None)
         self.source = self.publish(ingest, HOSPITAL, "Sita Tamang admitted to ward 3, stable.")
         self.relay = self.publish(
-            ingest, NGO, "According to Central Hospital Demo, Sita T. was admitted.", self.source
+            ingest, NGO, "According to Central Hospital, Sita T. was admitted.", self.source
         )
         starter = InvestigationService(self.repo, self.ledger, Queue(), self.config, self.clock)
         self.inv = starter.start(REVIEWER, self.relay.id).investigation
@@ -121,7 +121,7 @@ class World:
                 "comparison": "SUPPORTS",
                 "summary": "Repeats the hospital report.",
                 "citations": [
-                    {"claim_id": self.relay.id, "excerpt": "According to Central Hospital Demo"},
+                    {"claim_id": self.relay.id, "excerpt": "According to Central Hospital"},
                     {"claim_id": self.source.id, "excerpt": "admitted to ward 3, stable"},
                 ],
             },

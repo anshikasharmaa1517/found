@@ -20,8 +20,8 @@ from tests.unit.test_api_handler import call, event
 REVIEWER = Caller(user_id="rev_1", groups=frozenset({"reviewer"}))
 FAMILY = Caller(user_id="fam_1", groups=frozenset({"family"}))
 OUTSIDER = Caller(user_id="pub_x", groups=frozenset({"publisher"}), org_id="org_x")
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
-RELIEF = {"org_id": "org_r", "org_name": "Flood Relief Demo", "org_type": "NGO"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
+RELIEF = {"org_id": "org_r", "org_name": "Flood Relief", "org_type": "NGO"}
 
 
 class Clock:
@@ -85,7 +85,7 @@ def test_recent_reports_are_newest_first_with_names_and_sources(world):
     recent = service.recent_reports(REVIEWER, "inc_1")
     assert [r.claim.id for r in recent] == [second.id, first.id]
     assert recent[0].subject.display_name == "Bikash Shrestha"
-    assert recent[0].source_name == "Central Hospital Demo" and not recent[0].withheld
+    assert recent[0].source_name == "Central Hospital" and not recent[0].withheld
     assert len(service.recent_reports(REVIEWER, "inc_1", limit=1)) == 1
 
 
@@ -147,12 +147,12 @@ def test_sources_are_busiest_first_with_counts_and_relays(world):
         "V-1",
         "Sita Tamang",
         "FOUND_SAFE",
-        "According to Central Hospital Demo, Sita Tamang is safe.",
+        "According to Central Hospital, Sita Tamang is safe.",
         org=RELIEF,
     )
     hospital, relief = service.sources(REVIEWER, "inc_1")
     assert (hospital.source.name, hospital.reports, hospital.cited_by) == (
-        "Central Hospital Demo",
+        "Central Hospital",
         2,
         1,
     )
@@ -194,7 +194,7 @@ def test_sources_route_lists_each_source(world, monkeypatch):
         "sources": [
             {
                 "id": claim.source_id,
-                "name": "Central Hospital Demo",
+                "name": "Central Hospital",
                 "source_type": "HOSPITAL",
                 "organization_id": "org_h",
                 "reports": 1,

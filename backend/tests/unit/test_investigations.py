@@ -24,8 +24,8 @@ REVIEWER = Caller(user_id="rev_1", groups=frozenset({"reviewer"}))
 ADMIN = Caller(user_id="adm_1", groups=frozenset({"admin"}))
 FAMILY = Caller(user_id="fam_1", groups=frozenset({"family"}))
 
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
-NGO = {"org_id": "org_n", "org_name": "Flood Relief Demo", "org_type": "NGO"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
+NGO = {"org_id": "org_n", "org_name": "Flood Relief", "org_type": "NGO"}
 
 
 class FixedClock:
@@ -61,7 +61,7 @@ class World:
         self.refs = 0
         self.source_claim = self.publish(HOSPITAL, "Sita Tamang admitted to ward 3, stable.")
         self.relay = self.publish(
-            NGO, "According to Central Hospital Demo, Sita T. was admitted.", self.source_claim
+            NGO, "According to Central Hospital, Sita T. was admitted.", self.source_claim
         )
 
     def make_service(self):

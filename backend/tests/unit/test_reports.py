@@ -18,7 +18,7 @@ class FixedClock:
 HOSPITAL = Organization(
     id="org_h",
     incident_id="inc_1",
-    name="Central Hospital Demo",
+    name="Central Hospital",
     name_norm="central hospital demo",
     org_type="HOSPITAL",
 )
@@ -54,7 +54,7 @@ def test_publisher_publishes_as_their_organization(service, repo):
     claim = result.claim
     assert claim.created_by == "user_1"
     source = repo.sources[claim.source_id]
-    assert source.name == "Central Hospital Demo" and source.organization_id == "org_h"
+    assert source.name == "Central Hospital" and source.organization_id == "org_h"
     assert source.source_type == "HOSPITAL"
 
 

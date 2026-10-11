@@ -11,7 +11,7 @@ def _data(**overrides):
     base = {
         "incident_id": "inc_1",
         "org_id": "org_h",
-        "org_name": "Central Hospital Demo",
+        "org_name": "Central Hospital",
         "org_type": "HOSPITAL",
         "actor": "user_1",
         "subject": {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},

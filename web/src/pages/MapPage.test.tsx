@@ -44,7 +44,7 @@ function feature(overrides: Partial<ClimateFeature> = {}): ClimateFeature {
       {
         claim_id: "clm_1",
         claim_type: "BRIDGE_DAMAGED",
-        source: "District Police Demo",
+        source: "District Police",
         reported_at: "2026-10-02T14:40:00Z",
         excerpt: "Old Bridge closed.",
       },
@@ -262,7 +262,7 @@ describe("climate layers", () => {
     const { api } = routedApi({ [PATH]: () => body(), [CLIMATE]: climate() });
     renderMap(api);
     expect(await screen.findByText("Sources disagree", { selector: ".status-dot" })).toBeInTheDocument();
-    expect(screen.getByText(/District Police Demo says Bridge damaged/)).toBeInTheDocument();
+    expect(screen.getByText(/District Police says Bridge damaged/)).toBeInTheDocument();
     expect(screen.getByText(/Reported shelter full/)).toBeInTheDocument();
     expect(screen.getByText(/No place given/)).toBeInTheDocument();
   });

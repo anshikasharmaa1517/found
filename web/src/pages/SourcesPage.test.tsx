@@ -17,7 +17,7 @@ const PUBLISHER = userFromClaims({
 function source(overrides: Partial<SourceSummary> = {}): SourceSummary {
   return {
     id: "src_h",
-    name: "Central Hospital Demo",
+    name: "Central Hospital",
     source_type: "HOSPITAL",
     organization_id: "org_h",
     reports: 3,
@@ -30,7 +30,7 @@ function source(overrides: Partial<SourceSummary> = {}): SourceSummary {
 
 const RELIEF = source({
   id: "src_n",
-  name: "Flood Relief Demo",
+  name: "Flood Relief",
   source_type: "NGO",
   organization_id: "org_n",
   reports: 1,
@@ -47,7 +47,7 @@ const REPORTS: RecentReport[] = [
     ingested_at: "2026-10-05T10:10:00Z",
     withheld: false,
     claim_type: "FOUND_SAFE",
-    source: "Central Hospital Demo",
+    source: "Central Hospital",
     reported_at: "2026-10-03T02:10:00Z",
     excerpt: "Sita Tamang, 24, admitted to ward 3.",
   },
@@ -59,7 +59,7 @@ const REPORTS: RecentReport[] = [
     ingested_at: "2026-10-05T10:00:00Z",
     withheld: false,
     claim_type: "BRIDGE_DAMAGED",
-    source: "Central Hospital Demo",
+    source: "Central Hospital",
     reported_at: null,
     excerpt: "Ambulances cannot cross the Old Bridge.",
   },
@@ -84,7 +84,7 @@ describe("sources page", () => {
   it("shows each source with its counts, the types it reported and who relays it", async () => {
     const { api } = routes();
     renderApp(as(), "/incidents/inc_1/sources", api);
-    const card = (await screen.findByRole("heading", { name: "Central Hospital Demo" })).closest(
+    const card = (await screen.findByRole("heading", { name: "Central Hospital" })).closest(
       "article",
     )!;
     expect(within(card).getByText("Hospital")).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe("sources page", () => {
     expect(within(card).getByText(/not independent confirmation/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sources" })).toHaveAttribute("aria-current", "page");
 
-    const relief = screen.getByRole("heading", { name: "Flood Relief Demo" }).closest("article")!;
+    const relief = screen.getByRole("heading", { name: "Flood Relief" }).closest("article")!;
     expect(within(relief).getByRole("listitem")).toHaveTextContent("Held for review 1");
     expect(within(relief).getByText("No other source names this one.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Publish a report/ })).toBeNull();
@@ -107,7 +107,7 @@ describe("sources page", () => {
   it("opens a source's own reports on request", async () => {
     const { api, calls } = routes();
     renderApp(as(), "/incidents/inc_1/sources", api);
-    const card = (await screen.findByRole("heading", { name: "Central Hospital Demo" })).closest(
+    const card = (await screen.findByRole("heading", { name: "Central Hospital" })).closest(
       "article",
     )!;
     const toggle = within(card).getByRole("button", { name: "Show reports" });
@@ -134,11 +134,11 @@ describe("sources page", () => {
   it("filters by name and explains an empty result", async () => {
     const { api } = routes();
     renderApp(as(), "/incidents/inc_1/sources", api);
-    await screen.findByRole("heading", { name: "Central Hospital Demo" });
+    await screen.findByRole("heading", { name: "Central Hospital" });
     const user = userEvent.setup();
     await user.type(screen.getByRole("searchbox", { name: /Search sources/ }), "relief");
-    expect(screen.queryByRole("heading", { name: "Central Hospital Demo" })).toBeNull();
-    expect(screen.getByRole("heading", { name: "Flood Relief Demo" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Central Hospital" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Flood Relief" })).toBeInTheDocument();
     expect(screen.getByText("1 of 2 sources shown")).toBeInTheDocument();
 
     await user.type(screen.getByRole("searchbox", { name: /Search sources/ }), "zzz");

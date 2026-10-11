@@ -86,7 +86,7 @@ export const INVESTIGATION_STATUS_LABELS: Record<string, string> = {
 export const MODE_LABELS: Record<string, string> = {
   LIVE: "Live run",
   CACHED: "Cached result: same evidence as a stored run, no new model call",
-  REPLAYED: "Replayed: a recorded run restored for the demo",
+  REPLAYED: "Replayed: a recorded run restored when the incident was reloaded",
 };
 
 export const REASON_LABELS: Record<string, string> = {

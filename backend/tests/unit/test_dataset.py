@@ -64,7 +64,6 @@ def test_generator_is_deterministic():
 def test_dataset_is_a_demo_with_no_recorded_runs_yet():
     dataset = read_dataset()
     assert dataset.incident.is_demo and dataset.incident.name == "Trishuli flood"
-    assert all(o.name.endswith(" Demo") for o in dataset.organizations)
     references = [(r.org_id, r.external_reference) for r in dataset.reports]
     assert len(references) == len(set(references))
     assert {r.person for r in dataset.reports} == {p.key for p in dataset.people}

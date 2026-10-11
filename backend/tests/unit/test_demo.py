@@ -165,7 +165,7 @@ def record_a_real_run(world):
             kind=StepKind.TOOL,
             tool_name="find_reports_by_source",
             input_json=f'{{"source_id": "{source.source_id}", "subject_id": "{relay.subject_id}"}}',
-            output_summary=f"1 report from Central Hospital Demo ({source.id})",
+            output_summary=f"1 report from Central Hospital ({source.id})",
             duration_ms=90,
             created_at=world.clock.now(),
         )
@@ -180,7 +180,7 @@ def record_a_real_run(world):
             "comparison": "SUPPORTS",
             "summary": "The NGO repeats the hospital's admission report.",
             "citations": [
-                {"claim_id": relay.id, "excerpt": "According to Central Hospital Demo"},
+                {"claim_id": relay.id, "excerpt": "According to Central Hospital"},
                 {"claim_id": source.id, "excerpt": "admitted to ward 3 at 07:40"},
             ],
         },
@@ -192,13 +192,13 @@ def record_a_real_run(world):
 def test_recording_names_reports_by_reference_not_id(world):
     recording, inv = record_a_real_run(world)
     assert recording["claim"] == "{claim:org_ngo/FRD-0001}"
-    assert recording["referenced_source"] == "{source:Central Hospital Demo}"
+    assert recording["referenced_source"] == "{source:Central Hospital}"
     assert recording["citations"][1] == {
         "claim": "{claim:org_hospital/CHD-0001}",
         "excerpt": "admitted to ward 3 at 07:40",
     }
     step = recording["steps"][0]
-    assert "{source:Central Hospital Demo}" in step["input_json"]
+    assert "{source:Central Hospital}" in step["input_json"]
     assert "{subject:org_police/DPD-0001}" in step["input_json"]
     assert step["output_summary"].endswith("({claim:org_hospital/CHD-0001})")
     assert "clm_" not in str(recording) and "src_" not in str(recording)

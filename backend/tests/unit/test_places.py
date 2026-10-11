@@ -95,7 +95,7 @@ class Clock:
         return self.at
 
 
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
 REVIEWER = Caller(user_id="rev", groups=frozenset({"reviewer"}))
 
 

@@ -21,8 +21,8 @@ from found_core.services.review import ReviewService
 from found_core.services.watch import WatchService
 
 REVIEWER = Caller(user_id="rev_1", groups=frozenset({"reviewer"}))
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
 
 
 class Clock:

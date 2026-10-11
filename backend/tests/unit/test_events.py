@@ -236,7 +236,7 @@ def test_step_insert_becomes_investigation_step():
         seq=2,
         kind="TOOL",
         tool_name="get_report",
-        output_summary="Read report clm_1 from Flood Relief Demo",
+        output_summary="Read report clm_1 from Flood Relief",
         created_at=WHEN,
     )
     assert from_stream(record(investigation_step_item(step))) == InvestigationStepCreated(
@@ -246,7 +246,7 @@ def test_step_insert_becomes_investigation_step():
         seq=2,
         kind="TOOL",
         tool_name="get_report",
-        summary="Read report clm_1 from Flood Relief Demo",
+        summary="Read report clm_1 from Flood Relief",
         occurred_at=WHEN,
     )
 

@@ -11,7 +11,7 @@ const ROLE_TASKS: Record<Role, string> = {
   publisher: "Publish structured reports as your organization.",
   reviewer: "Review conflicts, trace where reports came from, and decide matches.",
   family: "Follow people and get alerts when new reports arrive.",
-  admin: "Manage incidents and the demo.",
+  admin: "Manage incidents and reload their data.",
 };
 
 type Health = "checking" | "up" | "down";
@@ -29,7 +29,7 @@ function destinations(user: User, incidentId: string): Destination[] {
     {
       to: base,
       title: "Incident dashboard",
-      text: "The map, people, sources and graph, what is new, and a guided walk through the demo.",
+      text: "The map, people, sources and graph, what is new, and a guided walk through one person's story.",
     },
   ];
   if (hasRole(user, "reviewer", "admin")) {

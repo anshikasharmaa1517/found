@@ -62,8 +62,8 @@ class FixedClock:
         return datetime(2026, 10, 5, 10, 15, tzinfo=UTC)
 
 
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-MORGUE = {"org_id": "org_m", "org_name": "District Morgue Demo", "org_type": "HOSPITAL"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+MORGUE = {"org_id": "org_m", "org_name": "District Morgue", "org_type": "HOSPITAL"}
 
 
 class World:
@@ -201,7 +201,7 @@ def test_api_response_leaves_out_type_text_and_source_for_families(world, monkey
 
     reviewer = {"sub": "rev", "cognito:groups": "[reviewer]"}
     _, raw = get(f"/v1/people/{world.person_id}/timeline", reviewer)
-    assert "DECEASED" in raw and "District Morgue Demo" in raw
+    assert "DECEASED" in raw and "District Morgue" in raw
 
 
 def test_api_masks_withheld_conflicts(world, monkeypatch):

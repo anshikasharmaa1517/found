@@ -207,7 +207,7 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
 
 ## UC-1: Hospital publishes a "found safe" report
 
-- **Actor**: Publisher (Central Hospital Demo)
+- **Actor**: Publisher (Central Hospital)
 - **Preconditions**: Publisher signed in; person "Sita T." exists with a police `MISSING` claim; a family member follows her.
 - **Main flow**:
   1. Publisher opens Sources, fills the form: person, `FOUND_SAFE`, reported time, text, reference `CH-2026-0412`.
@@ -215,7 +215,7 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
   3. Watcher classifies it as `UPDATE` (newer than the police report, different status).
   4. Watcher creates one alert for the subscription.
   5. Notifier sends SMS; WebSocket pushes the alert and new claim.
-  6. Family sees "Newer report: Central Hospital Demo says found safe. Police report retained."
+  6. Family sees "Newer report: Central Hospital says found safe. Police report retained."
 - **Alternative flows**:
   - A1: Reported time is earlier than the police report: classified `HISTORICAL`, alert says "Earlier report received".
   - A2: Reported time missing or equal: `NEEDS_REVIEW`, high-severity alert, item added to review queue.
@@ -227,12 +227,12 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
 ## UC-2: Reviewer investigates a relayed report
 
 - **Actor**: Reviewer
-- **Preconditions**: An NGO report says "According to Central Hospital Demo, Sita T. was admitted in stable condition."
+- **Preconditions**: An NGO report says "According to Central Hospital, Sita T. was admitted in stable condition."
 - **Main flow**:
   1. Reviewer clicks Investigate on the NGO claim.
   2. API computes the evidence fingerprint. No cached result. Budget reserved. Investigation queued.
-  3. Runner invokes the agent. Agent reads the report, lists mentioned sources (Central Hospital Demo), finds that source's reports about the same person, compares them.
-  4. Agent calls `record_finding`: `RELAY`, referenced source Central Hospital Demo, `SUPPORTS`, citations to both claims.
+  3. Runner invokes the agent. Agent reads the report, lists mentioned sources (Central Hospital), finds that source's reports about the same person, compares them.
+  4. Agent calls `record_finding`: `RELAY`, referenced source Central Hospital, `SUPPORTS`, citations to both claims.
   5. Code computes outcome `NEEDS_REVIEW` (a relay is never auto-accepted as first-hand).
   6. UI streams each step; reviewer reads the finding and marks it reviewed.
 - **Alternative flows**:
@@ -813,10 +813,10 @@ Request (existing person):
   "subject": { "type": "PERSON", "id": "per_01J9YQ8K2M" },
   "claim_type": "FOUND_SAFE",
   "value": "Admitted, stable condition",
-  "original_text": "Sita Tamang, 24, admitted to Central Hospital Demo ward 3 at 07:40, stable.",
+  "original_text": "Sita Tamang, 24, admitted to Central Hospital ward 3 at 07:40, stable.",
   "external_reference": "CH-2026-0412",
   "reported_at": "2026-10-03T07:40:00+05:30",
-  "location": { "name": "Central Hospital Demo", "lat": 30.7268, "lon": 78.4354 }
+  "location": { "name": "Central Hospital", "lat": 30.7268, "lon": 78.4354 }
 }
 ```
 
@@ -840,7 +840,7 @@ Response `201 Created`:
     "id": "clm_01J9Z3T0QF",
     "incident_id": "inc_01J9X0",
     "subject_id": "per_01J9YQ8K2M",
-    "source": { "id": "src_7f3a9c", "name": "Central Hospital Demo", "type": "HOSPITAL" },
+    "source": { "id": "src_7f3a9c", "name": "Central Hospital", "type": "HOSPITAL" },
     "seq": 2,
     "claim_type": "FOUND_SAFE",
     "reported_at": "2026-10-03T02:10:00Z",
@@ -872,13 +872,13 @@ Response `200`:
     "label": "Reported safe",
     "basis": "Latest dated status report",
     "cited_claim_id": "clm_01J9Z3T0QF",
-    "conflicts": [ { "claim_id": "clm_01J9YQ9A11", "claim_type": "MISSING", "source": "District Police Demo" } ],
+    "conflicts": [ { "claim_id": "clm_01J9YQ9A11", "claim_type": "MISSING", "source": "District Police" } ],
     "needs_review": false
   },
   "identity": [ { "pair_key": "per_01J9YQ8K2M|per_01J9YR2D0C", "decision": "CONFIRMED", "reviewer": "rev_ananya", "decided_at": "2026-10-05T09:02:11Z" } ],
   "entries": [
-    { "claim_id": "clm_01J9YQ9A11", "seq": 1, "claim_type": "MISSING", "source": "District Police Demo", "reported_at": "2026-10-02T15:40:00Z", "relation": "FIRST", "excerpt": "Family reports Sita Tamang..." },
-    { "claim_id": "clm_01J9Z3T0QF", "seq": 2, "claim_type": "FOUND_SAFE", "source": "Central Hospital Demo", "reported_at": "2026-10-03T02:10:00Z", "relation": "UPDATE", "excerpt": "Sita Tamang, 24, admitted..." }
+    { "claim_id": "clm_01J9YQ9A11", "seq": 1, "claim_type": "MISSING", "source": "District Police", "reported_at": "2026-10-02T15:40:00Z", "relation": "FIRST", "excerpt": "Family reports Sita Tamang..." },
+    { "claim_id": "clm_01J9Z3T0QF", "seq": 2, "claim_type": "FOUND_SAFE", "source": "Central Hospital", "reported_at": "2026-10-03T02:10:00Z", "relation": "UPDATE", "excerpt": "Sita Tamang, 24, admitted..." }
   ],
   "next_cursor": null
 }
@@ -931,12 +931,12 @@ Response `200`:
   "agent_version": "0.3.0",
   "finding": {
     "attribution": "RELAY",
-    "referenced_source": { "id": "src_7f3a9c", "name": "Central Hospital Demo" },
+    "referenced_source": { "id": "src_7f3a9c", "name": "Central Hospital" },
     "comparison": "SUPPORTS",
     "summary": "The NGO report repeats the hospital's admission report. Both give the same ward time and condition.",
     "citations": [
-      { "claim_id": "clm_01JA0B2", "excerpt": "According to Central Hospital Demo, Sita T. was admitted" },
-      { "claim_id": "clm_01J9Z3T0QF", "excerpt": "admitted to Central Hospital Demo ward 3 at 07:40, stable" }
+      { "claim_id": "clm_01JA0B2", "excerpt": "According to Central Hospital, Sita T. was admitted" },
+      { "claim_id": "clm_01J9Z3T0QF", "excerpt": "admitted to Central Hospital ward 3 at 07:40, stable" }
     ]
   },
   "outcome_reasons": ["RELAY_NOT_FIRST_HAND"],
@@ -944,7 +944,7 @@ Response `200`:
   "timing": { "queued_at": "...", "started_at": "...", "finished_at": "...", "duration_ms": 18450 },
   "steps": [
     { "seq": 1, "kind": "TOOL", "tool": "get_report", "summary": "Read NGO report clm_01JA0B2", "duration_ms": 120 },
-    { "seq": 2, "kind": "TOOL", "tool": "list_mentioned_sources", "summary": "1 source: Central Hospital Demo", "duration_ms": 95 }
+    { "seq": 2, "kind": "TOOL", "tool": "list_mentioned_sources", "summary": "1 source: Central Hospital", "duration_ms": 95 }
   ],
   "review": null
 }
@@ -1048,8 +1048,8 @@ Server to client (notifications only; the client refetches details if needed):
 
 ```json
 { "type": "claim.created", "incident_id": "inc_01J9X0", "claim_id": "clm_01J9Z3T0QF", "subject_id": "per_01J9YQ8K2M", "at": "2026-10-05T10:15:22Z" }
-{ "type": "alert.created", "alert_id": "alr_01J9Z3V", "subject_id": "per_01J9YQ8K2M", "severity": "info", "message": "Newer report for Sita Tamang: Central Hospital Demo says found safe. Earlier reports retained." }
-{ "type": "investigation.step", "investigation_id": "inv_01JA0D7", "seq": 3, "tool": "find_reports_by_source", "summary": "2 reports by Central Hospital Demo" }
+{ "type": "alert.created", "alert_id": "alr_01J9Z3V", "subject_id": "per_01J9YQ8K2M", "severity": "info", "message": "Newer report for Sita Tamang: Central Hospital says found safe. Earlier reports retained." }
+{ "type": "investigation.step", "investigation_id": "inv_01JA0D7", "seq": 3, "tool": "find_reports_by_source", "summary": "2 reports by Central Hospital" }
 { "type": "investigation.updated", "investigation_id": "inv_01JA0D7", "status": "NEEDS_REVIEW" }
 { "type": "review.created", "review_id": "rev_01JA0E1", "item_type": "conflict" }
 ```
@@ -1863,7 +1863,7 @@ Every tool takes `investigation_id`. The agent runtime overwrites this argument 
 Tool output text from reports is wrapped as data:
 
 ```json
-{ "report": { "claim_id": "clm_...", "source": "Flood Relief Demo", "text_untrusted": "According to Central Hospital Demo, ..." } }
+{ "report": { "claim_id": "clm_...", "source": "Flood Relief", "text_untrusted": "According to Central Hospital, ..." } }
 ```
 
 ### System prompt outline (`lineage-v1`)

@@ -32,14 +32,14 @@ class FixedClock:
         return datetime(2026, 10, 5, 10, 15, tzinfo=UTC)
 
 
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-NGO = {"org_id": "org_n", "org_name": "Flood Relief Demo", "org_type": "NGO"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+NGO = {"org_id": "org_n", "org_name": "Flood Relief", "org_type": "NGO"}
 
 SOURCE = Source(
     id="src_police",
     incident_id="inc_1",
-    name="District Police Demo",
+    name="District Police",
     name_norm="district police demo",
     source_type="POLICE",
     organization_id="org_p",
@@ -128,7 +128,7 @@ def test_get_organization_is_scoped_to_incident(repo, table):
     org = Organization(
         id="org_h",
         incident_id="inc_1",
-        name="Central Hospital Demo",
+        name="Central Hospital",
         name_norm="central hospital demo",
         org_type="HOSPITAL",
     )
@@ -243,7 +243,7 @@ def test_ingest_service_end_to_end(service, repo):
             ref="NGO-1",
             subject=person(hospital.subject_id),
             claim_type="FOUND_SAFE",
-            original_text="According to Central Hospital Demo, Sita T. was admitted.",
+            original_text="According to Central Hospital, Sita T. was admitted.",
         )
     ).claim
     assert relay.seq == 2

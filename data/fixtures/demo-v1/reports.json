@@ -22,7 +22,7 @@
     "original_text": "Sita Tamang, 24, admitted to ward 3 at 07:40. Condition stable.",
     "reported_at": "2026-08-27T07:40:00+05:45",
     "location": {
-      "name": "Central Hospital Demo grounds",
+      "name": "Central Hospital grounds",
       "lat": 27.9246,
       "lon": 85.1408
     }
@@ -33,7 +33,7 @@
     "person": "sita",
     "claim_type": "FOUND_SAFE",
     "value": null,
-    "original_text": "According to Central Hospital Demo, Sita Tamang was admitted to ward 3 and is stable.",
+    "original_text": "According to Central Hospital, Sita Tamang was admitted to ward 3 and is stable.",
     "reported_at": "2026-08-27T08:30:00+05:45",
     "location": null
   },
@@ -88,7 +88,7 @@
     "original_text": "Dipak Karki, 45, admitted with leg injuries and taken into surgery.",
     "reported_at": "2026-08-27T05:50:00+05:45",
     "location": {
-      "name": "Central Hospital Demo grounds",
+      "name": "Central Hospital grounds",
       "lat": 27.9246,
       "lon": 85.1408
     }
@@ -99,7 +99,7 @@
     "person": "dipak",
     "claim_type": "FOUND_SAFE",
     "value": null,
-    "original_text": "According to Central Hospital Demo, Dipak Karki is safe and unhurt.",
+    "original_text": "According to Central Hospital, Dipak Karki is safe and unhurt.",
     "reported_at": "2026-08-27T09:10:00+05:45",
     "location": null
   },
@@ -119,7 +119,7 @@
     "person": "sunita",
     "claim_type": "INJURED",
     "value": null,
-    "original_text": "Per Hill Clinic Demo, Sunita Magar has a fractured wrist and is under observation.",
+    "original_text": "Per Hill Clinic, Sunita Magar has a fractured wrist and is under observation.",
     "reported_at": "2026-08-27T07:05:00+05:45",
     "location": null
   },
@@ -202,7 +202,7 @@
     "original_text": "Gopal Adhikari, 67, was brought in and declared dead at 03:20.",
     "reported_at": "2026-08-27T03:20:00+05:45",
     "location": {
-      "name": "Central Hospital Demo grounds",
+      "name": "Central Hospital grounds",
       "lat": 27.9246,
       "lon": 85.1408
     }
@@ -227,7 +227,7 @@
     "person": "puja",
     "claim_type": "SHELTERED",
     "value": null,
-    "original_text": "Riverside Shelter Demo says Puja Tamang moved to the school building.",
+    "original_text": "Riverside Shelter says Puja Tamang moved to the school building.",
     "reported_at": "2026-08-27T12:45:00+05:45",
     "location": {
       "name": "Valley School Building",
@@ -255,7 +255,7 @@
     "person": "laxmi",
     "claim_type": "FOUND_SAFE",
     "value": null,
-    "original_text": "According to Centrel Hospitl Demo, Laxmi Basnet was admitted.",
+    "original_text": "According to Centrel Hospitl, Laxmi Basnet was admitted.",
     "reported_at": "2026-08-27T13:10:00+05:45",
     "location": null
   },
@@ -366,7 +366,7 @@
     "original_text": "Bimal Hyolmo treated for exposure and discharged.",
     "reported_at": "2026-08-27T12:45:00+05:45",
     "location": {
-      "name": "Central Hospital Demo grounds",
+      "name": "Central Hospital grounds",
       "lat": 27.9246,
       "lon": 85.1408
     }
@@ -674,7 +674,7 @@
     "original_text": "Mina Hyolmo treated for exposure and discharged.",
     "reported_at": "2026-08-27T10:00:00+05:45",
     "location": {
-      "name": "Central Hospital Demo grounds",
+      "name": "Central Hospital grounds",
       "lat": 27.9246,
       "lon": 85.1408
     }
@@ -702,7 +702,7 @@
     "original_text": "Prakash Magar treated for exposure and discharged.",
     "reported_at": "2026-08-27T13:20:00+05:45",
     "location": {
-      "name": "Central Hospital Demo grounds",
+      "name": "Central Hospital grounds",
       "lat": 27.9246,
       "lon": 85.1408
     }
@@ -730,7 +730,7 @@
     "original_text": "Yam Gautam treated for exposure and discharged.",
     "reported_at": "2026-08-27T10:20:00+05:45",
     "location": {
-      "name": "Central Hospital Demo grounds",
+      "name": "Central Hospital grounds",
       "lat": 27.9246,
       "lon": 85.1408
     }

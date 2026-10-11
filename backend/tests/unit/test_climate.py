@@ -17,8 +17,8 @@ from tests.unit.test_api_handler import call, event
 
 FAMILY = Caller(user_id="fam_1", groups=frozenset({"family"}))
 OUTSIDER = Caller(user_id="pub_x", groups=frozenset({"publisher"}), org_id="org_x")
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-VOLUNTEERS = {"org_id": "org_v", "org_name": "Valley Volunteers Demo", "org_type": "COMMUNITY"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+VOLUNTEERS = {"org_id": "org_v", "org_name": "Valley Volunteers", "org_type": "COMMUNITY"}
 BRIDGE = {"name": "Old Bridge", "lat": 30.7268, "lon": 78.4354}
 GHAT = {"name": "Market Ghat", "lat": 30.7231, "lon": 78.4302}
 
@@ -100,7 +100,7 @@ def test_disagreeing_bridge_reports_both_stay_visible_and_are_flagged(world):
     feature = world.feature("bridge")
     assert feature.label == "Reported bridge open" and feature.cited_claim_id == opened.id
     assert [(r.claim.id, r.source_name) for r in feature.conflicts] == [
-        (closed.id, "District Police Demo")
+        (closed.id, "District Police")
     ]
     assert [r.claim.id for r in feature.recent] == [opened.id, closed.id]
     assert feature.location.name == "Old Bridge" and feature.report_count == 2
@@ -228,10 +228,10 @@ def test_the_climate_route_returns_features_with_sources(monkeypatch):
     assert feature["subject_type"] == "INFRASTRUCTURE" and feature["name"] == "Old Bridge"
     assert feature["label"] == "Reported bridge open"
     assert feature["location"]["lat"] == 30.7268
-    assert feature["conflicts"][0]["source"] == "District Police Demo"
+    assert feature["conflicts"][0]["source"] == "District Police"
     assert feature["conflicts"][0]["claim_type"] == "BRIDGE_DAMAGED"
     assert [r["source"] for r in feature["recent"]] == [
-        "Valley Volunteers Demo",
-        "District Police Demo",
+        "Valley Volunteers",
+        "District Police",
     ]
     assert body["updated_at"] == "2026-10-05T10:15:00Z"

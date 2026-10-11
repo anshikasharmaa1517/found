@@ -35,7 +35,7 @@ const ALERT_MESSAGE = {
   alert_id: "alr_9",
   subject_id: "per_1",
   severity: "info",
-  message: "Newer report for Sita Tamang: Central Hospital Demo says found safe.",
+  message: "Newer report for Sita Tamang: Central Hospital says found safe.",
 };
 
 function count(calls: Call[], path: string) {
@@ -64,9 +64,9 @@ describe("live alerts", () => {
       summary: { label: "", basis: "", cited_claim_id: null, conflicts: [], needs_review: false },
       identity: [],
       entries: [
-        entry(3, "FOUND_SAFE", "Central Hospital Demo"),
-        entry(2, "SEEN_AT_LOCATION", "Flood Relief Demo"),
-        entry(1, "MISSING", "District Police Demo"),
+        entry(3, "FOUND_SAFE", "Central Hospital"),
+        entry(2, "SEEN_AT_LOCATION", "Flood Relief"),
+        entry(1, "MISSING", "District Police"),
       ],
       next_cursor: null,
     };
@@ -90,9 +90,9 @@ describe("live alerts", () => {
       "/people/per_1",
     );
     // Older status reports stay on record; the newest one is the alert itself.
-    expect(await within(banner).findByText("District Police Demo · Missing")).toBeInTheDocument();
-    expect(within(banner).queryByText(/Central Hospital Demo ·/)).toBeNull();
-    expect(within(banner).queryByText(/Flood Relief Demo/)).toBeNull();
+    expect(await within(banner).findByText("District Police · Missing")).toBeInTheDocument();
+    expect(within(banner).queryByText(/Central Hospital ·/)).toBeNull();
+    expect(within(banner).queryByText(/Flood Relief/)).toBeNull();
     expect(within(banner).getByText("New report about Sita Tamang")).toBeInTheDocument();
     expect(banner).toHaveClass("ok");
     expect(screen.getByRole("link", { name: "Alerts, 1 new" })).toBeInTheDocument();

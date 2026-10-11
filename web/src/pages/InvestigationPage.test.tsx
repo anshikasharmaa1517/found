@@ -27,11 +27,11 @@ function investigation(overrides: Partial<Investigation> = {}): Investigation {
     agent_version: "0.1.0",
     finding: {
       attribution: "RELAY",
-      referenced_source: { id: "src_h", name: "Central Hospital Demo" },
+      referenced_source: { id: "src_h", name: "Central Hospital" },
       comparison: "SUPPORTS",
       summary: "The NGO report repeats the hospital's admission report.",
       citations: [
-        { claim_id: "clm_relay", excerpt: "According to Central Hospital Demo" },
+        { claim_id: "clm_relay", excerpt: "According to Central Hospital" },
         { claim_id: "clm_src", excerpt: "admitted to ward 3 at 07:40, stable" },
       ],
     },
@@ -55,7 +55,7 @@ function investigation(overrides: Partial<Investigation> = {}): Investigation {
         seq: 1,
         kind: "TOOL",
         tool: "get_report",
-        summary: "Read report clm_relay from Flood Relief Demo",
+        summary: "Read report clm_relay from Flood Relief",
         duration_ms: 120,
         input_tokens: null,
         output_tokens: null,
@@ -91,7 +91,7 @@ describe("InvestigationPage", () => {
     expect(screen.getByText(/Status: Needs a reviewer/)).toBeInTheDocument();
     const finding = screen.getByRole("region", { name: "Finding" });
     expect(within(finding).getByText(/Relayed: it passes on another source's report/)).toBeInTheDocument();
-    expect(within(finding).getByText("Central Hospital Demo")).toBeInTheDocument();
+    expect(within(finding).getByText("Central Hospital")).toBeInTheDocument();
     expect(within(finding).getByText("Matches the named source's own reports")).toBeInTheDocument();
     expect(within(finding).getByText("admitted to ward 3 at 07:40, stable")).toBeInTheDocument();
     expect(
@@ -99,7 +99,7 @@ describe("InvestigationPage", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText("get_report")).toBeInTheDocument();
-    expect(screen.getByText("Read report clm_relay from Flood Relief Demo")).toBeInTheDocument();
+    expect(screen.getByText("Read report clm_relay from Flood Relief")).toBeInTheDocument();
     expect(screen.getByText("1200 tokens in, 80 out")).toBeInTheDocument();
     expect(screen.getByText(/5 model calls, 4 tool calls/)).toBeInTheDocument();
     expect(screen.getByText("model-a")).toBeInTheDocument();

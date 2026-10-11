@@ -222,7 +222,7 @@ answers it with `index.html` the basemap stays blank. Add the site's origin to
 With the demo loaded:
 
 - **Reviewer:** open the review queue, then a relayed report such as "According to
-  Central Hospital Demo, Dipak Karki is safe and unhurt", and start an investigation.
+  Central Hospital, Dipak Karki is safe and unhurt", and start an investigation.
   The finding cites both reports and is held for review because a relay is not
   independent confirmation.
 - **Family:** follow a person; when a publisher reports something new about them, the

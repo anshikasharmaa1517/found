@@ -18,8 +18,8 @@ class FixedClock:
         return datetime(2026, 10, 5, 10, 15, tzinfo=UTC)
 
 
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
 
 REVIEWER = Caller(user_id="rev", groups=frozenset({"reviewer"}))
 FAMILY = Caller(user_id="fam", groups=frozenset({"family"}))
@@ -38,7 +38,7 @@ class World:
             Organization(
                 id="org_h",
                 incident_id="inc_1",
-                name="Central Hospital Demo",
+                name="Central Hospital",
                 name_norm="central hospital demo",
                 org_type="HOSPITAL",
             )
@@ -184,7 +184,7 @@ def sita(world):
         subject,
         org=HOSPITAL,
         claim_type="FOUND_SAFE",
-        original_text="Sita Tamang, 24, admitted to Central Hospital Demo ward 3, stable.",
+        original_text="Sita Tamang, 24, admitted to Central Hospital ward 3, stable.",
         reported_at="2026-10-03T07:40:00+05:30",
     )
     world.publish(
@@ -211,7 +211,7 @@ def test_profile_cites_latest_report_and_names_conflicting_source(world, sita):
     cited = world.repo.get_claim(profile.summary.cited_claim_id)
     assert cited.claim_type == "FOUND_SAFE"
     assert [c.claim_type for c in profile.conflicts] == ["MISSING"]
-    assert profile.sources[profile.conflicts[0].source_id].name == "District Police Demo"
+    assert profile.sources[profile.conflicts[0].source_id].name == "District Police"
 
 
 def test_timeline_is_ordered_by_reported_time_with_relations(world, sita):

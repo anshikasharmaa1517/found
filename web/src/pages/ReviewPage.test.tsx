@@ -31,7 +31,7 @@ function item(overrides: Partial<ReviewItem> = {}): ReviewItem {
     claim: {
       id: "clm_9",
       claim_type: "DECEASED",
-      source: "Central Hospital Demo",
+      source: "Central Hospital",
       reported_at: "2026-10-03T02:10:00Z",
       excerpt: "Hospital record of death for Sita Tamang.",
     },
@@ -47,7 +47,7 @@ const CONFLICT = item({
   claim: {
     id: "clm_2",
     claim_type: "FOUND_SAFE",
-    source: "Flood Relief Demo",
+    source: "Flood Relief",
     reported_at: null,
     excerpt: "Sita Tamang is safe.",
   },
@@ -59,9 +59,9 @@ const FINDING = item({
   claim: {
     id: "clm_relay",
     claim_type: "FOUND_SAFE",
-    source: "Flood Relief Demo",
+    source: "Flood Relief",
     reported_at: null,
-    excerpt: "According to Central Hospital Demo, Sita Tamang was admitted.",
+    excerpt: "According to Central Hospital, Sita Tamang was admitted.",
   },
   investigation: {
     id: "inv_1",
@@ -219,7 +219,7 @@ function timelineOf(id: string, name: string, excerpt: string) {
         claim_type: "MISSING",
         value: null,
         source_id: "src_p",
-        source: "District Police Demo",
+        source: "District Police",
         reported_at: "2026-10-02T15:40:00Z",
         relation: "FIRST",
         excerpt,
@@ -341,7 +341,7 @@ function cand(idx: number, overrides = {}) {
     age: 29,
     claim_type: "SHELTERED",
     reported_at: null,
-    location_name: "Riverside Shelter Demo",
+    location_name: "Riverside Shelter",
     span_text: "Kamala Lama, 29, staying in hall B.",
     status: "PENDING_REVIEW" as const,
     claim_id: null,
@@ -361,7 +361,7 @@ const INTAKE = item({
   claim: null,
   intake: {
     job: INTAKE_JOB,
-    extracted_text: "Riverside Shelter Demo register.\nKamala Lama, 29, staying in hall B.",
+    extracted_text: "Riverside Shelter register.\nKamala Lama, 29, staying in hall B.",
     candidates: [cand(0), cand(1, { subject_name: "Road to Upper Village", subject_type: "INFRASTRUCTURE", age: null, claim_type: "ROAD_BLOCKED", span_text: "Road blocked." })],
   },
 });
@@ -375,7 +375,7 @@ describe("intake review", () => {
     expect(screen.getByText(/1 suggestion was left out/)).toBeInTheDocument();
     expect(screen.getByText("Kamala Lama, 29, staying in hall B.", { selector: "blockquote" })).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: "Show the full text" }));
-    expect(screen.getByText(/Riverside Shelter Demo register\./, { selector: "pre" })).toBeInTheDocument();
+    expect(screen.getByText(/Riverside Shelter register\./, { selector: "pre" })).toBeInTheDocument();
     // Only people get a report type to edit.
     expect(screen.getAllByLabelText("Report type")).toHaveLength(1);
   });

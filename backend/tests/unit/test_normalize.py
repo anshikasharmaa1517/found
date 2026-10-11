@@ -21,16 +21,16 @@ def test_name_tokens_are_unique_and_skip_single_letters():
 
 
 def test_detect_mentions_matches_whole_words_in_order():
-    hospital = _src("src_h", "Central Hospital Demo")
-    police = _src("src_p", "District Police Demo")
-    text = "Per District Police Demo and, later, CENTRAL hospital demo: admitted."
+    hospital = _src("src_h", "Central Hospital")
+    police = _src("src_p", "District Police")
+    text = "Per District Police and, later, CENTRAL hospital demo: admitted."
     assert detect_mentions(text, [hospital, police]) == [police, hospital]
 
 
 def test_detect_mentions_ignores_partial_words_and_excluded_source():
     cross = _src("src_c", "Red Cross")
-    own = _src("src_o", "Flood Relief Demo")
-    text = "Volunteers at Red Crossing; Flood Relief Demo reports."
+    own = _src("src_o", "Flood Relief")
+    text = "Volunteers at Red Crossing; Flood Relief reports."
     assert detect_mentions(text, [cross, own], exclude_id="src_o") == []
 
 

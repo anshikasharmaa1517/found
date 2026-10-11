@@ -21,9 +21,9 @@ from found_core.tools.service import AgentToolService
 
 REVIEWER = Caller(user_id="rev_1", groups=frozenset({"reviewer"}))
 FAMILY = Caller(user_id="fam_1", groups=frozenset({"family"}))
-HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-NGO = {"org_id": "org_n", "org_name": "Flood Relief Demo", "org_type": "NGO"}
+HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+NGO = {"org_id": "org_n", "org_name": "Flood Relief", "org_type": "NGO"}
 LATER = "2026-10-03T07:40:00+05:30"
 
 
@@ -108,7 +108,7 @@ def test_queue_lists_open_items_most_urgent_first_with_context(world):
     ]
     held = page.entries[0]
     assert held.claim.id == deceased.id and held.subject.display_name == "Sita Tamang"
-    assert held.source.name == "Central Hospital Demo"
+    assert held.source.name == "Central Hospital"
     only = world.review.queue(REVIEWER, "inc_1", item_type="conflict")
     assert [e.item.item_type for e in only.entries] == [ReviewItemType.CONFLICT]
     assert page.next_cursor is None
@@ -215,7 +215,7 @@ def test_resolve_needs_a_reviewer_and_a_known_item(world):
 def finished_finding(world):
     source = world.report("FOUND_SAFE", org=HOSPITAL, text="Sita Tamang admitted to ward 3.")
     relay = world.report(
-        "FOUND_SAFE", org=NGO, text="According to Central Hospital Demo, Sita Tamang was admitted."
+        "FOUND_SAFE", org=NGO, text="According to Central Hospital, Sita Tamang was admitted."
     )
     config = InvestigationConfig(model_id="model-a")
     starter = InvestigationService(world.repo, InMemoryBudgetLedger(), Queue(), config, world.clock)
@@ -231,7 +231,7 @@ def finished_finding(world):
             "comparison": "SUPPORTS",
             "summary": "Repeats the hospital report.",
             "citations": [
-                {"claim_id": relay.id, "excerpt": "According to Central Hospital Demo"},
+                {"claim_id": relay.id, "excerpt": "According to Central Hospital"},
                 {"claim_id": source.id, "excerpt": "admitted to ward 3"},
             ],
         },

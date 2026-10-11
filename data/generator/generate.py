@@ -30,12 +30,12 @@ INCIDENT = {
 
 # id, name, type, reference prefix
 ORGANIZATIONS = [
-    ("org_police", "District Police Demo", "POLICE", "DPD"),
-    ("org_hospital", "Central Hospital Demo", "HOSPITAL", "CHD"),
-    ("org_clinic", "Hill Clinic Demo", "HOSPITAL", "HCD"),
-    ("org_ngo", "Flood Relief Demo", "NGO", "FRD"),
-    ("org_shelter", "Riverside Shelter Demo", "SHELTER_OPERATOR", "RSD"),
-    ("org_volunteers", "Valley Volunteers Demo", "COMMUNITY", "VVD"),
+    ("org_police", "District Police", "POLICE", "DPD"),
+    ("org_hospital", "Central Hospital", "HOSPITAL", "CHD"),
+    ("org_clinic", "Hill Clinic", "HOSPITAL", "HCD"),
+    ("org_ngo", "Flood Relief", "NGO", "FRD"),
+    ("org_shelter", "Riverside Shelter", "SHELTER_OPERATOR", "RSD"),
+    ("org_volunteers", "Valley Volunteers", "COMMUNITY", "VVD"),
 ]
 ORG = {o[0]: o for o in ORGANIZATIONS}
 
@@ -50,7 +50,7 @@ PLACES = {
     "temple_steps": ("Temple Steps", 27.9206, 85.1426),
     "school": ("Valley School Building", 27.9226, 85.1390),
     "shelter": ("Riverside Shelter", 27.9232, 85.1440),
-    "hospital": ("Central Hospital Demo grounds", 27.9246, 85.1408),
+    "hospital": ("Central Hospital grounds", 27.9246, 85.1408),
     "footbridge": ("Upper Footbridge", 27.9290, 85.1491),
 }
 
@@ -168,7 +168,7 @@ def story(b: Builder) -> None:
              "Sita Tamang, 24, admitted to ward 3 at 07:40. Condition stable.",
              "2026-08-27T07:40:00+05:45", value="Ward 3, stable", where="hospital")
     b.report("org_ngo", sita, "FOUND_SAFE",
-             "According to Central Hospital Demo, Sita Tamang was admitted to ward 3 and is "
+             "According to Central Hospital, Sita Tamang was admitted to ward 3 and is "
              "stable.", "2026-08-27T08:30:00+05:45")
 
     bikash = b.person("bikash", "Bikash Shrestha", 31)
@@ -187,7 +187,7 @@ def story(b: Builder) -> None:
              "Dipak Karki, 45, admitted with leg injuries and taken into surgery.",
              "2026-08-27T05:50:00+05:45", value="Leg injuries", where="hospital")
     b.report("org_ngo", dipak, "FOUND_SAFE",
-             "According to Central Hospital Demo, Dipak Karki is safe and unhurt.",
+             "According to Central Hospital, Dipak Karki is safe and unhurt.",
              "2026-08-27T09:10:00+05:45")
 
     sunita = b.person("sunita", "Sunita Magar", 38)
@@ -195,7 +195,7 @@ def story(b: Builder) -> None:
              "Sunita Magar treated for a fractured wrist, kept for observation.",
              "2026-08-27T04:30:00+05:45", value="Fractured wrist")
     b.report("org_ngo", sunita, "INJURED",
-             "Per Hill Clinic Demo, Sunita Magar has a fractured wrist and is under "
+             "Per Hill Clinic, Sunita Magar has a fractured wrist and is under "
              "observation.", "2026-08-27T07:05:00+05:45")
 
     kamala = b.person("kamala", "Kamala Lama", 29)
@@ -228,7 +228,7 @@ def story(b: Builder) -> None:
              "Puja Tamang, 17, is staying at the shelter in hall A.",
              "2026-08-27T09:30:00+05:45", value="Hall A", where="shelter")
     b.report("org_volunteers", puja, "SHELTERED",
-             "Riverside Shelter Demo says Puja Tamang moved to the school building.",
+             "Riverside Shelter says Puja Tamang moved to the school building.",
              "2026-08-27T12:45:00+05:45", where="school")
 
     laxmi = b.person("laxmi", "Laxmi Basnet", 58)
@@ -237,7 +237,7 @@ def story(b: Builder) -> None:
              where="market_ghat")
     # The source name is misspelled, so it is not offered as a named source.
     b.report("org_volunteers", laxmi, "FOUND_SAFE",
-             "According to Centrel Hospitl Demo, Laxmi Basnet was admitted.",
+             "According to Centrel Hospitl, Laxmi Basnet was admitted.",
              "2026-08-27T13:10:00+05:45")
 
 

@@ -44,7 +44,7 @@ const RECENT: RecentReport[] = [
     ingested_at: "2026-10-05T10:10:00Z",
     withheld: false,
     claim_type: "FOUND_SAFE",
-    source: "Central Hospital Demo",
+    source: "Central Hospital",
     reported_at: "2026-10-03T02:10:00Z",
     excerpt: "Sita Tamang, 24, admitted to ward 3.",
   },
@@ -85,7 +85,7 @@ function routes(
           claim_type: "FOUND_SAFE",
           value: null,
           source_id: "src_h",
-          source: "Central Hospital Demo",
+          source: "Central Hospital",
           reported_at: null,
           relation: "UPDATE",
           excerpt: "Sita Tamang admitted.",
@@ -97,10 +97,10 @@ function routes(
           claim_type: "FOUND_SAFE",
           value: null,
           source_id: "src_n",
-          source: "Flood Relief Demo",
+          source: "Flood Relief",
           reported_at: null,
           relation: "UPDATE",
-          excerpt: "According to Central Hospital Demo, Sita is safe.",
+          excerpt: "According to Central Hospital, Sita is safe.",
         },
       ],
       next_cursor: null,
@@ -109,8 +109,8 @@ function routes(
       nodes: [
         { id: "per_1", kind: "person", label: "Sita Tamang", detail: "Age 24", subject_type: "PERSON" },
         { id: "per_2", kind: "person", label: "Sita T.", detail: "Age 24", subject_type: "PERSON" },
-        { id: "clm_2", kind: "report", label: "Found safe", detail: "Central Hospital Demo", subject_type: null },
-        { id: "src_h", kind: "source", label: "Central Hospital Demo", detail: null, subject_type: null },
+        { id: "clm_2", kind: "report", label: "Found safe", detail: "Central Hospital", subject_type: null },
+        { id: "src_h", kind: "source", label: "Central Hospital", detail: null, subject_type: null },
         { id: "per_3", kind: "person", label: "Bikash Shrestha", detail: null, subject_type: "PERSON" },
       ],
       edges: [
@@ -245,7 +245,7 @@ describe("app shell", () => {
     await user.click(await screen.findByRole("button", { name: "Start over" }));
     expect(reset).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Start over" }));
-    expect(await screen.findByText(/The demo is reloading/)).toBeInTheDocument();
+    expect(await screen.findByText(/The incident is reloading/)).toBeInTheDocument();
     expect(confirm).toHaveBeenCalledTimes(2);
     expect(reset).toHaveBeenCalledTimes(1);
   });
@@ -262,7 +262,7 @@ describe("app shell", () => {
     expect(await within(recent).findByText("Sensitive report")).toBeInTheDocument();
     expect(within(recent).getByText(/A coordinator will contact you/)).toBeInTheDocument();
     expect(within(recent).getByText("Found safe")).toBeInTheDocument();
-    expect(within(recent).getByText(/Central Hospital Demo/)).toBeInTheDocument();
+    expect(within(recent).getByText(/Central Hospital/)).toBeInTheDocument();
     expect(within(rail).getByText("No notifications yet")).toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toHaveTextContent(/confirm with the source/);
 
@@ -298,7 +298,7 @@ describe("app shell", () => {
     expect(screen.getByLabelText("Focus on")).toHaveValue("per_1");
     expect(screen.getByText("Records").closest(".stat")).toHaveTextContent("5");
 
-    await user.click(screen.getByRole("button", { name: "Central Hospital Demo" }));
+    await user.click(screen.getByRole("button", { name: "Central Hospital" }));
     const details = screen
       .getByText("Source", { selector: ".eyebrow" })
       .closest(".graph-details") as HTMLElement;

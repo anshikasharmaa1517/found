@@ -154,7 +154,7 @@ function overviewRoutes() {
         basis: "Latest dated status report",
         cited_claim_id: "clm_2",
         conflicts: [
-          { claim_id: "clm_1", claim_type: "MISSING", source: "District Police Demo", withheld: false },
+          { claim_id: "clm_1", claim_type: "MISSING", source: "District Police", withheld: false },
         ],
         needs_review: false,
       },
@@ -167,7 +167,7 @@ function overviewRoutes() {
           claim_type: "FOUND_SAFE",
           value: null,
           source_id: "src_h",
-          source: "Central Hospital Demo",
+          source: "Central Hospital",
           reported_at: "2026-10-03T02:10:00Z",
           relation: "UPDATE",
           excerpt: "Sita Tamang, 24, admitted to ward 3.",
@@ -237,8 +237,8 @@ describe("people overview", () => {
     expect(within(preview).getByText(/say different things/)).toBeInTheDocument();
     const changed = within(preview).getByRole("region", { name: "What changed?" });
     expect(within(changed).getByText("1 stored entry.")).toBeInTheDocument();
-    expect(within(changed).getByText("Central Hospital Demo")).toBeInTheDocument();
-    expect(within(preview).getByText(/District Police Demo, Missing/)).toBeInTheDocument();
+    expect(within(changed).getByText("Central Hospital")).toBeInTheDocument();
+    expect(within(preview).getByText(/District Police, Missing/)).toBeInTheDocument();
     // Once on its card and once in the plain record below.
     expect(within(preview).getAllByText("Sita Tamang, 24, admitted to ward 3.")).toHaveLength(2);
     expect(within(preview).getByRole("link", { name: "Open the full timeline" })).toHaveAttribute(

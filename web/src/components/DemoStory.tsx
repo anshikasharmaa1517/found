@@ -38,7 +38,7 @@ async function loadStory(
   const timeline = await getTimeline(api, sita.id, { limit: 20 });
   const visible = timeline.entries.filter((e): e is VisibleEntry => !e.withheld);
   const hospital = visible.find(
-    (e) => e.source === "Central Hospital Demo" && e.claim_type === "FOUND_SAFE",
+    (e) => e.source === "Central Hospital" && e.claim_type === "FOUND_SAFE",
   );
   const relay = visible.find((e) => e.excerpt.startsWith("According to"));
   return {
@@ -65,13 +65,13 @@ const STEPS = [
   {
     short: "Hospital says safe",
     title: "The hospital says she is safe",
-    text: "Central Hospital Demo reports Sita admitted and stable. Her page now cites that report, and still shows the police report that came first.",
+    text: "Central Hospital reports Sita admitted and stable. Her page now cites that report, and still shows the police report that came first.",
     icon: <HospitalIcon size={24} />,
   },
   {
     short: "Where did it come from?",
     title: "Where did the last report come from?",
-    text: "Flood Relief Demo also says Sita is safe, citing the hospital. The agent traces it and finds a relay: helpful, but not independent confirmation.",
+    text: "Flood Relief also says Sita is safe, citing the hospital. The agent traces it and finds a relay: helpful, but not independent confirmation.",
     icon: <SearchIcon size={24} />,
   },
 ] as const;
@@ -102,7 +102,7 @@ function StartOver({ incidentId }: { incidentId: string }) {
   const [error, setError] = useState("");
 
   async function onClick() {
-    if (!window.confirm("Reload the demo incident? Reports added since the last load are removed.")) {
+    if (!window.confirm("Reload this incident from its dataset? Reports added since the last load are removed.")) {
       return;
     }
     setState("busy");
@@ -123,7 +123,7 @@ function StartOver({ incidentId }: { incidentId: string }) {
       </button>
       {state === "done" && (
         <span className="story-note" role="status">
-          The demo is reloading. Refresh in about a minute.
+          The incident is reloading. Refresh in about a minute.
         </span>
       )}
       {state === "failed" && (

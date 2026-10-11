@@ -32,7 +32,7 @@ def queued_world():
 
 def correct_model(world):
     target = world.target()
-    source = world.sources["Central Hospital Demo"]
+    source = world.sources["Central Hospital"]
     hospital = next(c for c in world.claims.values() if c.source_id == source.id)
     finding = {
         "attribution": "RELAY",

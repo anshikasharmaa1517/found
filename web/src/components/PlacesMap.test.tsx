@@ -144,7 +144,7 @@ describe("PlacesMap", () => {
         {
           claim_id: "clm_1",
           claim_type: "BRIDGE_DAMAGED",
-          source: "District Police Demo",
+          source: "District Police",
           reported_at: null,
           excerpt: "<b>Closed</b>",
         },
@@ -153,7 +153,7 @@ describe("PlacesMap", () => {
         {
           claim_id: "clm_1",
           claim_type: "BRIDGE_DAMAGED",
-          source: "District Police Demo",
+          source: "District Police",
           reported_at: null,
           excerpt: "<b>Closed</b>",
         },
@@ -168,7 +168,7 @@ describe("PlacesMap", () => {
     expect(marker.element).toHaveAccessibleName(
       "Old Bridge: Reported bridge open, sources disagree",
     );
-    expect(marker.popup).toHaveTextContent("District Police Demo says Bridge damaged");
+    expect(marker.popup).toHaveTextContent("District Police says Bridge damaged");
     expect(marker.popup!.querySelector("b")).toBeNull();
   });
 

@@ -149,7 +149,7 @@ def test_settings_default_to_live_off(repo, table):
 
 def test_latest_source_claim_follows_reported_time(repo):
     service = IngestService(repo, clock=FixedClock(), sleep=lambda _: None)
-    hospital = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
+    hospital = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
 
     def publish(ref, reported_at, subject):
         return service.publish(
@@ -203,7 +203,7 @@ def test_tool_calls_count_only_while_running_and_under_the_cap(repo):
 
 def test_list_source_claims_newest_first_with_subject_filter(repo):
     service = IngestService(repo, clock=FixedClock(), sleep=lambda _: None)
-    hospital = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
+    hospital = {"org_id": "org_h", "org_name": "Central Hospital", "org_type": "HOSPITAL"}
 
     def publish(ref, hour, subject):
         return service.publish(
@@ -343,7 +343,7 @@ def test_delete_incident_data_removes_only_that_incident(repo, table):
     ledger.reserve_run("2026-10", 5)
     publish = PublishCommand.parse(
         {
-            "incident_id": "inc_1", "org_id": "org_p", "org_name": "District Police Demo",
+            "incident_id": "inc_1", "org_id": "org_p", "org_name": "District Police",
             "org_type": "POLICE", "actor": "u", "subject": {"type": "PERSON", "new": {"name": "X"}},
             "claim_type": "MISSING", "original_text": "X missing.", "external_reference": "R1",
         }

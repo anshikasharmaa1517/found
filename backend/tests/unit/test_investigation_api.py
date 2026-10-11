@@ -42,8 +42,8 @@ class World:
         self.repo.add_incident("inc_1")
         self.repo.settings = Settings(live_enabled=True)
         for oid, name, kind in (
-            ("org_h", "Central Hospital Demo", "HOSPITAL"),
-            ("org_n", "Flood Relief Demo", "NGO"),
+            ("org_h", "Central Hospital", "HOSPITAL"),
+            ("org_n", "Flood Relief", "NGO"),
         ):
             self.repo.add_organization(
                 Organization(
@@ -67,7 +67,7 @@ class World:
             **BODY,
             "subject": {"type": "PERSON", "id": self.person},
             "claim_type": "FOUND_SAFE",
-            "original_text": "According to Central Hospital Demo, Sita Tamang was admitted.",
+            "original_text": "According to Central Hospital, Sita Tamang was admitted.",
             "external_reference": "NGO-1",
         }
         _, body, _ = publish(relay, claims=NGO_CLAIMS)
@@ -187,7 +187,7 @@ def test_detail_shows_finding_usage_timing_and_steps(world):
             "comparison": "DIFFERS",
             "summary": "The NGO says found safe; the hospital report says missing.",
             "citations": [
-                {"claim_id": world.relay, "excerpt": "According to Central Hospital Demo"},
+                {"claim_id": world.relay, "excerpt": "According to Central Hospital"},
                 {"claim_id": world.source_claim, "excerpt": "missing since the bridge collapse"},
             ],
         },
@@ -207,11 +207,11 @@ def test_detail_shows_finding_usage_timing_and_steps(world):
     assert (view["model_id"], view["prompt_version"]) == ("model-a", "lineage-v1")
     assert view["finding"] == {
         "attribution": "RELAY",
-        "referenced_source": {"id": source_id, "name": "Central Hospital Demo"},
+        "referenced_source": {"id": source_id, "name": "Central Hospital"},
         "comparison": "DIFFERS",
         "summary": "The NGO says found safe; the hospital report says missing.",
         "citations": [
-            {"claim_id": world.relay, "excerpt": "According to Central Hospital Demo"},
+            {"claim_id": world.relay, "excerpt": "According to Central Hospital"},
             {"claim_id": world.source_claim, "excerpt": "missing since the bridge collapse"},
         ],
     }

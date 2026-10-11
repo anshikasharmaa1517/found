@@ -284,7 +284,7 @@ STEP = InvestigationStepCreated(
     seq=3,
     kind="TOOL",
     tool_name="find_reports_by_source",
-    summary="2 reports from Central Hospital Demo",
+    summary="2 reports from Central Hospital",
     occurred_at=NOW,
 )
 UPDATED = InvestigationUpdated(
@@ -305,7 +305,7 @@ def test_investigation_messages_match_the_protocol():
         "seq": 3,
         "kind": "TOOL",
         "tool": "find_reports_by_source",
-        "summary": "2 reports from Central Hospital Demo",
+        "summary": "2 reports from Central Hospital",
     }
     assert message_for(UPDATED) == {
         "type": "investigation.updated",

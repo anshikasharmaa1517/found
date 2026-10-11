@@ -23,7 +23,7 @@ def people(monkeypatch):
                 {
                     "incident_id": "inc_1",
                     "org_id": "org_p",
-                    "org_name": "District Police Demo",
+                    "org_name": "District Police",
                     "org_type": "POLICE",
                     "actor": "user_1",
                     "subject": {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},

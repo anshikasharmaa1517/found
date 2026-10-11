@@ -15,7 +15,7 @@ from found_core.domain.intake import (
     validate_candidates,
 )
 
-TEXT = """Riverside Shelter Demo register, 3 Oct.
+TEXT = """Riverside Shelter register, 3 Oct.
 Kamala Lama, 29, arrived with her son at 08:00 and is staying in hall B.
 Road to Upper Village blocked by a landslide."""
 
@@ -27,7 +27,7 @@ def candidate(**overrides):
         "age": 29,
         "claim_type": "SHELTERED",
         "reported_at_text": "2026-10-03T08:00:00+05:30",
-        "location_name": "Riverside Shelter Demo",
+        "location_name": "Riverside Shelter",
         "span_text": "Kamala Lama, 29, arrived with her son at 08:00 and is staying in hall B.",
         **overrides,
     }
@@ -88,7 +88,7 @@ def test_a_good_candidate_is_kept_with_its_time_parsed():
 
 def test_spans_must_occur_in_the_text_whitespace_and_case_aside():
     loose = candidate(span_text="kamala lama, 29, arrived   with her son at 08:00")
-    invented = candidate(span_text="Kamala Lama was taken to Central Hospital Demo.")
+    invented = candidate(span_text="Kamala Lama was taken to Central Hospital.")
     kept, dropped = validate_candidates([loose, invented], TEXT)
     assert len(kept) == 1 and dropped == [{"index": 1, "reason": "SPAN_NOT_IN_TEXT"}]
 

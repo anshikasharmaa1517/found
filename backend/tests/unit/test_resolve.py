@@ -24,8 +24,8 @@ from found_core.services.review import ReviewService
 REVIEWER = Caller(user_id="rev_1", groups=frozenset({"reviewer"}))
 REVIEWER_2 = Caller(user_id="rev_2", groups=frozenset({"reviewer"}))
 FAMILY = Caller(user_id="fam_1", groups=frozenset({"family"}))
-POLICE = {"org_id": "org_p", "org_name": "District Police Demo", "org_type": "POLICE"}
-NGO = {"org_id": "org_n", "org_name": "Flood Relief Demo", "org_type": "NGO"}
+POLICE = {"org_id": "org_p", "org_name": "District Police", "org_type": "POLICE"}
+NGO = {"org_id": "org_n", "org_name": "Flood Relief", "org_type": "NGO"}
 BRIDGE = {"name": "Old Bridge", "lat": 30.7268, "lon": 78.4354}
 SCHOOL = {"name": "Upper School", "lat": 30.7301, "lon": 78.4402}
 
