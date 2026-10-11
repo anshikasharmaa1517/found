@@ -37,7 +37,7 @@ import { usePager } from "../usePager";
 function IdentityLinks({ links }: { links: IdentityLink[] }) {
   if (links.length === 0) return null;
   return (
-    <section aria-labelledby="identity-title">
+    <section className="other-records" aria-labelledby="identity-title">
       <h2 id="identity-title">Other records</h2>
       <ul className="identity-links">
         {links.map((link) => (
@@ -241,62 +241,62 @@ export function PersonPage() {
         }
       />
 
-      <div className="split">
-        <div className="split-main">
-      <SummaryCard summary={summary} />
-      <OpenMatches
-        person={person}
-        matches={first.data.open_matches ?? []}
-        reviewHref={
-          incidentId && canReview
-            ? `/incidents/${encodeURIComponent(incidentId)}/review?type=identity`
-            : undefined
-        }
-      />
-
-      <div className="timeline-head">
-        <label className="inline">
-          Order
-          <select
-            value={order}
-            onChange={(e) => setParams(e.target.value === "desc" ? { order: "desc" } : {})}
-          >
-            <option value="asc">Oldest report first</option>
-            <option value="desc">Newest report first</option>
-          </select>
-        </label>
+      {/* The cards that say what is known sit side by side; the history fills the width. */}
+      <div className="person-top">
+        <SummaryCard summary={summary} />
+        <OpenMatches
+          person={person}
+          matches={first.data.open_matches ?? []}
+          reviewHref={
+            incidentId && canReview
+              ? `/incidents/${encodeURIComponent(incidentId)}/review?type=identity`
+              : undefined
+          }
+        />
+        {hasRole(user, "family") && <FollowPanel personId={person.id} personName={person.name} />}
+        <IdentityLinks links={identity} />
       </div>
 
-      {entries.length === 0 ? (
-        <p className="empty">No reports yet.</p>
-      ) : (
-        <WhatChanged
-          entries={[...entries, ...pager.items]}
-          newestFirst={order === "desc"}
-          investigations={investigations}
-          incidentId={incidentId}
-          citedId={summary.cited_claim_id}
-          showRelation
-        />
-      )}
-      {pager.error && <ErrorNotice error={pager.error} onRetry={pager.loadMore} />}
-      {pager.hasMore && (
-        <button type="button" onClick={pager.loadMore} disabled={pager.busy}>
-          {pager.busy ? "Loading" : "Load more"}
-        </button>
-      )}
-      {entries.length > 0 && (
-        <SourceChecks
-          entries={[...entries, ...pager.items]}
-          investigations={investigations}
-          canTrace={canTrace}
-        />
-      )}
+      <div className="person-body">
+        <div className="person-history">
+          <div className="timeline-head">
+            <label className="inline">
+              Order
+              <select
+                value={order}
+                onChange={(e) => setParams(e.target.value === "desc" ? { order: "desc" } : {})}
+              >
+                <option value="asc">Oldest report first</option>
+                <option value="desc">Newest report first</option>
+              </select>
+            </label>
+          </div>
+          {entries.length === 0 ? (
+            <p className="empty">No reports yet.</p>
+          ) : (
+            <WhatChanged
+              entries={[...entries, ...pager.items]}
+              newestFirst={order === "desc"}
+              investigations={investigations}
+              incidentId={incidentId}
+              citedId={summary.cited_claim_id}
+              showRelation
+            />
+          )}
+          {pager.error && <ErrorNotice error={pager.error} onRetry={pager.loadMore} />}
+          {pager.hasMore && (
+            <button type="button" onClick={pager.loadMore} disabled={pager.busy}>
+              {pager.busy ? "Loading" : "Load more"}
+            </button>
+          )}
         </div>
-        <aside className="split-side">
-          {hasRole(user, "family") && <FollowPanel personId={person.id} personName={person.name} />}
-          <IdentityLinks links={identity} />
-        </aside>
+        {entries.length > 0 && (
+          <SourceChecks
+            entries={[...entries, ...pager.items]}
+            investigations={investigations}
+            canTrace={canTrace}
+          />
+        )}
       </div>
     </section>
   );

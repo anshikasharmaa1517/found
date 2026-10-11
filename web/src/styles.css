@@ -3372,6 +3372,56 @@ tbody tr.selected {
   margin: var(--s-1) 0 0;
 }
 
+/* Person page: what is known, side by side; then the history beside where reports came
+   from. Columns wrap, so nothing is squeezed on smaller screens. */
+
+.person-top {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: var(--s-4);
+  align-items: stretch;
+  margin: var(--s-4) 0 var(--s-2);
+}
+
+.person-top > .summary,
+.person-top > .follow,
+.person-top > .matches {
+  margin: 0;
+}
+
+.person-top > .matches .match-cards,
+.person-top > .matches .match-card {
+  height: 100%;
+}
+
+.other-records {
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+}
+
+.other-records h2 {
+  margin: 0 0 var(--s-2);
+}
+
+.person-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 var(--s-6);
+  align-items: start;
+}
+
+@media (min-width: 1200px) {
+  .person-body {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  }
+
+  .person-body > .source-checks {
+    margin-top: calc(36px + var(--s-5) + var(--s-2));
+  }
+}
+
 /* Match review: what two records share, where they differ, what neither says. */
 
 .facts-grid {
