@@ -6,7 +6,6 @@ import { claimTypeLabel } from "../labels";
 import { useLoad } from "../useLoad";
 import { ErrorNotice } from "./ErrorNotice";
 import { AlertIcon } from "./icons";
-import { ReportTimeline } from "./ReportTimeline";
 import { WhatChanged } from "./WhatChanged";
 import { SkeletonRows } from "./ui";
 
@@ -63,9 +62,13 @@ export function PersonPreview({
       {entries.length === 0 ? (
         <p className="meta">No reports yet.</p>
       ) : (
-        <ReportTimeline entries={entries} incidentId={incidentId} citedId={summary.cited_claim_id} />
+        <WhatChanged
+          entries={entries}
+          investigations={investigations}
+          incidentId={incidentId}
+          citedId={summary.cited_claim_id}
+        />
       )}
-      {entries.length > 0 && <WhatChanged entries={entries} investigations={investigations} />}
       <Link className="button-link primary" to={full}>
         {next_cursor ? "Open the full timeline, with more reports" : "Open the full timeline"}
       </Link>

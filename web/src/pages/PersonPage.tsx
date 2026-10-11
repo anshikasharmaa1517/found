@@ -15,7 +15,6 @@ import {
 } from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FollowPanel } from "../components/FollowPanel";
-import { ReportTimeline } from "../components/ReportTimeline";
 import { WhatChanged } from "../components/WhatChanged";
 import { TraceButton } from "../components/TraceButton";
 import { PageHeader, SkeletonRows } from "../components/ui";
@@ -228,7 +227,6 @@ export function PersonPage() {
       <SummaryCard summary={summary} />
 
       <div className="timeline-head">
-        <h2>Timeline</h2>
         <label className="inline">
           Order
           <select
@@ -240,18 +238,17 @@ export function PersonPage() {
           </select>
         </label>
       </div>
-      <p className="hint">Ordered by when each report says it happened, not when it arrived.</p>
 
       {entries.length === 0 ? (
         <p className="empty">No reports yet.</p>
       ) : (
-        <ReportTimeline
+        <WhatChanged
           entries={[...entries, ...pager.items]}
           newestFirst={order === "desc"}
+          investigations={investigations}
           incidentId={incidentId}
           citedId={summary.cited_claim_id}
           showRelation
-          actions={canTrace ? (entry) => <TraceButton claimId={entry.claim_id} /> : undefined}
         />
       )}
       {pager.error && <ErrorNotice error={pager.error} onRetry={pager.loadMore} />}
@@ -261,18 +258,11 @@ export function PersonPage() {
         </button>
       )}
       {entries.length > 0 && (
-        <>
-          <WhatChanged
-            entries={[...entries, ...pager.items]}
-            newestFirst={order === "desc"}
-            investigations={investigations}
-          />
-          <SourceChecks
-            entries={[...entries, ...pager.items]}
-            investigations={investigations}
-            canTrace={canTrace}
-          />
-        </>
+        <SourceChecks
+          entries={[...entries, ...pager.items]}
+          investigations={investigations}
+          canTrace={canTrace}
+        />
       )}
         </div>
         <aside className="split-side">

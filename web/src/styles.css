@@ -3083,136 +3083,6 @@ tbody tr.selected {
   margin-top: var(--s-3);
 }
 
-/* Reports as cards on a line, as in Trace: a status stripe, a dot on the line, the
-   sentence, the time, who said it and what changed. */
-
-.report-cards {
-  list-style: none;
-  position: relative;
-  display: grid;
-  gap: var(--s-3);
-  margin: var(--s-3) 0 var(--s-4);
-  padding: 0 0 0 var(--s-6);
-}
-
-.report-cards::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: var(--s-2);
-  bottom: var(--s-2);
-  width: 1px;
-  background: var(--line);
-}
-
-.report-card {
-  --tone: var(--neutral);
-  position: relative;
-  scroll-margin-top: var(--s-6);
-}
-
-.report-card.ok {
-  --tone: var(--ok);
-}
-
-.report-card.bad {
-  --tone: var(--bad);
-}
-
-.report-card.warn {
-  --tone: var(--warn);
-}
-
-.report-dot {
-  position: absolute;
-  left: calc(-1 * var(--s-6) + 1px);
-  top: var(--s-4);
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--tone);
-  box-shadow: 0 0 0 4px var(--bg);
-}
-
-.report-body {
-  position: relative;
-  display: grid;
-  gap: var(--s-1);
-  min-width: 0;
-  padding: var(--s-3) var(--s-4) var(--s-3) var(--s-5);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-3);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  overflow-wrap: anywhere;
-}
-
-.report-body::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--tone);
-}
-
-.report-card.cited .report-body {
-  border-color: var(--accent);
-}
-
-.report-card:target .report-body {
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
-.report-body p {
-  margin: 0;
-}
-
-.report-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s-1) var(--s-3);
-}
-
-.report-sentence {
-  color: var(--tone);
-  font-size: var(--fs-16);
-}
-
-.report-card.withheld .report-head strong {
-  color: var(--text-2);
-}
-
-.report-time {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-1);
-  font-size: var(--fs-13);
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-.report-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
-}
-
-.report-value {
-  font-weight: 500;
-}
-
-.report-source {
-  color: var(--text);
-}
-
-.report-place {
-  justify-self: start;
-  font-size: var(--fs-13);
-}
-
 /* Two sources say different things: shown, never resolved by the app. */
 
 .disagree {
@@ -3324,16 +3194,13 @@ tbody tr.selected {
   overflow-wrap: anywhere;
 }
 
-.what-changed h3 {
-  margin: 0;
-  font-family: var(--display);
+.what-changed h2 {
+  margin: 0 0 var(--s-1);
   font-size: var(--fs-24);
-  font-weight: 500;
 }
 
-.what-changed-lead {
-  margin: var(--s-1) 0;
-  font-weight: 600;
+.what-changed > .meta {
+  margin: 0 0 var(--s-1);
 }
 
 .change-log {
@@ -3373,6 +3240,31 @@ tbody tr.selected {
 
 .change-refs {
   font-size: var(--fs-12);
+}
+
+.change-value {
+  font-weight: 500;
+}
+
+.change-log li.cited::before {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px var(--ok-soft);
+}
+
+.change-log li:target {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--r-1);
+}
+
+.change-log li {
+  scroll-margin-top: var(--s-6);
+}
+
+.change-place {
+  display: inline-block;
+  margin-top: var(--s-1);
+  font-size: var(--fs-13);
 }
 
 .change-log li.change-check::before {

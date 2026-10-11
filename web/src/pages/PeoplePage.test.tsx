@@ -239,8 +239,7 @@ describe("people overview", () => {
     expect(within(changed).getByText("1 stored entry.")).toBeInTheDocument();
     expect(within(changed).getByText("Central Hospital")).toBeInTheDocument();
     expect(within(preview).getByText(/District Police, Missing/)).toBeInTheDocument();
-    // Once on its card and once in the plain record below.
-    expect(within(preview).getAllByText("Sita Tamang, 24, admitted to ward 3.")).toHaveLength(2);
+    expect(within(preview).getByText("Sita Tamang, 24, admitted to ward 3.")).toBeInTheDocument();
     expect(within(preview).getByRole("link", { name: "Open the full timeline" })).toHaveAttribute(
       "href",
       "/people/per_1",

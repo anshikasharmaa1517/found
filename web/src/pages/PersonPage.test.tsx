@@ -9,6 +9,12 @@ import { FakeGateway, REVIEWER, renderApp, routedApi, type Query } from "../test
 
 const PATH = "/v1/people/per_1/timeline";
 
+/** A report's row in "Where did this report come from?", where tracing starts. */
+async function checkFor(text: string): Promise<HTMLElement> {
+  const region = await screen.findByRole("region", { name: "Where did this report come from?" });
+  return within(region).getByText(text).closest("li")!;
+}
+
 function signedIn() {
   const gateway = new FakeGateway();
   gateway.user = REVIEWER;
@@ -143,25 +149,27 @@ describe("person page", () => {
     const items = await screen.findAllByRole("listitem");
     const hospital = items.find((li) => li.id === "entry-clm_2")!;
     expect(hospital).toHaveClass("cited");
-    expect(within(hospital).getByText("Reported safe")).toBeInTheDocument();
+    expect(within(hospital).getByText("Found safe")).toBeInTheDocument();
     expect(within(hospital).getByText("Newer report")).toBeInTheDocument();
     expect(within(hospital).getByText("Used for summary")).toBeInTheDocument();
     expect(within(hospital).getByText("Admitted, stable condition")).toBeInTheDocument();
+    expect(within(hospital).getByText("Sita Tamang, 24, admitted to ward 3.")).toBeInTheDocument();
     // Who said it, what kind of source it is, when it arrived and its own reference.
-    expect(within(hospital).getByText(/^From/)).toHaveTextContent(
-      "From Central Hospital (Hospital)",
-    );
-    expect(within(hospital).getByText(/^Received/)).toHaveTextContent("Reference CHD-0001");
-    // What changed since the report before it, which stays on the page too.
-    expect(within(hospital).getByText("Changed from Missing")).toBeInTheDocument();
+    expect(within(hospital).getByText("Central Hospital")).toBeInTheDocument();
+    expect(within(hospital).getByText("(Hospital)")).toBeInTheDocument();
+    expect(within(hospital).getByText(/^Reported:/)).toHaveTextContent("Received:");
+    expect(within(hospital).getByText(/^Reference:/)).toHaveTextContent("Reference: CHD-0001");
+    // What changed since the report before it.
+    expect(within(hospital).getByText("status changed")).toBeInTheDocument();
+    expect(within(hospital).getByText("Previous report: Missing")).toBeInTheDocument();
     const police = items.find((li) => li.id === "entry-clm_1")!;
-    expect(within(police).queryByText(/Changed from/)).toBeNull();
+    expect(within(police).queryByText("status changed")).toBeNull();
     // No incident remembered in this test, so no map link.
     expect(within(hospital).queryByRole("link", { name: /on the map/ })).toBeNull();
     const undated = items.find((li) => li.id === "entry-clm_3")!;
-    expect(within(undated).getByText(/Reported time unknown/)).toBeInTheDocument();
+    expect(within(undated).getByText(/^Reported:/)).toHaveTextContent("Reported: time unknown");
     expect(within(undated).getByText("Other information", { selector: ".tag" })).toBeInTheDocument();
-    expect(within(undated).getByText("Changed from Found safe")).toBeInTheDocument();
+    expect(within(undated).getByText("Previous report: Found safe")).toBeInTheDocument();
   });
 
   it("links a report's place to the incident map", async () => {
@@ -274,7 +282,7 @@ describe("person page", () => {
       { "/v1/claims/clm_2/investigations": () => started },
     );
     renderApp(signedIn(), "/people/per_1", api);
-    const hospital = (await screen.findAllByText("Admitted, stable condition"))[0]!.closest("li")!;
+    const hospital = await checkFor("Sita Tamang, 24, admitted to ward 3.");
     await userEvent.setup().click(
       within(hospital).getByRole("button", { name: "Trace where this came from" }),
     );
@@ -297,7 +305,7 @@ describe("person page", () => {
     );
     renderApp(signedIn(), "/people/per_1", api);
     const user = userEvent.setup();
-    const police = (await screen.findAllByText("Family reports Sita Tamang missing."))[0]!.closest("li")!;
+    const police = await checkFor("Family reports Sita Tamang missing.");
     await user.click(within(police).getByRole("button", { name: "Trace where this came from" }));
     await waitFor(() =>
       expect(calls.some((c) => c.path === "/v1/investigations/inv_3")).toBe(true),
@@ -307,9 +315,9 @@ describe("person page", () => {
       throw new ApiError(503, "LIVE_UNAVAILABLE", "Off.");
     };
     renderApp(signedIn(), "/people/per_1", api);
-    const again = (await screen.findAllByText("Family reports Sita Tamang missing."))
+    const again = (await screen.findAllByRole("region", { name: "Where did this report come from?" }))
       .at(-1)!
-      .closest("li")!;
+      .querySelector("li")!;
     await user.click(within(again).getByRole("button", { name: "Trace where this came from" }));
     expect(
       await within(again).findByText("Live investigations are switched off right now."),
