@@ -509,7 +509,7 @@ def test_get_review_item_is_scoped_to_incident(repo):
 
 
 def test_incident_and_organization_round_trip(repo):
-    from found_core.domain.models import Incident, RiverCourse
+    from found_core.domain.models import Incident, MapContext, MapLine, RiverCourse
 
     assert repo.get_incident("inc_1").id == "inc_1"
     demo = Incident(
@@ -529,6 +529,13 @@ def test_incident_and_organization_round_trip(repo):
     # Points are stored as numbers and come back exactly as given.
     repo.put_incident(demo.model_copy(update={"river": river}))
     assert repo.get_incident("inc_demo").river == river
+    context = MapContext(
+        attribution="OpenStreetMap contributors",
+        rivers=(MapLine(name=None, coordinates=((85.2, 27.9), (85.18, 27.88))),),
+        district=MapLine(name="Nuwakot district", coordinates=((85.0, 27.8), (85.4, 28.0))),
+    )
+    repo.put_incident(demo.model_copy(update={"map_context": context}))
+    assert repo.get_incident("inc_demo").map_context == context
     assert repo.get_incident("inc_x") is None
     org = Organization(
         id="org_h", incident_id="inc_demo", name="H", name_norm="h", org_type="HOSPITAL"

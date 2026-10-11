@@ -10,7 +10,7 @@ from found_core.domain.cursor import CursorCodec
 from found_core.domain.enums import ReviewItemType
 from found_core.domain.errors import Forbidden, NotFound
 from found_core.domain.ids import review_item_id
-from found_core.domain.models import Incident, RiverCourse
+from found_core.domain.models import Incident, MapContext, MapLine, RiverCourse
 from found_core.services.incidents import RECENT_MAX, WITHHELD_KEY, IncidentService
 from found_core.services.ingest import IngestService
 from found_core.services.review import ReviewService
@@ -126,6 +126,7 @@ def test_routes_show_details_and_mask_withheld_reports(world, monkeypatch):
         "is_demo": True,
         "started_at": None,
         "river": None,
+        "map_context": None,
     }
 
     status, body, _ = call(event("GET", "/v1/incidents/inc_1/recent", claims=family))
@@ -236,6 +237,28 @@ def test_the_route_returns_the_river_course(world, monkeypatch):
         "attribution": "OpenStreetMap contributors",
         "coordinates": [[85.15, 27.93], [85.14, 27.92]],
     }
+
+
+def test_the_route_returns_the_rivers_and_district_around_it(world, monkeypatch):
+    repo, service, _, _ = world
+    monkeypatch.setattr(container, "incident_service", lambda: service)
+    context = MapContext(
+        attribution="OpenStreetMap contributors",
+        rivers=(MapLine(name="Tadi Khola", coordinates=((85.20, 27.90), (85.18, 27.88))),),
+        district=MapLine(
+            name="Nuwakot district",
+            coordinates=((85.0, 27.8), (85.4, 27.8), (85.4, 28.0), (85.0, 27.8)),
+        ),
+    )
+    repo.put_incident(Incident(id="inc_1", name="Trishuli flood", map_context=context))
+    family = {"sub": "fam_1", "cognito:groups": "[family]"}
+    status, body, _ = call(event("GET", "/v1/incidents/inc_1", claims=family))
+    assert status == 200
+    assert body["map_context"]["attribution"] == "OpenStreetMap contributors"
+    assert body["map_context"]["rivers"] == [
+        {"name": "Tadi Khola", "coordinates": [[85.2, 27.9], [85.18, 27.88]]}
+    ]
+    assert body["map_context"]["district"]["name"] == "Nuwakot district"
 
 
 @pytest.mark.parametrize(

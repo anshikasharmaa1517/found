@@ -1,6 +1,6 @@
 """Labeled eval cases for the provenance agent (design Section 9.9, Evaluation).
 
-Every person, place and organization here is fictional. Each case is a small incident:
+Each case is a small incident:
 the sources that exist, the reports they published in order, the report to
 investigate, and the labels a careful reviewer would give. Code, not the case, decides
 the outcome; `expected_status` is what the outcome table gives for those labels.

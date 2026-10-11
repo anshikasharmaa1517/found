@@ -262,6 +262,9 @@ def get_incident(incident_id: str) -> Response:
             "is_demo": incident.is_demo,
             "started_at": _iso(incident.started_at),
             "river": incident.river.model_dump(mode="json") if incident.river else None,
+            "map_context": (
+                incident.map_context.model_dump(mode="json") if incident.map_context else None
+            ),
         },
     )
 

@@ -61,9 +61,9 @@ def test_generator_is_deterministic():
     assert gen.build(seed=1)["people.json"] != gen.build()["people.json"]
 
 
-def test_dataset_is_a_fictional_demo_with_no_recorded_runs_yet():
+def test_dataset_is_a_demo_with_no_recorded_runs_yet():
     dataset = read_dataset()
-    assert dataset.incident.is_demo and "fictional" in dataset.incident.name
+    assert dataset.incident.is_demo and dataset.incident.name == "Trishuli flood"
     assert all(o.name.endswith(" Demo") for o in dataset.organizations)
     references = [(r.org_id, r.external_reference) for r in dataset.reports]
     assert len(references) == len(set(references))
@@ -83,6 +83,12 @@ def test_load_goes_through_ingest_and_gives_the_story(loaded):
     assert "OpenStreetMap" in incident.river.attribution
     assert "not the extent of the flood" in incident.river.note
     assert len(incident.river.coordinates) > 50
+    # Other rivers and the district boundary come with it too, for orientation.
+    assert "OpenStreetMap" in incident.map_context.attribution
+    assert len(incident.map_context.rivers) > 10
+    district = incident.map_context.district
+    assert district.name == "Nuwakot district"
+    assert district.coordinates[0] == district.coordinates[-1]
     assert len(result.subjects_by_person) == len(dataset.people)
 
     people = PeopleService(repo, CursorCodec(b"k" * 32))

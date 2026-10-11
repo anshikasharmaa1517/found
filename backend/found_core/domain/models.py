@@ -46,6 +46,13 @@ class Activity(_Entity):
 RIVER_POINTS_MAX = 500
 
 
+def _on_the_globe(value: tuple[tuple[float, float], ...]) -> tuple[tuple[float, float], ...]:
+    for lon, lat in value:
+        if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+            raise ValueError("Each point must be a (lon, lat) pair on the globe.")
+    return value
+
+
 class RiverCourse(_Entity):
     """A river's course to draw on the map, from open map data. It is not the flood's extent."""
 
@@ -62,10 +69,31 @@ class RiverCourse(_Entity):
     def _on_the_globe(
         cls, value: tuple[tuple[float, float], ...]
     ) -> tuple[tuple[float, float], ...]:
-        for lon, lat in value:
-            if not (-180 <= lon <= 180 and -90 <= lat <= 90):
-                raise ValueError("Each point must be a (lon, lat) pair on the globe.")
-        return value
+        return _on_the_globe(value)
+
+
+class MapLine(_Entity):
+    """A line from open map data drawn only for context: another river, or a boundary."""
+
+    name: str | None = Field(default=None, max_length=120)
+    # (lon, lat) points; a boundary ends where it starts.
+    coordinates: tuple[tuple[float, float], ...] = Field(min_length=2, max_length=RIVER_POINTS_MAX)
+
+    @field_validator("coordinates")
+    @classmethod
+    def _on_the_globe(
+        cls, value: tuple[tuple[float, float], ...]
+    ) -> tuple[tuple[float, float], ...]:
+        return _on_the_globe(value)
+
+
+class MapContext(_Entity):
+    """What surrounds the incident on the map: nearby rivers and the district's boundary."""
+
+    # Credit for the map data, shown on the map.
+    attribution: str = Field(min_length=1, max_length=200)
+    rivers: tuple[MapLine, ...] = Field(default=(), max_length=100)
+    district: MapLine | None = None
 
 
 class Incident(_Entity):
@@ -79,6 +107,8 @@ class Incident(_Entity):
     started_at: datetime | None = None
     # The river that flooded, when the incident has one to draw.
     river: RiverCourse | None = None
+    # Other rivers and the district around it, drawn faintly for orientation.
+    map_context: MapContext | None = None
 
 
 class Organization(_Entity):

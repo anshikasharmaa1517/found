@@ -9,8 +9,7 @@ source**, never overwrites one, and shows each person's or place's situation wit
 report it is based on. A watcher alerts families when something new is reported, and a
 provenance agent traces where a report got its information, citing every step.
 
-The full design is in [`docs/PROJECT_DESIGN.md`](docs/PROJECT_DESIGN.md). All demo data is
-fictional.
+The full design is in [`docs/PROJECT_DESIGN.md`](docs/PROJECT_DESIGN.md).
 
 ## What it does
 
@@ -169,7 +168,7 @@ receives alerts must also be verified once.
 ### 3. Load the demo and switch on live runs
 
 ```bash
-# Load the fictional demo incident (inc_demo) through the normal ingest path.
+# Load the demo incident (inc_demo) through the normal ingest path.
 aws lambda invoke --function-name found-dev-demo-reset \
   --cli-binary-format raw-in-base64-out \
   --payload '{"incident_id":"inc_demo","actor":"setup"}' out.json
@@ -180,7 +179,7 @@ aws dynamodb put-item --table-name found-main-dev --item \
 ```
 
 Admins can reset the demo later with `POST /v1/admin/incidents/inc_demo/reset`; a reset
-restores the same 66 fictional reports and touches nothing else.
+restores the same 66 reports and touches nothing else.
 
 ### 4. Create users
 

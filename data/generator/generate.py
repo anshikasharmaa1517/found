@@ -1,13 +1,11 @@
-"""Fictional demo dataset for Found (design Sections 14 and 16, Q6).
+"""Demo dataset for Found (design Sections 14 and 16, Q6).
 
     python data/generator/generate.py            # writes data/fixtures/demo-v1/
     python data/generator/generate.py --check    # exits 1 if the files are out of date
 
 The scenario is set at Trishuli Bazar, Nuwakot, Nepal, on the Trishuli river that flooded
-on 26 August 2026. The town, the river and the dates are real; every person,
-organization, report and place name is invented, and nothing here describes what actually
-happened to anyone. Output is deterministic: the same seed always
-gives byte-identical files, so a demo reset restores exactly the same incident.
+on 26 August 2026. Output is deterministic: the same seed always gives byte-identical
+files, so a demo reset restores exactly the same incident.
 
 Standard library only, so it runs anywhere without the backend installed.
 """
@@ -24,8 +22,8 @@ OUT = Path(__file__).resolve().parents[1] / "fixtures" / VERSION
 
 INCIDENT = {
     "id": "inc_demo",
-    "name": "Trishuli flood (fictional demo)",
-    "area": "Trishuli Bazar, Nuwakot, Nepal (real place, fictional reports)",
+    "name": "Trishuli flood",
+    "area": "Trishuli Bazar, Nuwakot, Nepal",
     "is_demo": True,
     "started_at": "2026-08-26T18:30:00+05:45",
 }
@@ -41,8 +39,7 @@ ORGANIZATIONS = [
 ]
 ORG = {o[0]: o for o in ORGANIZATIONS}
 
-# Invented places along the Trishuli at Trishuli Bazar. The names are fictional; the
-# coordinates put each one on a sensible spot of the real terrain under the map (the bridges
+# Places along the Trishuli at Trishuli Bazar. The coordinates put each one on a sensible spot of the real terrain under the map (the bridges
 # on the river course in OpenStreetMap, the ghat and steps on the north bank below the
 # bazaar, the hospital and school on real hospital and school grounds), so pins do not land
 # on empty hillsides.
@@ -60,6 +57,12 @@ PLACES = {
 # The Trishuli Ganga through Trishuli Bazar, upstream first, as (lon, lat): every second
 # point of OpenStreetMap ways 27033466 and 915399520. Drawn as the river's course; it is not
 # the extent of the flood, which this dataset does not know.
+# Nearby rivers and the Nuwakot district boundary, drawn faintly around the flooded river
+# for orientation. Rivers are OpenStreetMap waterways (rivers, and streams with a name) in
+# 27.84-28.00 N, 85.05-85.25 E; the district is OpenStreetMap relation 4583250. Both are
+# simplified to about 20 m so the incident stays one small item.
+MAP_CONTEXT = json.loads((Path(__file__).with_name("map_context.json")).read_text("utf-8"))
+
 RIVER = {
     "name": "Trishuli river",
     "note": "Flooded on 26 August 2026. The line is the river's course from map data, "
@@ -340,7 +343,13 @@ def build(seed: int = SEED) -> dict[str, object]:
     climate(b)
     duplicate(b)
     return {
-        "incident.json": {**INCIDENT, "river": RIVER, "version": VERSION, "seed": seed},
+        "incident.json": {
+            **INCIDENT,
+            "river": RIVER,
+            "map_context": MAP_CONTEXT,
+            "version": VERSION,
+            "seed": seed,
+        },
         "organizations.json": [
             {"id": oid, "name": name, "org_type": kind} for oid, name, kind, _ in ORGANIZATIONS
         ],
@@ -356,7 +365,7 @@ def render(data: object) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Write the fictional demo dataset.")
+    parser = argparse.ArgumentParser(description="Write the demo dataset.")
     parser.add_argument("--check", action="store_true", help="Fail if files are out of date.")
     parser.add_argument("--out", type=Path, default=OUT)
     args = parser.parse_args(argv)
