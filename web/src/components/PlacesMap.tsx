@@ -14,6 +14,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { useEffect, useRef } from "react";
 
 import { CLIMATE_TYPE_LABELS, plotted, type ClimateFeature } from "../api/climate";
+import type { RiverCourse } from "../api/incidents";
 import { BUCKET_LABELS, BUCKETS, type MapPlace } from "../api/map";
 import { claimTypeLabel, formatTime } from "../labels";
 
@@ -95,13 +96,49 @@ function pin(place: MapPlace, largest: number): HTMLElement {
   return el;
 }
 
+/** The theme's river color; the map paints with plain colors, not CSS variables. */
+function riverColor(): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue("--river").trim();
+  return value || "#1f6feb";
+}
+
+/** The river under the pins: a pale casing so it reads on any basemap, then the line. */
+function drawRiver(map: MapLibreMap, river: RiverCourse) {
+  map.addSource("river", {
+    type: "geojson",
+    attribution: river.attribution,
+    data: {
+      type: "Feature",
+      properties: { name: river.name },
+      geometry: { type: "LineString", coordinates: river.coordinates },
+    },
+  });
+  map.addLayer({
+    id: "river-casing",
+    type: "line",
+    source: "river",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#ffffff", "line-opacity": 0.7, "line-width": 11 },
+  });
+  map.addLayer({
+    id: "river",
+    type: "line",
+    source: "river",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": riverColor(), "line-opacity": 0.85, "line-width": 6 },
+  });
+}
+
 export default function PlacesMap({
   places,
   features = [],
+  river = null,
   styleUrl,
 }: {
   places: MapPlace[];
   features?: ClimateFeature[];
+  /** The river that flooded, drawn under the pins. */
+  river?: RiverCourse | null;
   styleUrl: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -112,6 +149,7 @@ export default function PlacesMap({
     const points: [number, number][] = [
       ...places.map((p): [number, number] => [p.lon, p.lat]),
       ...located.map((f): [number, number] => [f.location.lon, f.location.lat]),
+      ...(river?.coordinates ?? []),
     ];
     const map = new MapLibreMap({
       container: container.current,
@@ -121,6 +159,7 @@ export default function PlacesMap({
       attributionControl: { compact: true },
     });
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+    if (river) map.on("load", () => drawRiver(map, river));
 
     const largest = Math.max(...places.map((p) => p.reports), 1);
     const markers = places.map((place) =>
@@ -159,7 +198,7 @@ export default function PlacesMap({
       for (const marker of markers) marker.remove();
       map.remove();
     };
-  }, [places, features, styleUrl]);
+  }, [places, features, river, styleUrl]);
 
   return <div ref={container} className="map" role="region" aria-label="Map of reported places and conditions" />;
 }

@@ -10,7 +10,7 @@ from found_core.domain.cursor import CursorCodec
 from found_core.domain.enums import ReviewItemType
 from found_core.domain.errors import Forbidden, NotFound
 from found_core.domain.ids import review_item_id
-from found_core.domain.models import Incident
+from found_core.domain.models import Incident, RiverCourse
 from found_core.services.incidents import RECENT_MAX, WITHHELD_KEY, IncidentService
 from found_core.services.ingest import IngestService
 from found_core.services.review import ReviewService
@@ -125,6 +125,7 @@ def test_routes_show_details_and_mask_withheld_reports(world, monkeypatch):
         "area": "Trishuli Bazar",
         "is_demo": True,
         "started_at": None,
+        "river": None,
     }
 
     status, body, _ = call(event("GET", "/v1/incidents/inc_1/recent", claims=family))
@@ -212,3 +213,35 @@ def test_sources_route_lists_each_source(world, monkeypatch):
         )
     )
     assert status == 200 and body == {"reports": []}
+
+
+def test_the_route_returns_the_river_course(world, monkeypatch):
+    repo, service, _, _ = world
+    monkeypatch.setattr(container, "incident_service", lambda: service)
+    river = RiverCourse(
+        name="Trishuli river",
+        note="Flooded on 26 August 2026.",
+        attribution="OpenStreetMap contributors",
+        coordinates=((85.15, 27.93), (85.14, 27.92)),
+    )
+    repo.put_incident(
+        Incident(id="inc_1", name="Trishuli flood", area="Trishuli Bazar", river=river)
+    )
+    family = {"sub": "fam_1", "cognito:groups": "[family]"}
+    status, body, _ = call(event("GET", "/v1/incidents/inc_1", claims=family))
+    assert status == 200
+    assert body["river"] == {
+        "name": "Trishuli river",
+        "note": "Flooded on 26 August 2026.",
+        "attribution": "OpenStreetMap contributors",
+        "coordinates": [[85.15, 27.93], [85.14, 27.92]],
+    }
+
+
+@pytest.mark.parametrize(
+    "coordinates",
+    [((85.15, 27.93),), ((85.15, 27.93), (185.0, 27.9)), ((85.15, 27.93), (85.1, -91.0))],
+)
+def test_a_river_needs_two_points_on_the_globe(coordinates):
+    with pytest.raises(ValueError):
+        RiverCourse(name="R", note="N", attribution="A", coordinates=coordinates)

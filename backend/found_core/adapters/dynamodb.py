@@ -189,8 +189,19 @@ def activity_item(activity: Activity) -> dict[str, Any]:
     }
 
 
+def _decimals(value: Any) -> Any:
+    """Floats as Decimal, at any depth; str() keeps each value exactly as given."""
+    if isinstance(value, float):
+        return Decimal(str(value))
+    if isinstance(value, list):
+        return [_decimals(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _decimals(v) for k, v in value.items()}
+    return value
+
+
 def incident_item(incident: Incident) -> dict[str, Any]:
-    attrs = _attrs(incident)
+    attrs = _decimals(_attrs(incident))
     return {
         **incident_key(incident.id),
         "GSI1PK": "LIST#INCIDENT",

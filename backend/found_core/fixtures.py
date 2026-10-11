@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from found_core.domain.commands import PublishCommand
 from found_core.domain.enums import ExtractionMethod, SourceType, SubjectType
-from found_core.domain.models import Claim, Incident, Organization
+from found_core.domain.models import Claim, Incident, Organization, RiverCourse
 from found_core.domain.normalize import normalize_text
 from found_core.ports.repository import FoundRepository
 from found_core.services.ingest import IngestService
@@ -35,6 +35,7 @@ class IncidentFixture(_Fixture):
     area: str | None = None
     is_demo: bool
     started_at: datetime | None = None
+    river: RiverCourse | None = None
     version: str
     seed: int
 
@@ -112,6 +113,7 @@ def load_dataset(dataset: Dataset, repo: FoundRepository, ingest: IngestService)
             area=incident.area,
             is_demo=incident.is_demo,
             started_at=incident.started_at,
+            river=incident.river,
         )
     )
     orgs = {o.id: o for o in dataset.organizations}

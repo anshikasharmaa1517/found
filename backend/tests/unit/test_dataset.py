@@ -76,7 +76,13 @@ def test_load_goes_through_ingest_and_gives_the_story(loaded):
     repo, _, result = loaded
     dataset = read_dataset()
     assert result.published == len(dataset.reports) and result.replayed == 0
-    assert repo.get_incident("inc_demo").is_demo
+    incident = repo.get_incident("inc_demo")
+    assert incident.is_demo
+    # The flooded river's course comes with the incident, credited to its map data.
+    assert incident.river.name == "Trishuli river"
+    assert "OpenStreetMap" in incident.river.attribution
+    assert "not the extent of the flood" in incident.river.note
+    assert len(incident.river.coordinates) > 50
     assert len(result.subjects_by_person) == len(dataset.people)
 
     people = PeopleService(repo, CursorCodec(b"k" * 32))

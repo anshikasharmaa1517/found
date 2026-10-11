@@ -9,6 +9,7 @@ import {
   type ClimateType,
 } from "../api/climate";
 import { useApi } from "../api/context";
+import { getIncident } from "../api/incidents";
 import {
   BUCKET_LABELS,
   BUCKETS,
@@ -177,6 +178,9 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
   const [climate, reloadClimate] = useLoad(`climate|${incidentId}`, () =>
     getClimateLayer(api, incidentId),
   );
+  // The flooded river comes with the incident; the map works without it.
+  const [incident] = useLoad(`map-incident|${incidentId}`, () => getIncident(api, incidentId));
+  const river = incident.status === "ready" ? (incident.data.river ?? null) : null;
   const [hidden, setHidden] = useState<Set<Layer>>(new Set());
   const features = useMemo(
     () =>
@@ -220,6 +224,14 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
           <p className="notice-box" role="note">
             {state.data.caveat}
           </p>
+          {river && (
+            <p className="river-note">
+              <span className="legend-river" aria-hidden="true" />
+              <span>
+                <strong>{river.name}.</strong> {river.note}
+              </span>
+            </p>
+          )}
           <p className="meta">
             {state.data.located_reports} reports with a place, {state.data.unlocated_reports} without.
             Counts as of {formatTime(state.data.updated_at)}; they refresh every 30 seconds.{" "}
@@ -241,16 +253,17 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
             ))}
           </fieldset>
           {mapStyleUrl ? (
-            (state.data.places.length > 0 || features.length > 0) && (
+            (state.data.places.length > 0 || features.length > 0 || river) && (
               <div className="map-frame">
                 <Suspense fallback={<p className="muted">Loading map</p>}>
                   <PlacesMap
                     places={hidden.has("PEOPLE") ? [] : state.data.places}
                     features={features}
+                    river={river}
                     styleUrl={mapStyleUrl}
                   />
                 </Suspense>
-                <MapLegend />
+                <MapLegend river={river?.name} />
               </div>
             )
           ) : (

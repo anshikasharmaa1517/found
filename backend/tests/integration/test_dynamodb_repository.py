@@ -509,7 +509,7 @@ def test_get_review_item_is_scoped_to_incident(repo):
 
 
 def test_incident_and_organization_round_trip(repo):
-    from found_core.domain.models import Incident
+    from found_core.domain.models import Incident, RiverCourse
 
     assert repo.get_incident("inc_1").id == "inc_1"
     demo = Incident(
@@ -520,6 +520,15 @@ def test_incident_and_organization_round_trip(repo):
     )
     repo.put_incident(demo)
     assert repo.get_incident("inc_demo") == demo and repo.incident_exists("inc_demo")
+    river = RiverCourse(
+        name="Trishuli river",
+        note="Course, not flood extent.",
+        attribution="OpenStreetMap contributors",
+        coordinates=((85.1561354, 27.9362994), (85.1357436, 27.9161586)),
+    )
+    # Points are stored as numbers and come back exactly as given.
+    repo.put_incident(demo.model_copy(update={"river": river}))
+    assert repo.get_incident("inc_demo").river == river
     assert repo.get_incident("inc_x") is None
     org = Organization(
         id="org_h", incident_id="inc_demo", name="H", name_norm="h", org_type="HOSPITAL"

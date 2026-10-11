@@ -2,12 +2,22 @@
 
 import type { ApiClient } from "./client";
 
+/** A river's course from open map data. It is never the extent of a flood. */
+export interface RiverCourse {
+  name: string;
+  note: string;
+  attribution: string;
+  /** [lon, lat] points, upstream first. */
+  coordinates: [number, number][];
+}
+
 export interface IncidentInfo {
   id: string;
   name: string;
   area: string | null;
   is_demo: boolean;
   started_at: string | null;
+  river?: RiverCourse | null;
 }
 
 interface RecentBase {

@@ -6,7 +6,14 @@ import type { MapPlace } from "../api/map";
 import PlacesMap from "./PlacesMap";
 
 const made = vi.hoisted(() => ({
-  maps: [] as { options: Record<string, unknown>; fitted: unknown; removed: boolean }[],
+  maps: [] as {
+    options: Record<string, unknown>;
+    fitted: unknown;
+    removed: boolean;
+    handlers: Record<string, () => void>;
+    sources: Record<string, Record<string, unknown>>;
+    layers: { id: string; paint: Record<string, unknown> }[];
+  }[],
   markers: [] as { element: HTMLElement; at: unknown; popup: HTMLElement | null; removed: boolean }[],
 }));
 
@@ -14,10 +21,20 @@ vi.mock("maplibre-gl", () => {
   class Map {
     entry: (typeof made.maps)[number];
     constructor(options: Record<string, unknown>) {
-      this.entry = { options, fitted: null, removed: false };
+      this.entry = { options, fitted: null, removed: false, handlers: {}, sources: {}, layers: [] };
       made.maps.push(this.entry);
     }
     addControl() {}
+    on(event: string, handler: () => void) {
+      this.entry.handlers[event] = handler;
+    }
+    addSource(id: string, source: Record<string, unknown>) {
+      this.entry.sources[id] = source;
+    }
+    addLayer(layer: { id: string; paint: Record<string, unknown> }) {
+      this.entry.layers.push(layer);
+    }
+    resize() {}
     fitBounds(bounds: unknown) {
       this.entry.fitted = bounds;
     }
@@ -150,5 +167,39 @@ describe("PlacesMap", () => {
     );
     expect(marker.popup).toHaveTextContent("District Police Demo says Bridge damaged");
     expect(marker.popup!.querySelector("b")).toBeNull();
+  });
+
+  it("draws the flooded river under the pins once the map loads, credited", () => {
+    made.maps.length = 0;
+    const river = {
+      name: "Trishuli river",
+      note: "Course, not flood extent.",
+      attribution: "River course: OpenStreetMap contributors (ODbL)",
+      coordinates: [
+        [85.1561, 27.9363],
+        [85.1357, 27.9162],
+      ] as [number, number][],
+    };
+    render(<PlacesMap styleUrl="s" places={[place({ lat: 27.92, lon: 85.14 })]} river={river} />);
+    const map = made.maps[0]!;
+    // Layers can only be added to a loaded style.
+    expect(map.layers).toEqual([]);
+    map.handlers.load!();
+    const source = map.sources.river as { attribution: string; data: { geometry: unknown } };
+    expect(source.attribution).toBe("River course: OpenStreetMap contributors (ODbL)");
+    expect(source.data.geometry).toEqual({ type: "LineString", coordinates: river.coordinates });
+    expect(map.layers.map((l) => l.id)).toEqual(["river-casing", "river"]);
+    // The view fits the river as well as the pins.
+    expect((map.fitted as { points: unknown[] }).points).toEqual([
+      [85.14, 27.92],
+      [85.1561, 27.9363],
+      [85.1357, 27.9162],
+    ]);
+  });
+
+  it("adds no river when the incident has none", () => {
+    made.maps.length = 0;
+    render(<PlacesMap styleUrl="s" places={[place({})]} />);
+    expect(made.maps[0]!.handlers.load).toBeUndefined();
   });
 });

@@ -11,14 +11,17 @@ vi.mock("../components/PlacesMap", () => ({
   default: ({
     places,
     features = [],
+    river = null,
     styleUrl,
   }: {
     places: MapPlace[];
     features?: ClimateFeature[];
+    river?: { name: string } | null;
     styleUrl: string;
   }) => (
     <div data-testid="map" data-style={styleUrl}>
       {places.length} pins, {features.length} conditions
+      {river && `, ${river.name}`}
     </div>
   ),
 }));
@@ -141,6 +144,34 @@ describe("map page", () => {
 
     await user.click(chips[0]!);
     expect(screen.queryByRole("region", { name: "Reports at Old Bridge" })).toBeNull();
+  });
+
+  it("marks the flooded river on the map, with what the line is not", async () => {
+    const { api } = routedApi({
+      [PATH]: () => body({ places: [] }),
+      [CLIMATE]: climate([]),
+      "/v1/incidents/inc_1": () => ({
+        id: "inc_1",
+        name: "Trishuli flood (fictional demo)",
+        area: "Trishuli Bazar",
+        is_demo: true,
+        started_at: null,
+        river: {
+          name: "Trishuli river",
+          note: "Flooded on 26 August 2026. The line is the river's course, not the flood's extent.",
+          attribution: "OpenStreetMap contributors",
+          coordinates: [
+            [85.15, 27.93],
+            [85.14, 27.92],
+          ],
+        },
+      }),
+    });
+    renderMap(api, "https://tiles.example/style");
+    // No pins yet, but the river alone is worth a map.
+    expect(await screen.findByTestId("map")).toHaveTextContent("0 pins, 0 conditions, Trishuli river");
+    expect(screen.getByText(/not the flood's extent\./)).toBeInTheDocument();
+    expect(screen.getByText(/Trishuli river that flooded/)).toBeInTheDocument();
   });
 
   it("draws the map only when a basemap is configured", async () => {

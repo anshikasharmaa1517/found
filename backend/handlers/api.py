@@ -254,6 +254,7 @@ def get_incident(incident_id: str) -> Response:
             "area": incident.area,
             "is_demo": incident.is_demo,
             "started_at": _iso(incident.started_at),
+            "river": incident.river.model_dump(mode="json") if incident.river else None,
         },
     )
 

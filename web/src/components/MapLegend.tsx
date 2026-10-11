@@ -5,11 +5,17 @@ function startsOpen(): boolean {
 }
 
 /** What the pins mean. Sits over the map and folds away. */
-export function MapLegend() {
+export function MapLegend({ river }: { river?: string | null }) {
   return (
     <details className="map-legend" open={startsOpen()}>
       <summary>Legend</summary>
       <ul>
+        {river && (
+          <li>
+            <span className="legend-river" aria-hidden="true" />
+            {river} that flooded (its course, not the flood&apos;s extent)
+          </li>
+        )}
         <li>
           <span className="legend-pin" aria-hidden="true" />
           Reports about people at a place

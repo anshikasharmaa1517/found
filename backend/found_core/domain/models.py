@@ -42,6 +42,32 @@ class Activity(_Entity):
     created_at: datetime
 
 
+# Points kept per river line: enough for a town's stretch, small enough for one item.
+RIVER_POINTS_MAX = 500
+
+
+class RiverCourse(_Entity):
+    """A river's course to draw on the map, from open map data. It is not the flood's extent."""
+
+    name: str = Field(min_length=1, max_length=120)
+    # Shown with the line, for example when the river flooded and what the line is not.
+    note: str = Field(min_length=1, max_length=300)
+    # Credit for the map data, shown on the map.
+    attribution: str = Field(min_length=1, max_length=200)
+    # (lon, lat) points along the channel, upstream first.
+    coordinates: tuple[tuple[float, float], ...] = Field(min_length=2, max_length=RIVER_POINTS_MAX)
+
+    @field_validator("coordinates")
+    @classmethod
+    def _on_the_globe(
+        cls, value: tuple[tuple[float, float], ...]
+    ) -> tuple[tuple[float, float], ...]:
+        for lon, lat in value:
+            if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+                raise ValueError("Each point must be a (lon, lat) pair on the globe.")
+        return value
+
+
 class Incident(_Entity):
     """A disaster incident. Only a demo incident may be reset."""
 
@@ -51,6 +77,8 @@ class Incident(_Entity):
     area: str | None = None
     is_demo: bool = False
     started_at: datetime | None = None
+    # The river that flooded, when the incident has one to draw.
+    river: RiverCourse | None = None
 
 
 class Organization(_Entity):
