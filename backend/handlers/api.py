@@ -264,7 +264,7 @@ def recent_reports(incident_id: str) -> Response:
     if limit is not None and not limit.isdigit():
         raise BadRequest("limit must be a whole number.")
     reports = container.incident_service().recent_reports(
-        _caller(), incident_id, int(limit) if limit else 10
+        _caller(), incident_id, int(limit) if limit else 10, source_id=_query("source_id")
     )
     return _json(
         HTTPStatus.OK,
@@ -293,6 +293,29 @@ def recent_reports(incident_id: str) -> Response:
                     "excerpt": excerpt(r.claim.original_text),
                 }
                 for r in reports
+            ]
+        },
+    )
+
+
+@app.get("/v1/incidents/<incident_id>/sources")
+def incident_sources(incident_id: str) -> Response:
+    summaries = container.incident_service().sources(_caller(), incident_id)
+    return _json(
+        HTTPStatus.OK,
+        {
+            "sources": [
+                {
+                    "id": s.source.id,
+                    "name": s.source.name,
+                    "source_type": s.source.source_type.value,
+                    "organization_id": s.source.organization_id,
+                    "reports": s.reports,
+                    "by_type": s.by_type,
+                    "cited_by": s.cited_by,
+                    "latest_at": _iso(s.latest_at),
+                }
+                for s in summaries
             ]
         },
     )

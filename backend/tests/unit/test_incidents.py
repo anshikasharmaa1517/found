@@ -11,7 +11,7 @@ from found_core.domain.enums import ReviewItemType
 from found_core.domain.errors import Forbidden, NotFound
 from found_core.domain.ids import review_item_id
 from found_core.domain.models import Incident
-from found_core.services.incidents import RECENT_MAX, IncidentService
+from found_core.services.incidents import RECENT_MAX, WITHHELD_KEY, IncidentService
 from found_core.services.ingest import IngestService
 from found_core.services.review import ReviewService
 from found_core.services.watch import WatchService
@@ -21,6 +21,7 @@ REVIEWER = Caller(user_id="rev_1", groups=frozenset({"reviewer"}))
 FAMILY = Caller(user_id="fam_1", groups=frozenset({"family"}))
 OUTSIDER = Caller(user_id="pub_x", groups=frozenset({"publisher"}), org_id="org_x")
 HOSPITAL = {"org_id": "org_h", "org_name": "Central Hospital Demo", "org_type": "HOSPITAL"}
+RELIEF = {"org_id": "org_r", "org_name": "Flood Relief Demo", "org_type": "NGO"}
 
 
 class Clock:
@@ -42,12 +43,12 @@ def world():
     ingest = IngestService(repo, clock=clock, sleep=lambda _: None)
     watch = WatchService(repo, clock=clock)
 
-    def report(ref, name, claim_type, text):
+    def report(ref, name, claim_type, text, org=HOSPITAL):
         claim = ingest.publish(
             PublishCommand.parse(
                 {
                     "incident_id": "inc_1",
-                    **HOSPITAL,
+                    **org,
                     "actor": "pub",
                     "subject": {"type": "PERSON", "new": {"name": name}},
                     "claim_type": claim_type,
@@ -134,3 +135,80 @@ def test_routes_show_details_and_mask_withheld_reports(world, monkeypatch):
 
     bad = call(event("GET", "/v1/incidents/inc_1/recent", claims=family, query={"limit": "x"}))
     assert bad[0] == 400
+
+
+def test_sources_are_busiest_first_with_counts_and_relays(world):
+    _, service, report, _ = world
+    report("R-1", "Maya Rawat", "FOUND_SAFE", "Maya Rawat admitted to ward 3.")
+    report("R-2", "Arjun Negi", "INJURED", "Arjun Negi treated for cuts.")
+    relay = report(
+        "V-1",
+        "Maya Rawat",
+        "FOUND_SAFE",
+        "According to Central Hospital Demo, Maya Rawat is safe.",
+        org=RELIEF,
+    )
+    hospital, relief = service.sources(REVIEWER, "inc_1")
+    assert (hospital.source.name, hospital.reports, hospital.cited_by) == (
+        "Central Hospital Demo",
+        2,
+        1,
+    )
+    assert hospital.by_type == {"FOUND_SAFE": 1, "INJURED": 1}
+    assert (relief.reports, relief.cited_by) == (1, 0)
+    assert relief.latest_at == relay.ingested_at
+    assert hospital.latest_at < relay.ingested_at
+
+
+def test_recent_reports_can_come_from_one_source(world):
+    _, service, report, _ = world
+    report("R-1", "Maya Rawat", "FOUND_SAFE", "Maya Rawat admitted to ward 3.")
+    relay = report("V-1", "Arjun Negi", "MISSING", "Arjun Negi not found.", org=RELIEF)
+    (only,) = service.recent_reports(REVIEWER, "inc_1", source_id=relay.source_id)
+    assert only.claim.id == relay.id
+    assert service.recent_reports(REVIEWER, "inc_1", source_id="src_none") == []
+
+
+def test_source_counts_hide_the_type_of_held_reports(world):
+    _, service, report, _ = world
+    report("R-1", "Ramesh Thapliyal", "DECEASED", "Declared dead at 03:20.")
+    (mine,) = service.sources(FAMILY, "inc_1")
+    assert mine.by_type == {WITHHELD_KEY: 1}
+    (theirs,) = service.sources(REVIEWER, "inc_1")
+    assert theirs.by_type == {"DECEASED": 1}
+    with pytest.raises(Forbidden):
+        service.sources(OUTSIDER, "inc_1")
+
+
+def test_sources_route_lists_each_source(world, monkeypatch):
+    _, service, report, _ = world
+    monkeypatch.setattr(container, "incident_service", lambda: service)
+    claim = report("R-1", "Maya Rawat", "FOUND_SAFE", "Maya Rawat admitted to ward 3.")
+    family = {"sub": "fam_1", "cognito:groups": "[family]"}
+
+    status, body, _ = call(event("GET", "/v1/incidents/inc_1/sources", claims=family))
+    assert status == 200
+    assert body == {
+        "sources": [
+            {
+                "id": claim.source_id,
+                "name": "Central Hospital Demo",
+                "source_type": "HOSPITAL",
+                "organization_id": "org_h",
+                "reports": 1,
+                "by_type": {"FOUND_SAFE": 1},
+                "cited_by": 0,
+                "latest_at": "2026-10-05T10:15:01Z",
+            }
+        ]
+    }
+
+    status, body, _ = call(
+        event(
+            "GET",
+            "/v1/incidents/inc_1/recent",
+            claims=family,
+            query={"source_id": "src_none"},
+        )
+    )
+    assert status == 200 and body == {"reports": []}
