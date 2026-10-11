@@ -322,4 +322,52 @@ describe("app shell", () => {
     await user.click(screen.getByLabelText("Reports"));
     expect(screen.getByRole("img", { name: "Graph of 4 records and 1 links" })).toBeInTheDocument();
   });
+
+  it("publishes the hospital report from step 3, once, as in Trace", async () => {
+    let published = false;
+    const timeline = () => {
+      return {
+        person: { id: "per_1", name: "Sita Tamang", age: 24 },
+        summary: { label: "", basis: "", cited_claim_id: null, conflicts: [], needs_review: false },
+        identity: [],
+        entries: published
+          ? [
+              {
+                withheld: false,
+                claim_id: "clm_2",
+                seq: 2,
+                claim_type: "FOUND_SAFE",
+                value: null,
+                source_id: "src_h",
+                source: "Central Hospital",
+                reported_at: null,
+                relation: "UPDATE",
+                excerpt: "Sita Tamang admitted.",
+              },
+            ]
+          : [],
+        next_cursor: null,
+      };
+    };
+    const publish = vi.fn(() => {
+      published = true;
+      return { incident_id: "inc_demo", claim_ids: ["clm_2"], published: 1, replayed: 0 };
+    });
+    const { api } = routes(
+      { "/v1/people/per_1/timeline": timeline },
+      { "/v1/incidents/inc_demo/demo/hospital-update": publish },
+    );
+    const family = userFromClaims({ sub: "f", "cognito:groups": ["family"] });
+    renderApp(as(family), "/incidents/inc_demo", api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /Hospital says safe/ }));
+    await user.click(screen.getByRole("button", { name: "Publish the hospital report" }));
+    expect(await screen.findByText("Hospital report published")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See the hospital report" })).toHaveAttribute(
+      "href",
+      "/people/per_1#entry-clm_2",
+    );
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Publish the hospital report" })).toBeNull();
+  });
 });

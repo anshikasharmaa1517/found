@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { resetDemo } from "../api/admin";
 import { useApi } from "../api/context";
+import { publishDemoHospitalUpdate } from "../api/incidents";
 import { getTimeline, listPeople, type VisibleEntry } from "../api/people";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
@@ -68,14 +69,14 @@ const STEPS = [
   {
     short: "Hospital says safe",
     title: "The hospital says she is safe",
-    text: "Central Hospital reports Sita admitted and stable. Her page now cites that report, and still shows the police report that came first.",
+    text: "Central Hospital reports Sita admitted and stable. The police report still says missing, so Found shows both side by side and alerts everyone following her.",
     icon: <HospitalIcon size={24} />,
-    note: "Found stores the report, then the watcher finds everyone following Sita and creates one alert each. A report of a death is held for a reviewer before anyone is alerted.",
+    note: "This button publishes a prepared, fictional hospital report through the normal path: Found stores it, then the watcher finds everyone following Sita and creates one alert each. Pressing it again publishes nothing new.",
   },
   {
     short: "Where did it come from?",
-    title: "Where did the last report come from?",
-    text: "Flood Relief also says Sita is safe, citing the hospital. The agent traces it and finds a relay: helpful, but not independent confirmation.",
+    title: "Where did this report come from?",
+    text: "Flood Relief says Sita is missing, \"according to District Police\". The agent checks who it quotes and compares it with that source: a relay, never independent confirmation.",
     icon: <SearchIcon size={24} />,
     note: "The model only labels who a report quotes. Code decides what happens next, and a person makes the final call. Recorded runs are labelled REPLAYED.",
   },
@@ -147,11 +148,27 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
   const reviewer = hasRole(user, "reviewer", "admin");
   const [step, setStep] = useState(0);
   const [hidden, setHidden] = useState(storyHidden);
-  const [story] = useLoad(`story|${incidentId}`, () => loadStory(api, incidentId));
+  const [story, , reloadStory] = useLoad(`story|${incidentId}`, () => loadStory(api, incidentId));
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
   if (story.status !== "ready" || story.data === null) return null;
   const data = story.data;
   const person = `/people/${encodeURIComponent(data.sitaId)}`;
   const current = STEPS[step]!;
+
+  async function publishHospital() {
+    setPublishing(true);
+    setPublishError("");
+    try {
+      await publishDemoHospitalUpdate(api, incidentId);
+      // Read the story again, so the step shows the report it just published.
+      reloadStory();
+    } catch (err) {
+      setPublishError(asApiError(err).message);
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   function toggleHidden() {
     rememberHidden(!hidden);
@@ -186,13 +203,28 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
           </Link>
         ) : null;
       case 2:
-        return (
-          <Link
-            className="button-link primary large"
-            to={data.hospitalClaimId ? `${person}#entry-${data.hospitalClaimId}` : person}
+        return data.hospitalClaimId ? (
+          <>
+            <span className="pill ok story-done">
+              <CheckIcon size={14} />
+              Hospital report published
+            </span>
+            <Link
+              className="button-link large"
+              to={`${person}#entry-${data.hospitalClaimId}`}
+            >
+              See the hospital report
+            </Link>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="primary large"
+            onClick={publishHospital}
+            disabled={publishing}
           >
-            See the hospital report
-          </Link>
+            {publishing ? "Publishing" : "Publish the hospital report"}
+          </button>
         );
       default:
         return reviewer && data.relayClaimId ? (
@@ -258,6 +290,11 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
           </div>
           <div className="story-actions">
             {action()}
+            {step === 2 && publishError && (
+              <span className="field-error" role="alert">
+                {publishError}
+              </span>
+            )}
             {step < STEPS.length - 1 && (
               <button type="button" className="ghost large" onClick={() => setStep(step + 1)}>
                 Next step

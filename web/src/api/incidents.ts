@@ -54,6 +54,17 @@ export type RecentReport =
     })
   | (RecentBase & { withheld: true; notice: string });
 
+/**
+ * The demo story's step 3: publish the prepared hospital report, as its organization.
+ * Demo incident only; pressing twice publishes nothing new.
+ */
+export function publishDemoHospitalUpdate(
+  api: ApiClient,
+  incidentId: string,
+): Promise<{ incident_id: string; claim_ids: string[]; published: number; replayed: number }> {
+  return api.post(`/v1/incidents/${encodeURIComponent(incidentId)}/demo/hospital-update`);
+}
+
 export function getIncident(api: ApiClient, incidentId: string): Promise<IncidentInfo> {
   return api.get<IncidentInfo>(`/v1/incidents/${encodeURIComponent(incidentId)}`);
 }
