@@ -459,3 +459,46 @@ def test_map_of_unknown_incident_is_404(repo):
 def test_location_with_half_a_coordinate_is_422(repo):
     status, body, _ = publish({**BODY, "location": {"name": "Old Bridge", "lat": 30.7}})
     assert status == 422 and body["error"]["code"] == "VALIDATION_FAILED"
+
+
+def test_timeline_lists_source_checks_for_reviewers_only(sita, repo):
+    from datetime import UTC, datetime
+
+    from found_core.domain.models import Investigation
+
+    _, body, _ = get(f"/v1/people/{sita}/timeline")
+    hospital = body["entries"][1]["claim_id"]
+    repo.put_investigation(
+        Investigation(
+            id="inv_1",
+            incident_id="inc_1",
+            claim_id=hospital,
+            fingerprint="fp",
+            mode="REPLAYED",
+            status="NEEDS_REVIEW",
+            model_id="m",
+            prompt_version="p",
+            agent_version="a",
+            attribution="RELAY",
+            summary="The report relays another source.",
+            created_by="rev_1",
+            queued_at=datetime(2026, 10, 3, 4, 0, tzinfo=UTC),
+        )
+    )
+    _, body, _ = get(f"/v1/people/{sita}/timeline")
+    assert body["investigations"] == [
+        {
+            "id": "inv_1",
+            "claim_id": hospital,
+            "mode": "REPLAYED",
+            "status": "NEEDS_REVIEW",
+            "attribution": "RELAY",
+            "comparison": None,
+            "summary": "The report relays another source.",
+            "review_status": None,
+            "queued_at": "2026-10-03T04:00:00Z",
+            "finished_at": None,
+        }
+    ]
+    _, family, _ = get(f"/v1/people/{sita}/timeline", claims=FAMILY_CLAIMS)
+    assert family["investigations"] == []

@@ -430,6 +430,21 @@ def get_timeline(person_id: str) -> Response:
             "summary": summary_view(profile),
             "identity": identity_view(profile),
             "entries": [entry_view(profile, e) for e in timeline.entries],
+            "investigations": [
+                {
+                    "id": i.id,
+                    "claim_id": i.claim_id,
+                    "mode": i.mode.value,
+                    "status": i.status.value,
+                    "attribution": i.attribution.value if i.attribution else None,
+                    "comparison": i.comparison.value if i.comparison else None,
+                    "summary": i.summary,
+                    "review_status": i.review_status.value if i.review_status else None,
+                    "queued_at": _iso(i.queued_at),
+                    "finished_at": _iso(i.finished_at),
+                }
+                for i in timeline.investigations
+            ],
             "next_cursor": timeline.next_cursor,
         },
     )

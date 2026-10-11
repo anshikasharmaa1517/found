@@ -12,7 +12,14 @@ from found_core.domain.cursor import CursorCodec, parse_limit
 from found_core.domain.enums import Relation, ReviewItemType, ReviewStatus, SubjectType
 from found_core.domain.errors import BadRequest, NotFound
 from found_core.domain.ids import review_item_id
-from found_core.domain.models import Claim, IdentityDecision, Location, Source, Subject
+from found_core.domain.models import (
+    Claim,
+    IdentityDecision,
+    Investigation,
+    Location,
+    Source,
+    Subject,
+)
 from found_core.domain.normalize import name_tokens
 from found_core.domain.rules import CitedSummary, age_matches, relations, report_order, summarize
 from found_core.domain.visibility import is_sensitive, masked_summary, sees_sensitive, withheld_ids
@@ -82,6 +89,8 @@ class Timeline:
     profile: PersonProfile
     entries: list[TimelineEntry]
     next_cursor: str | None
+    # Source checks on this person's reports, oldest first. Reviewer work: empty for others.
+    investigations: tuple[Investigation, ...] = ()
 
 
 def _parse_age(raw: str | None) -> int | None:
@@ -237,8 +246,22 @@ class PeopleService:
         if start + page_size < len(ordered):
             next_cursor = self._cursors.encode(scope, {"s": page[-1].seq})
         profile = self._profile(person, claims, caller)
+        investigations: tuple[Investigation, ...] = ()
+        if sees_sensitive(caller):
+            mine = {c.id for c in claims}
+            investigations = tuple(
+                sorted(
+                    (
+                        i
+                        for i in self._repo.list_incident_investigations(person.incident_id)
+                        if i.claim_id in mine
+                    ),
+                    key=lambda i: (i.queued_at, i.id),
+                )
+            )
         return Timeline(
             profile=profile,
+            investigations=investigations,
             entries=[
                 TimelineEntry(
                     claim=c, relation=relation_of[c.id], withheld=c.id in profile.withheld
