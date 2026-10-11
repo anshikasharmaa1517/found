@@ -20,6 +20,7 @@ import { TraceButton } from "../components/TraceButton";
 import { PageHeader, SkeletonRows } from "../components/ui";
 import { rememberedIncident } from "../incident";
 import {
+  ATTRIBUTION_LABELS,
   claimTypeLabel,
   formatTime,
   IDENTITY_DECISION_LABELS,
@@ -109,7 +110,8 @@ function SourceChecks({
       <h2 id="source-checks-title">Where did this report come from?</h2>
       <p className="meta">
         A source check asks who a report is quoting, then compares it with that source&apos;s own
-        reports. A relay is never treated as independent confirmation.
+        reports when it can. A person makes the final call, and a relay is never treated as
+        independent confirmation.
       </p>
       {canTrace ? (
         <ul className="check-list">
@@ -124,16 +126,31 @@ function SourceChecks({
                 </div>
                 <p className="meta">{entry.excerpt}</p>
                 {latest ? (
-                  <p>
-                    <Link to={`/investigations/${encodeURIComponent(latest.id)}`}>
-                      See the source check
-                    </Link>{" "}
-                    <span className="pill accent">
-                      {latest.mode} · {labelFor(INVESTIGATION_STATUS_LABELS, latest.status)}
-                    </span>
-                  </p>
+                  <div className="check-result" role="status">
+                    <p className="change-head">
+                      <span className={`pill ${latest.mode === "LIVE" ? "ok" : ""}`}>{latest.mode}</span>
+                      <strong>{labelFor(INVESTIGATION_STATUS_LABELS, latest.status)}</strong>
+                    </p>
+                    <p>
+                      {latest.summary ??
+                        (latest.attribution
+                          ? labelFor(ATTRIBUTION_LABELS, latest.attribution)
+                          : "No finding recorded yet.")}
+                    </p>
+                    <p className="meta">
+                      Recorded run: {formatTime(latest.finished_at ?? latest.queued_at)}
+                      <span className="meta-sep">
+                        <Link to={`/investigations/${encodeURIComponent(latest.id)}`}>
+                          See the source check
+                        </Link>
+                      </span>
+                    </p>
+                  </div>
                 ) : (
-                  <TraceButton claimId={entry.claim_id} />
+                  <>
+                    <p className="meta">No check recorded yet for this report.</p>
+                    <TraceButton claimId={entry.claim_id} />
+                  </>
                 )}
               </li>
             );

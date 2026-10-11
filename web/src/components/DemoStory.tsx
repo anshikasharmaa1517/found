@@ -17,6 +17,7 @@ import {
   RestartIcon,
   SearchIcon,
 } from "./icons";
+import { InfoTip } from "./InfoTip";
 import { TraceButton } from "./TraceButton";
 
 interface StoryData {
@@ -55,24 +56,28 @@ const STEPS = [
     title: "Sita is reported missing",
     text: "After the flood, the police report Sita Tamang, 24, missing near the Old Bridge. Found keeps the report with who said it and when.",
     icon: <PinIcon size={24} />,
+    note: "The pin marks the bridge named in the police report. It is not live tracking.",
   },
   {
     short: "Same person?",
     title: "Is this the same person?",
     text: "A volunteer desk reports a Sita T., 24, at the same bridge. The resolver proposes a match with its reasons; a reviewer decides, and the records are never merged.",
     icon: <PersonSearchIcon size={24} />,
+    note: "Names alone are never enough. The resolver compares given name, surname or initial, age and place, and lists what it could not check. The decision records who made it and when.",
   },
   {
     short: "Hospital says safe",
     title: "The hospital says she is safe",
     text: "Central Hospital reports Sita admitted and stable. Her page now cites that report, and still shows the police report that came first.",
     icon: <HospitalIcon size={24} />,
+    note: "Found stores the report, then the watcher finds everyone following Sita and creates one alert each. A report of a death is held for a reviewer before anyone is alerted.",
   },
   {
     short: "Where did it come from?",
     title: "Where did the last report come from?",
     text: "Flood Relief also says Sita is safe, citing the hospital. The agent traces it and finds a relay: helpful, but not independent confirmation.",
     icon: <SearchIcon size={24} />,
+    note: "The model only labels who a report quotes. Code decides what happens next, and a person makes the final call. Recorded runs are labelled REPLAYED.",
   },
 ] as const;
 
@@ -245,7 +250,10 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
             <p className="eyebrow accent">
               Step {step + 1} of {STEPS.length}
             </p>
-            <h2>{current.title}</h2>
+            <div className="story-title">
+              <h2>{current.title}</h2>
+              <InfoTip label="More about this step">{current.note}</InfoTip>
+            </div>
             <p>{current.text}</p>
           </div>
           <div className="story-actions">

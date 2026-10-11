@@ -364,6 +364,12 @@ describe("person page", () => {
       "href",
       "/investigations/inv_9",
     );
+    // The latest result shows in place: mode, status and the finding.
+    const result = within(checks).getByRole("status");
+    expect(result).toHaveTextContent("REPLAYED");
+    expect(result).toHaveTextContent("Needs a reviewer");
+    expect(result).toHaveTextContent("The report appears to relay another source.");
+    expect(within(checks).getByText("No check recorded yet for this report.")).toBeInTheDocument();
     // The police report has no check yet, so a reviewer can start one.
     expect(within(checks).getByRole("button", { name: "Trace where this came from" })).toBeInTheDocument();
   });

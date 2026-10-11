@@ -156,6 +156,10 @@ describe("app shell", () => {
     expect(screen.getByRole("link", { name: "Map" })).toHaveAttribute("aria-current", "page");
 
     expect(await screen.findByRole("heading", { name: "Sita is reported missing" })).toBeInTheDocument();
+    // Caveats sit behind an (i), one click away.
+    expect(screen.getByText(/It is not live tracking/)).not.toBeVisible();
+    await userEvent.setup().click(screen.getByLabelText("More about this step"));
+    expect(screen.getByText(/It is not live tracking/)).toBeVisible();
     expect(screen.getByRole("link", { name: "See every report about Sita" })).toHaveAttribute(
       "href",
       "/people/per_1",

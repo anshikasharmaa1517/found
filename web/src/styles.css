@@ -2400,6 +2400,69 @@ button.story-step.active {
   }
 }
 
+.story-title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+/* A small (i) that opens a caveat. */
+
+.info-tip {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+
+.info-tip summary {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.info-tip summary::-webkit-details-marker {
+  display: none;
+}
+
+.info-tip summary:hover,
+.info-tip[open] summary {
+  color: var(--accent);
+  background: var(--hover);
+}
+
+.info-tip p {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--s-1));
+  z-index: 30;
+  width: min(20rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-float);
+  font-size: var(--fs-13);
+  color: var(--text-2);
+}
+
+.check-result {
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-left: 2px solid var(--g-investigation);
+  background: var(--sunken);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+}
+
+.check-result p {
+  margin: 0 0 var(--s-1);
+}
+
 /* The newest alert, large, under the tabs. */
 
 .alert-banner {
