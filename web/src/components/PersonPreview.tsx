@@ -2,10 +2,13 @@ import { Link } from "react-router-dom";
 
 import { useApi } from "../api/context";
 import { getTimeline } from "../api/people";
+import { useUser } from "../auth/context";
+import { hasRole } from "../auth/user";
 import { claimTypeLabel } from "../labels";
 import { useLoad } from "../useLoad";
 import { ErrorNotice } from "./ErrorNotice";
 import { AlertIcon } from "./icons";
+import { OpenMatches } from "./MatchCard";
 import { WhatChanged } from "./WhatChanged";
 import { SkeletonRows } from "./ui";
 
@@ -20,12 +23,13 @@ export function PersonPreview({
   incidentId?: string;
 }) {
   const api = useApi();
+  const user = useUser();
   const [state, retry] = useLoad(`preview|${personId}`, () =>
     getTimeline(api, personId, { order: "asc", limit: PREVIEW_ENTRIES }),
   );
   if (state.status === "loading") return <SkeletonRows label="Loading the person" rows={4} />;
   if (state.status === "error") return <ErrorNotice error={state.error} onRetry={retry} />;
-  const { person, summary, entries, investigations, next_cursor } = state.data;
+  const { person, summary, entries, investigations, open_matches, next_cursor } = state.data;
   const full = `/people/${encodeURIComponent(person.id)}`;
   return (
     <section className="preview" aria-labelledby="preview-title" aria-live="polite">
@@ -40,6 +44,15 @@ export function PersonPreview({
         <strong>{summary.label}</strong>
         <p className="meta">{summary.basis}</p>
       </div>
+      <OpenMatches
+        person={person}
+        matches={open_matches ?? []}
+        reviewHref={
+          incidentId && hasRole(user, "reviewer", "admin")
+            ? `/incidents/${encodeURIComponent(incidentId)}/review?type=identity`
+            : undefined
+        }
+      />
       {summary.conflicts.length > 0 && (
         <div className="disagree" role="note">
           <AlertIcon />

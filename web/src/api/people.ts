@@ -107,6 +107,14 @@ export interface TimelineInvestigation {
   finished_at: string | null;
 }
 
+/** An undecided proposal that this person and another record are the same. */
+export interface OpenMatch {
+  pair_key: string;
+  other: { id: string; name: string; age: number | null };
+  reasons: string[];
+  proposed_by: string;
+}
+
 export interface Timeline {
   person: PersonRow;
   summary: Summary;
@@ -114,6 +122,8 @@ export interface Timeline {
   entries: TimelineEntry[];
   /** Empty, or missing, for roles that do not review. */
   investigations?: TimelineInvestigation[];
+  /** Undecided matches that include this person, shown to every role. */
+  open_matches?: OpenMatch[];
   next_cursor: string | null;
 }
 

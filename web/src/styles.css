@@ -1393,7 +1393,7 @@ button.menu-button[aria-expanded="true"] {
 }
 
 .crumb a::before {
-  content: "90";
+  content: "\2190";
   margin-right: var(--s-1);
 }
 

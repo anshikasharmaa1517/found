@@ -7,6 +7,7 @@ import { listReviewQueue } from "../api/review";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { MatchCard } from "../components/MatchCard";
 import {
   AlertIcon,
   CheckIcon,
@@ -18,7 +19,7 @@ import { PersonPreview } from "../components/PersonPreview";
 import { PersonStatusDot } from "../components/PersonStatusDot";
 import { Empty, PageHeader, SkeletonRows } from "../components/ui";
 import { rememberIncident } from "../incident";
-import { labelFor, MATCH_REASON_LABELS } from "../labels";
+import { nameInitials } from "../names";
 import { useLoad } from "../useLoad";
 import { usePager } from "../usePager";
 
@@ -33,15 +34,6 @@ function statusTone(person: PersonRow): string {
   const status = person.status;
   if (!status || status.withheld) return "";
   return TONE[status.claim_type ?? ""] ?? "";
-}
-
-/** "Sita Tamang" -> "ST"; a dot or a single name still gives something to show. */
-function nameInitials(name: string): string {
-  const parts = name.replace(/\./g, " ").split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  const first = parts[0]!.charAt(0);
-  const last = parts.length > 1 ? parts[parts.length - 1]!.charAt(0) : "";
-  return (first + last).toUpperCase();
 }
 
 /** One card per person: a status stripe, initials, age, report count and cited status. */
@@ -171,42 +163,14 @@ function PossibleMatches({ incidentId }: { incidentId: string }) {
         Possible matches
       </h2>
       <ul className="match-cards">
-        {proposals.slice(0, MATCHES_SHOWN).map((item) => {
-          const proposal = item.proposal!;
-          const ages = [...new Set(proposal.people.map((p) => p.age))];
-          return (
-            <li key={item.id} className="match-card">
-              <div className="match-head">
-                <span className="match-icon" aria-hidden="true">
-                  <PersonSearchIcon />
-                </span>
-                <h3>Could these be the same person?</h3>
-              </div>
-              <p className="match-pair">
-                {proposal.people.map((p, i) => (
-                  <span key={p.id} className="match-person">
-                    {i > 0 && <span className="meta">and</span>}
-                    <span className="person-initials" aria-hidden="true">
-                      {nameInitials(p.name)}
-                    </span>
-                    <Link to={`/people/${encodeURIComponent(p.id)}`}>{p.name}</Link>
-                  </span>
-                ))}
-              </p>
-              <p className="meta">
-                Why we think so:{" "}
-                {proposal.reasons.map((r) => labelFor(MATCH_REASON_LABELS, r).toLowerCase()).join(", ")}
-                {ages.length === 1 && ages[0] !== null && ` (${ages[0]})`}.
-              </p>
-              <p className="meta match-note">
-                We keep them separate until someone who knows them confirms.
-              </p>
-              <Link className="button-link" to={review}>
-                Review match
-              </Link>
-            </li>
-          );
-        })}
+        {proposals.slice(0, MATCHES_SHOWN).map((item) => (
+          <MatchCard
+            key={item.id}
+            people={item.proposal!.people}
+            reasons={item.proposal!.reasons}
+            reviewHref={review}
+          />
+        ))}
       </ul>
       {proposals.length > MATCHES_SHOWN && (
         <p className="meta">

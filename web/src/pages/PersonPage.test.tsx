@@ -386,4 +386,35 @@ describe("person page", () => {
     expect(within(checks).getByText(/Reviewers check where reports came from/)).toBeInTheDocument();
     expect(within(checks).queryByRole("button")).toBeNull();
   });
+
+  it("shows a possible match to every role, and the review button to reviewers", async () => {
+    const match = {
+      pair_key: "per_1|per_2",
+      other: { id: "per_2", name: "Sita T.", age: 24 },
+      reasons: ["GIVEN_EXACT", "AGE_EQUAL"],
+      proposed_by: "resolver",
+    };
+    localStorage.setItem("found.incidentId", "inc_1");
+    const { api } = routedApi({
+      [PATH]: () => timeline({ open_matches: [match] }),
+      "/v1/me/subscriptions": () => ({ subscriptions: [] }),
+    });
+    const family = new FakeGateway();
+    family.user = userFromClaims({ sub: "f", "cognito:groups": ["family"] });
+    const view = renderApp(family, "/people/per_1", api);
+    const card = await screen.findByRole("region", { name: "Possible matches" });
+    expect(within(card).getByRole("heading", { name: "Could these be the same person?" })).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Sita T." })).toHaveAttribute("href", "/people/per_2");
+    expect(within(card).getByText(/same given name, same age \(24\)/)).toBeInTheDocument();
+    expect(within(card).queryByRole("link", { name: "Review match" })).toBeNull();
+    view.unmount();
+
+    renderApp(signedIn(), "/people/per_1", api);
+    const reviewer = await screen.findByRole("region", { name: "Possible matches" });
+    expect(within(reviewer).getByRole("link", { name: "Review match" })).toHaveAttribute(
+      "href",
+      "/incidents/inc_1/review?type=identity",
+    );
+    localStorage.clear();
+  });
 });

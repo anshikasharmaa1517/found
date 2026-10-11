@@ -15,6 +15,7 @@ import {
 } from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FollowPanel } from "../components/FollowPanel";
+import { OpenMatches } from "../components/MatchCard";
 import { WhatChanged } from "../components/WhatChanged";
 import { TraceButton } from "../components/TraceButton";
 import { PageHeader, SkeletonRows } from "../components/ui";
@@ -213,6 +214,7 @@ export function PersonPage() {
   const { person, summary, identity, entries } = first.data;
   const investigations = first.data.investigations ?? [];
   const canTrace = hasRole(user, "reviewer", "admin");
+  const canReview = canTrace;
   return (
     <section className="page">
       {incidentId && (
@@ -242,6 +244,15 @@ export function PersonPage() {
       <div className="split">
         <div className="split-main">
       <SummaryCard summary={summary} />
+      <OpenMatches
+        person={person}
+        matches={first.data.open_matches ?? []}
+        reviewHref={
+          incidentId && canReview
+            ? `/incidents/${encodeURIComponent(incidentId)}/review?type=identity`
+            : undefined
+        }
+      />
 
       <div className="timeline-head">
         <label className="inline">
