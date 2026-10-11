@@ -293,7 +293,20 @@ def test_timeline_matches_design_shape(sita):
     assert second["reported_at"] == "2026-10-03T02:10:00Z"
     assert second["excerpt"].endswith("...") and len(second["excerpt"]) <= 163
     assert "original_text" not in second
+    # Who the source is, when it arrived, its own reference and where it was made.
+    assert second["source_type"] == "HOSPITAL"
+    assert second["external_reference"] == "CH-2"
+    assert second["ingested_at"].startswith("20") and second["location"] is None
     assert body["next_cursor"] is None
+
+
+def test_timeline_names_the_place_a_report_was_made(repo):
+    located = {**BODY, "location": {"name": "Old Bridge", "lat": 27.9206, "lon": 85.1463}}
+    _, published, _ = publish(located)
+    claim = published["claim"]
+    _, body, _ = get(f"/v1/people/{claim['subject_id']}/timeline")
+    (entry,) = body["entries"]
+    assert entry["location"] == {"id": claim["location_id"], "name": "Old Bridge"}
 
 
 def test_timeline_desc_with_cursor(sita):

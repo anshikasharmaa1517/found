@@ -12,7 +12,7 @@ from found_core.domain.cursor import CursorCodec, parse_limit
 from found_core.domain.enums import Relation, ReviewItemType, ReviewStatus, SubjectType
 from found_core.domain.errors import BadRequest, NotFound
 from found_core.domain.ids import review_item_id
-from found_core.domain.models import Claim, IdentityDecision, Source, Subject
+from found_core.domain.models import Claim, IdentityDecision, Location, Source, Subject
 from found_core.domain.normalize import name_tokens
 from found_core.domain.rules import CitedSummary, age_matches, relations, report_order, summarize
 from found_core.domain.visibility import is_sensitive, masked_summary, sees_sensitive, withheld_ids
@@ -66,6 +66,8 @@ class PersonProfile:
     withheld: frozenset[str] = frozenset()
     # Reviewers' current decisions on pairs that include this person. Never a merge.
     identity: tuple[IdentityDecision, ...] = ()
+    # The incident's reported places, so each report can name where it was made.
+    locations: dict[str, Location] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -265,6 +267,7 @@ class PeopleService:
             sources={s.id: s for s in self._repo.list_sources(person.incident_id)},
             claim_count=len(claims),
             identity=tuple(self._repo.list_identity_decisions(person.incident_id, person.id)),
+            locations={loc.id: loc for loc in self._repo.list_locations(person.incident_id)},
         )
 
     def _released(self, person: Subject, claims: Sequence[Claim], caller: Caller) -> set[str]:

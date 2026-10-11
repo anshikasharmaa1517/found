@@ -175,7 +175,8 @@ def decision_view(decision: IdentityDecision) -> dict[str, Any]:
 
 def entry_view(profile: PersonProfile, entry: TimelineEntry) -> dict[str, Any]:
     claim = entry.claim
-    reported_at = claim.model_dump(mode="json")["reported_at"]
+    data = claim.model_dump(mode="json")
+    reported_at = data["reported_at"]
     if entry.withheld:
         return {
             "claim_id": claim.id,
@@ -184,6 +185,8 @@ def entry_view(profile: PersonProfile, entry: TimelineEntry) -> dict[str, Any]:
             "withheld": True,
             "notice": SENSITIVE_NOTICE,
         }
+    source = profile.sources.get(claim.source_id)
+    place = profile.locations.get(claim.location_id) if claim.location_id else None
     return {
         "claim_id": claim.id,
         "seq": claim.seq,
@@ -191,7 +194,11 @@ def entry_view(profile: PersonProfile, entry: TimelineEntry) -> dict[str, Any]:
         "value": claim.value,
         "source_id": claim.source_id,
         "source": _source_name(profile, claim.source_id),
+        "source_type": source.source_type.value if source else None,
         "reported_at": reported_at,
+        "ingested_at": data["ingested_at"],
+        "external_reference": claim.external_reference,
+        "location": {"id": place.id, "name": place.name} if place else None,
         "relation": entry.relation.value,
         "excerpt": excerpt(claim.original_text),
         "withheld": False,
