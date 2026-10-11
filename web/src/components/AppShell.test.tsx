@@ -21,8 +21,8 @@ vi.mock("./PlacesMap", () => ({
 const BASE = "/v1/incidents/inc_demo";
 const INCIDENT = {
   id: "inc_demo",
-  name: "Kesari Valley flood (fictional demo)",
-  area: "Kesari valley, Uttarakhand (fictional)",
+  name: "Melamchi flood (fictional demo)",
+  area: "Melamchi, Sindhupalchok, Nepal (fictional scenario)",
   is_demo: true,
   started_at: "2026-10-02T13:00:00Z",
 };
@@ -31,7 +31,7 @@ const RECENT: RecentReport[] = [
     claim_id: "clm_9",
     subject_id: "per_9",
     subject_type: "PERSON",
-    subject_name: "Ramesh Thapliyal",
+    subject_name: "Gopal Adhikari",
     ingested_at: "2026-10-05T10:15:00Z",
     withheld: true,
     notice: "A sensitive report was received. A coordinator will contact you.",
@@ -40,13 +40,13 @@ const RECENT: RecentReport[] = [
     claim_id: "clm_2",
     subject_id: "per_1",
     subject_type: "PERSON",
-    subject_name: "Maya Rawat",
+    subject_name: "Sita Tamang",
     ingested_at: "2026-10-05T10:10:00Z",
     withheld: false,
     claim_type: "FOUND_SAFE",
     source: "Central Hospital Demo",
     reported_at: "2026-10-03T02:10:00Z",
-    excerpt: "Maya Rawat, 24, admitted to ward 3.",
+    excerpt: "Sita Tamang, 24, admitted to ward 3.",
   },
 ];
 
@@ -68,13 +68,13 @@ function routes(
     [`${BASE}/climate`]: () => ({ features: [], caveat: "", updated_at: "2026-10-05T10:15:00Z" }),
     [`${BASE}/people`]: () => ({
       people: [
-        { id: "per_1", name: "Maya Rawat", age: 24 },
-        { id: "per_2", name: "Maya R.", age: 24 },
+        { id: "per_1", name: "Sita Tamang", age: 24 },
+        { id: "per_2", name: "Sita T.", age: 24 },
       ],
       next_cursor: null,
     }),
     "/v1/people/per_1/timeline": () => ({
-      person: { id: "per_1", name: "Maya Rawat", age: 24 },
+      person: { id: "per_1", name: "Sita Tamang", age: 24 },
       summary: { label: "", basis: "", cited_claim_id: null, conflicts: [], needs_review: false },
       identity: [],
       entries: [
@@ -88,7 +88,7 @@ function routes(
           source: "Central Hospital Demo",
           reported_at: null,
           relation: "UPDATE",
-          excerpt: "Maya Rawat admitted.",
+          excerpt: "Sita Tamang admitted.",
         },
         {
           withheld: false,
@@ -100,18 +100,18 @@ function routes(
           source: "Flood Relief Demo",
           reported_at: null,
           relation: "UPDATE",
-          excerpt: "According to Central Hospital Demo, Maya is safe.",
+          excerpt: "According to Central Hospital Demo, Sita is safe.",
         },
       ],
       next_cursor: null,
     }),
     [`${BASE}/graph`]: () => ({
       nodes: [
-        { id: "per_1", kind: "person", label: "Maya Rawat", detail: "Age 24", subject_type: "PERSON" },
-        { id: "per_2", kind: "person", label: "Maya R.", detail: "Age 24", subject_type: "PERSON" },
+        { id: "per_1", kind: "person", label: "Sita Tamang", detail: "Age 24", subject_type: "PERSON" },
+        { id: "per_2", kind: "person", label: "Sita T.", detail: "Age 24", subject_type: "PERSON" },
         { id: "clm_2", kind: "report", label: "Found safe", detail: "Central Hospital Demo", subject_type: null },
         { id: "src_h", kind: "source", label: "Central Hospital Demo", detail: null, subject_type: null },
-        { id: "per_3", kind: "person", label: "Arjun Negi", detail: null, subject_type: "PERSON" },
+        { id: "per_3", kind: "person", label: "Bikash Shrestha", detail: null, subject_type: "PERSON" },
       ],
       edges: [
         { source: "clm_2", target: "per_1", kind: "about" },
@@ -149,14 +149,14 @@ describe("app shell", () => {
     renderApp(as(), "/incidents/inc_demo", api, { mapStyleUrl: "https://tiles.example/style" });
     const masthead = await screen.findByRole("banner");
     expect(
-      await within(masthead).findByText("Kesari Valley flood (fictional demo)"),
+      await within(masthead).findByText("Melamchi flood (fictional demo)"),
     ).toBeInTheDocument();
-    expect(within(masthead).getByText(/Kesari valley, Uttarakhand/)).toBeInTheDocument();
+    expect(within(masthead).getByText(/Melamchi, Sindhupalchok, Nepal/)).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Map", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Map" })).toHaveAttribute("aria-current", "page");
 
-    expect(await screen.findByRole("heading", { name: "Maya is reported missing" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "See every report about Maya" })).toHaveAttribute(
+    expect(await screen.findByRole("heading", { name: "Sita is reported missing" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See every report about Sita" })).toHaveAttribute(
       "href",
       "/people/per_1",
     );
@@ -198,7 +198,7 @@ describe("app shell", () => {
     const { api } = routes();
     localStorage.setItem("found.incidentId", "inc_demo");
     renderApp(as(), "/people/per_1", api);
-    await screen.findByRole("heading", { name: "Maya Rawat", level: 1 });
+    await screen.findByRole("heading", { name: "Sita Tamang", level: 1 });
     expect(screen.getByRole("link", { name: "People" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Map" })).not.toHaveAttribute("aria-current");
   });
@@ -206,7 +206,7 @@ describe("app shell", () => {
   it("gives families the other record instead of the review queue", async () => {
     const { api } = routes({ "/v1/me/alerts": () => ({ alerts: [], next_cursor: null }) });
     renderApp(as(FAMILY), "/incidents/inc_demo", api);
-    await screen.findByRole("heading", { name: "Maya is reported missing" });
+    await screen.findByRole("heading", { name: "Sita is reported missing" });
     await userEvent.setup().click(screen.getByRole("button", { name: "Next step" }));
     expect(screen.getByRole("link", { name: "See the other record" })).toHaveAttribute(
       "href",
@@ -219,9 +219,9 @@ describe("app shell", () => {
   it("hides the story guide and remembers it", async () => {
     const { api } = routes();
     const view = renderApp(as(), "/incidents/inc_demo", api);
-    await screen.findByRole("heading", { name: "Maya is reported missing" });
+    await screen.findByRole("heading", { name: "Sita is reported missing" });
     await userEvent.setup().click(screen.getByRole("button", { name: "Hide story guide" }));
-    expect(screen.queryByRole("heading", { name: "Maya is reported missing" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Sita is reported missing" })).toBeNull();
     expect(screen.getByRole("button", { name: "Show story guide" })).toHaveAttribute(
       "aria-expanded",
       "false",
@@ -230,7 +230,7 @@ describe("app shell", () => {
 
     renderApp(as(), "/incidents/inc_demo", api);
     expect(await screen.findByRole("button", { name: "Show story guide" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Maya is reported missing" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Sita is reported missing" })).toBeNull();
   });
 
   it("lets an admin start the demo over after confirming", async () => {
@@ -268,7 +268,7 @@ describe("app shell", () => {
 
     await userEvent.setup().click(screen.getByRole("link", { name: "People" }));
     const list = await screen.findByRole("list", { name: "People" });
-    expect(within(list).getByRole("link", { name: "Maya R." })).toHaveAttribute(
+    expect(within(list).getByRole("link", { name: "Sita T." })).toHaveAttribute(
       "href",
       "/people/per_2",
     );
@@ -277,7 +277,7 @@ describe("app shell", () => {
   it("has no story outside the demo and explains a missing incident", async () => {
     const { api } = routes({ [BASE]: () => ({ ...INCIDENT, is_demo: false }) });
     const view = renderApp(as(), "/incidents/inc_demo", api);
-    await screen.findByText("Kesari Valley flood (fictional demo)");
+    await screen.findByText("Melamchi flood (fictional demo)");
     await screen.findByRole("heading", { name: "Map" });
     expect(screen.queryByText(/Step 1 of 4/)).toBeNull();
     view.unmount();
@@ -287,13 +287,13 @@ describe("app shell", () => {
     expect(screen.getAllByRole("banner")[0]).toHaveTextContent("inc_x");
   });
 
-  it("draws the graph focused on Maya and explains a selected record", async () => {
+  it("draws the graph focused on Sita and explains a selected record", async () => {
     const { api } = routes();
     renderApp(as(), "/incidents/inc_demo", api);
     const user = userEvent.setup();
     await user.click(await screen.findByRole("link", { name: "Graph" }));
     expect(screen.getByRole("link", { name: "Graph" })).toHaveAttribute("aria-current", "page");
-    // Focused on Maya: her report, its source and the possible match, not Arjun.
+    // Focused on Sita: her report, its source and the possible match, not Bikash.
     expect(await screen.findByRole("img", { name: "Graph of 4 records and 3 links" })).toBeInTheDocument();
     expect(screen.getByLabelText("Focus on")).toHaveValue("per_1");
     expect(screen.getByText("Records").closest(".stat")).toHaveTextContent("5");

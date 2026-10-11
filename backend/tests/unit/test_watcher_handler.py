@@ -56,9 +56,9 @@ def stored(monkeypatch):
                 "org_name": "District Police Demo",
                 "org_type": "POLICE",
                 "actor": "user_1",
-                "subject": {"type": "PERSON", "new": {"name": "Maya Rawat"}},
+                "subject": {"type": "PERSON", "new": {"name": "Sita Tamang"}},
                 "claim_type": "MISSING",
-                "original_text": "Maya Rawat missing.",
+                "original_text": "Sita Tamang missing.",
                 "external_reference": "REF-1",
                 "reported_at": "2026-10-02T21:10:00+05:30",
             }

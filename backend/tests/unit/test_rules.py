@@ -82,7 +82,7 @@ def test_deceased_is_held_and_message_is_gentle():
     c = claim(2, "DECEASED", T2)
     status, reason = delivery_for(c.claim_type, subscription(sms=True))
     assert status == DeliveryStatus.HELD and reason == "SENSITIVE_STATUS"
-    assert "coordinator will contact you" in alert_message("Newer report", "Maya", "Police", c)
+    assert "coordinator will contact you" in alert_message("Newer report", "Sita", "Police", c)
 
 
 def test_delivery_depends_on_channels():

@@ -26,9 +26,9 @@ def people(monkeypatch):
                     "org_name": "District Police Demo",
                     "org_type": "POLICE",
                     "actor": "user_1",
-                    "subject": {"type": "PERSON", "new": {"name": "Maya Rawat", "age": 24}},
+                    "subject": {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},
                     "claim_type": "MISSING",
-                    "original_text": "Maya Rawat, 24, missing.",
+                    "original_text": "Sita Tamang, 24, missing.",
                     "external_reference": ref,
                     "reported_at": "2026-10-02T21:10:00+05:30",
                 }

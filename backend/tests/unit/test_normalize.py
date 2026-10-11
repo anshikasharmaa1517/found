@@ -17,7 +17,7 @@ def test_normalize_text_folds_case_punctuation_and_spaces():
 
 
 def test_name_tokens_are_unique_and_skip_single_letters():
-    assert name_tokens("Maya R. Rawat maya") == ["maya", "rawat"]
+    assert name_tokens("Sita T. Tamang sita") == ["sita", "tamang"]
 
 
 def test_detect_mentions_matches_whole_words_in_order():
@@ -40,6 +40,6 @@ def test_detect_mentions_skips_very_short_names():
 
 
 def test_excerpt_keeps_short_text_and_cuts_long_text_on_a_word():
-    assert excerpt("  Maya   Rawat,\n24 ") == "Maya Rawat, 24"
-    assert excerpt("Family reports Maya Rawat missing", limit=20) == "Family reports Maya..."
+    assert excerpt("  Sita   Tamang,\n24 ") == "Sita Tamang, 24"
+    assert excerpt("Family reports Sita Tamang missing", limit=20) == "Family reports Sita..."
     assert excerpt("abcdefghijklmnop", limit=5) == "abcde..."

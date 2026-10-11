@@ -24,9 +24,9 @@ def cmd(org=POLICE, ref="REF-1", subject=None, **overrides) -> PublishCommand:
         "incident_id": "inc_1",
         **org,
         "actor": "user_1",
-        "subject": subject or {"type": "PERSON", "new": {"name": "Maya Rawat", "age": 24}},
+        "subject": subject or {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},
         "claim_type": "MISSING",
-        "original_text": "Maya Rawat, 24, missing since the bridge collapse.",
+        "original_text": "Sita Tamang, 24, missing since the bridge collapse.",
         "external_reference": ref,
         "reported_at": "2026-10-02T21:10:00+05:30",
         **overrides,
@@ -56,10 +56,10 @@ def test_first_report_creates_subject_source_and_claim(service, repo):
     assert not result.replayed
     assert claim.seq == 1
     subject = repo.get_subject(claim.subject_id)
-    assert subject.claim_seq == 1 and subject.display_name == "Maya Rawat"
+    assert subject.claim_seq == 1 and subject.display_name == "Sita Tamang"
     assert not hasattr(subject, "status")
     assert repo.sources[claim.source_id].name == "District Police Demo"
-    assert repo.name_tokens["rawat"] == {subject.id}
+    assert repo.name_tokens["tamang"] == {subject.id}
 
 
 def test_reports_about_one_subject_get_increasing_sequence(service):
@@ -106,7 +106,7 @@ def test_mentions_are_detected_and_exclude_own_source(service):
             ref="NGO-1",
             subject=person(hospital_claim.subject_id),
             claim_type="FOUND_SAFE",
-            original_text="According to Central Hospital Demo, Maya R. was admitted.",
+            original_text="According to Central Hospital Demo, Sita T. was admitted.",
         )
     ).claim
     assert relay.mentioned_source_ids == (hospital_claim.source_id,)

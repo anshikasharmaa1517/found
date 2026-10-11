@@ -22,7 +22,7 @@ def pair(api_repo, monkeypatch):  # noqa: F811
     review = ReviewService(api_repo, CursorCodec(b"k" * 32), clock=FixedClock())
     monkeypatch.setattr(container, "review_service", lambda: review)
     ids = []
-    for ref, name in (("CH-1", "Maya Rawat"), ("CH-2", "Maya R.")):
+    for ref, name in (("CH-1", "Sita Tamang"), ("CH-2", "Sita T.")):
         body = {
             **BODY,
             "subject": {"type": "PERSON", "new": {"name": name, "age": 24}},
@@ -57,7 +57,7 @@ def test_the_queue_shows_the_pair_with_its_reasons(pair):
     assert proposal["pair_key"] == key and proposal["score"] == 55
     assert proposal["reasons"] == ["GIVEN_EXACT", "AGE_EQUAL", "SHARED_LOCATION"]
     assert [p["id"] for p in proposal["people"]] == sorted(ids)
-    assert {p["name"] for p in proposal["people"]} == {"Maya Rawat", "Maya R."}
+    assert {p["name"] for p in proposal["people"]} == {"Sita Tamang", "Sita T."}
 
 
 @pytest.mark.parametrize("encode", [True, False])

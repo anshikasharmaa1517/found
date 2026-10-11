@@ -11,8 +11,8 @@ KEY = b"k" * 32
 
 def test_round_trip():
     codec = CursorCodec(KEY)
-    token = codec.encode("people:inc_1", {"n": "maya rawat", "i": "per_1"})
-    assert codec.decode("people:inc_1", token) == {"n": "maya rawat", "i": "per_1"}
+    token = codec.encode("people:inc_1", {"n": "sita tamang", "i": "per_1"})
+    assert codec.decode("people:inc_1", token) == {"n": "sita tamang", "i": "per_1"}
 
 
 def test_cursor_is_bound_to_its_scope():

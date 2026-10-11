@@ -67,7 +67,7 @@ ALERT = AlertCreated(
     subscription_id="sub_1",
     claim_id="clm_1",
     severity="info",
-    message="Newer report for Maya Rawat.",
+    message="Newer report for Sita Tamang.",
     delivery_status="NOT_REQUIRED",
     occurred_at=NOW,
 )
@@ -107,7 +107,7 @@ def test_messages_match_the_protocol():
         "alert_id": "alr_1",
         "subject_id": "per_1",
         "severity": "info",
-        "message": "Newer report for Maya Rawat.",
+        "message": "Newer report for Sita Tamang.",
     }
     assert message_for(REVIEW) == {
         "type": "review.created",

@@ -167,7 +167,7 @@ def test_latest_source_claim_follows_reported_time(repo):
             )
         ).claim
 
-    first = publish("R1", "2026-10-05T08:00:00Z", {"type": "PERSON", "new": {"name": "Maya"}})
+    first = publish("R1", "2026-10-05T08:00:00Z", {"type": "PERSON", "new": {"name": "Sita"}})
     person = {"type": "PERSON", "id": first.subject_id}
     newest = publish("R2", "2026-10-05T09:00:00Z", person)
     publish("R3", "2026-10-05T07:00:00Z", person)
@@ -221,14 +221,14 @@ def test_list_source_claims_newest_first_with_subject_filter(repo):
             )
         ).claim
 
-    maya = publish("R1", 1, {"type": "PERSON", "new": {"name": "Maya"}})
+    sita = publish("R1", 1, {"type": "PERSON", "new": {"name": "Sita"}})
     ravi = publish("R2", 2, {"type": "PERSON", "new": {"name": "Ravi"}})
-    maya_later = publish("R3", 3, {"type": "PERSON", "id": maya.subject_id})
-    source = maya.source_id
-    assert [c.id for c in repo.list_source_claims(source, 10)] == [maya_later.id, ravi.id, maya.id]
-    assert [c.id for c in repo.list_source_claims(source, 2)] == [maya_later.id, ravi.id]
-    only_maya = repo.list_source_claims(source, 10, subject_id=maya.subject_id)
-    assert [c.id for c in only_maya] == [maya_later.id, maya.id]
+    sita_later = publish("R3", 3, {"type": "PERSON", "id": sita.subject_id})
+    source = sita.source_id
+    assert [c.id for c in repo.list_source_claims(source, 10)] == [sita_later.id, ravi.id, sita.id]
+    assert [c.id for c in repo.list_source_claims(source, 2)] == [sita_later.id, ravi.id]
+    only_sita = repo.list_source_claims(source, 10, subject_id=sita.subject_id)
+    assert [c.id for c in only_sita] == [sita_later.id, sita.id]
     # The filter runs after the page limit, so the reader keeps paging to fill it.
     assert [c.id for c in repo.list_source_claims(source, 1, subject_id=ravi.subject_id)] == [
         ravi.id
@@ -331,8 +331,8 @@ def test_delete_incident_data_removes_only_that_incident(repo, table):
     fixtures = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "demo-v1"
     ingest = IngestService(repo, clock=FixedClock(), sleep=lambda _: None)
     loaded = load_dataset(Dataset.from_files(DirectoryFixtures(fixtures).read()), repo, ingest)
-    maya = loaded.subjects_by_person["maya"]
-    repo.save_subscription(Subscription(id="sub_1", subject_id=maya, user_id="fam_1"))
+    sita = loaded.subjects_by_person["sita"]
+    repo.save_subscription(Subscription(id="sub_1", subject_id=sita, user_id="fam_1"))
     claim = next(iter(loaded.claims_by_reference.values()))
     repo.acquire_run_lock(claim.id, "inv_1", AT, AT + timedelta(minutes=10))
     repo.put_activity(
@@ -356,7 +356,7 @@ def test_delete_incident_data_removes_only_that_incident(repo, table):
     leftovers = [
         i for i in table.scan()["Items"]
         if i.get("incident_id") == "inc_demo" or str(i["PK"]).startswith("IDEM#org_police")
-        or i["PK"] == f"SUBJ#{maya}" or i["PK"] == f"LOCK#INV#{claim.id}"
+        or i["PK"] == f"SUBJ#{sita}" or i["PK"] == f"LOCK#INV#{claim.id}"
     ]  # fmt: skip
     assert leftovers == []
     assert not repo.incident_exists("inc_demo")

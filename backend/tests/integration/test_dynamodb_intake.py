@@ -29,10 +29,10 @@ def candidate(idx=0, job_id="ijb_1") -> IntakeCandidate:
         incident_id="inc_1",
         idx=idx,
         subject_type="PERSON",
-        subject_name="Kavita Bisht",
+        subject_name="Kamala Lama",
         age=29,
         claim_type="SHELTERED",
-        span_text="Kavita Bisht, 29, staying in hall B.",
+        span_text="Kamala Lama, 29, staying in hall B.",
     )
 
 
@@ -62,7 +62,7 @@ def test_candidates_are_stored_once_per_index_and_decided_once(repo, table):
     repo.put_intake_candidates([candidate(0), candidate(1)])
     repo.put_intake_candidates([candidate(0).model_copy(update={"subject_name": "Other"})])
     item = table.get_item(Key=intake_candidate_key("ijb_1", 0))["Item"]
-    assert item["SK"] == "CAND#000" and item["subject_name"] == "Kavita Bisht"
+    assert item["SK"] == "CAND#000" and item["subject_name"] == "Kamala Lama"
     assert [c.idx for c in repo.list_intake_candidates("ijb_1")] == [0, 1]
     assert repo.get_intake_candidate("icd_ijb_1_1") == candidate(1)
 

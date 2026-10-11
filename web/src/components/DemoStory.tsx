@@ -20,29 +20,29 @@ import {
 import { TraceButton } from "./TraceButton";
 
 interface StoryData {
-  mayaId: string;
+  sitaId: string;
   otherId: string | null;
   hospitalClaimId: string | null;
   relayClaimId: string | null;
 }
 
-/** Finds Maya's records in the demo incident. Every step links to real data. */
+/** Finds Sita's records in the demo incident. Every step links to real data. */
 async function loadStory(
   api: ReturnType<typeof useApi>,
   incidentId: string,
 ): Promise<StoryData | null> {
-  const { people } = await listPeople(api, incidentId, { q: "Maya", limit: 20 });
-  const maya = people.find((p) => p.name === "Maya Rawat");
-  if (!maya) return null;
-  const other = people.find((p) => p.id !== maya.id && p.name.startsWith("Maya R"));
-  const timeline = await getTimeline(api, maya.id, { limit: 20 });
+  const { people } = await listPeople(api, incidentId, { q: "Sita", limit: 20 });
+  const sita = people.find((p) => p.name === "Sita Tamang");
+  if (!sita) return null;
+  const other = people.find((p) => p.id !== sita.id && p.name.startsWith("Sita T"));
+  const timeline = await getTimeline(api, sita.id, { limit: 20 });
   const visible = timeline.entries.filter((e): e is VisibleEntry => !e.withheld);
   const hospital = visible.find(
     (e) => e.source === "Central Hospital Demo" && e.claim_type === "FOUND_SAFE",
   );
   const relay = visible.find((e) => e.excerpt.startsWith("According to"));
   return {
-    mayaId: maya.id,
+    sitaId: sita.id,
     otherId: other?.id ?? null,
     hospitalClaimId: hospital?.claim_id ?? null,
     relayClaimId: relay?.claim_id ?? null,
@@ -52,26 +52,26 @@ async function loadStory(
 const STEPS = [
   {
     short: "Reported missing",
-    title: "Maya is reported missing",
-    text: "After the flood, the police report Maya Rawat, 24, missing near the Old Bridge. Found keeps the report with who said it and when.",
+    title: "Sita is reported missing",
+    text: "After the flood, the police report Sita Tamang, 24, missing near the Old Bridge. Found keeps the report with who said it and when.",
     icon: <PinIcon size={24} />,
   },
   {
     short: "Same person?",
     title: "Is this the same person?",
-    text: "A volunteer desk reports a Maya R., 24, at the same bridge. The resolver proposes a match with its reasons; a reviewer decides, and the records are never merged.",
+    text: "A volunteer desk reports a Sita T., 24, at the same bridge. The resolver proposes a match with its reasons; a reviewer decides, and the records are never merged.",
     icon: <PersonSearchIcon size={24} />,
   },
   {
     short: "Hospital says safe",
     title: "The hospital says she is safe",
-    text: "Central Hospital Demo reports Maya admitted and stable. Her page now cites that report, and still shows the police report that came first.",
+    text: "Central Hospital Demo reports Sita admitted and stable. Her page now cites that report, and still shows the police report that came first.",
     icon: <HospitalIcon size={24} />,
   },
   {
     short: "Where did it come from?",
     title: "Where did the last report come from?",
-    text: "Flood Relief Demo also says Maya is safe, citing the hospital. The agent traces it and finds a relay: helpful, but not independent confirmation.",
+    text: "Flood Relief Demo also says Sita is safe, citing the hospital. The agent traces it and finds a relay: helpful, but not independent confirmation.",
     icon: <SearchIcon size={24} />,
   },
 ] as const;
@@ -145,7 +145,7 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
   const [story] = useLoad(`story|${incidentId}`, () => loadStory(api, incidentId));
   if (story.status !== "ready" || story.data === null) return null;
   const data = story.data;
-  const person = `/people/${encodeURIComponent(data.mayaId)}`;
+  const person = `/people/${encodeURIComponent(data.sitaId)}`;
   const current = STEPS[step]!;
 
   function toggleHidden() {
@@ -158,7 +158,7 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
       case 0:
         return (
           <Link className="button-link primary large" to={person}>
-            See every report about Maya
+            See every report about Sita
           </Link>
         );
       case 1:
@@ -201,10 +201,10 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
   }
 
   return (
-    <section className="story" aria-label="Maya's story, step by step">
+    <section className="story" aria-label="Sita's story, step by step">
       <div className="story-bar">
-        <span className="eyebrow">Maya&apos;s story</span>
-        <ol className="story-steps" aria-label="Maya's story">
+        <span className="eyebrow">Sita&apos;s story</span>
+        <ol className="story-steps" aria-label="Sita's story">
           {STEPS.map((s, i) => (
             <li key={s.short}>
               <button

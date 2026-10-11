@@ -26,7 +26,7 @@ function entry(overrides: Partial<VisibleEntry>): VisibleEntry {
     source: "District Police Demo",
     reported_at: "2026-10-02T15:40:00Z",
     relation: "FIRST",
-    excerpt: "Family reports Maya Rawat missing.",
+    excerpt: "Family reports Sita Tamang missing.",
     ...overrides,
   };
 }
@@ -41,7 +41,7 @@ const HOSPITAL = entry({
   reported_at: "2026-10-03T02:10:00Z",
   relation: "UPDATE",
   value: "Admitted, stable condition",
-  excerpt: "Maya Rawat, 24, admitted to ward 3.",
+  excerpt: "Sita Tamang, 24, admitted to ward 3.",
 });
 const UNDATED = entry({
   claim_id: "clm_3",
@@ -54,7 +54,7 @@ const UNDATED = entry({
 
 function timeline(overrides: Partial<Timeline> = {}): Timeline {
   return {
-    person: { id: "per_1", name: "Maya Rawat", age: 24 },
+    person: { id: "per_1", name: "Sita Tamang", age: 24 },
     summary: {
       label: "Reported found safe",
       basis: "Latest dated status report",
@@ -114,14 +114,14 @@ describe("person page", () => {
   it("has no other records section when nothing was decided", async () => {
     const { api } = routedApi({ [PATH]: () => timeline() });
     renderApp(signedIn(), "/people/per_1", api);
-    expect(await screen.findByRole("heading", { name: "Maya Rawat" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sita Tamang" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Other records" })).toBeNull();
   });
 
   it("shows the cited summary and other sources", async () => {
     const { api } = routedApi({ [PATH]: () => timeline() });
     renderApp(signedIn(), "/people/per_1", api);
-    expect(await screen.findByRole("heading", { name: "Maya Rawat" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sita Tamang" })).toBeInTheDocument();
     const summary = screen.getByRole("heading", { name: "Reported found safe" }).closest("section")!;
     expect(within(summary).getByText(/Latest dated status report/)).toBeInTheDocument();
     expect(
@@ -170,7 +170,7 @@ describe("person page", () => {
     const user = userEvent.setup();
     await user.selectOptions(await screen.findByLabelText("Order"), "desc");
     await user.click(await screen.findByRole("button", { name: "Load more" }));
-    await screen.findByText("Family reports Maya Rawat missing.");
+    await screen.findByText("Family reports Sita Tamang missing.");
     expect(calls.at(-1)?.query).toMatchObject({ order: "desc", cursor: "next" });
     expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
   });
@@ -200,11 +200,11 @@ describe("person page", () => {
     const view = renderApp(publisher, "/people/per_1", api);
     expect(
       await screen.findByRole("link", { name: "Publish a report about this person" }),
-    ).toHaveAttribute("href", "/incidents/inc_1/report?person=per_1&name=Maya+Rawat");
+    ).toHaveAttribute("href", "/incidents/inc_1/report?person=per_1&name=Sita+Tamang");
     view.unmount();
 
     renderApp(signedIn(), "/people/per_1", api);
-    await screen.findByRole("heading", { name: "Maya Rawat" });
+    await screen.findByRole("heading", { name: "Sita Tamang" });
     expect(screen.queryByRole("link", { name: /Publish a report/ })).not.toBeInTheDocument();
     localStorage.clear();
   });
@@ -272,7 +272,7 @@ describe("person page", () => {
     );
     renderApp(signedIn(), "/people/per_1", api);
     const user = userEvent.setup();
-    const police = (await screen.findByText("Family reports Maya Rawat missing.")).closest("li")!;
+    const police = (await screen.findByText("Family reports Sita Tamang missing.")).closest("li")!;
     await user.click(within(police).getByRole("button", { name: "Trace where this came from" }));
     await waitFor(() =>
       expect(calls.some((c) => c.path === "/v1/investigations/inv_3")).toBe(true),
@@ -282,7 +282,7 @@ describe("person page", () => {
       throw new ApiError(503, "LIVE_UNAVAILABLE", "Off.");
     };
     renderApp(signedIn(), "/people/per_1", api);
-    const again = (await screen.findAllByText("Family reports Maya Rawat missing."))
+    const again = (await screen.findAllByText("Family reports Sita Tamang missing."))
       .at(-1)!
       .closest("li")!;
     await user.click(within(again).getByRole("button", { name: "Trace where this came from" }));
@@ -296,7 +296,7 @@ describe("person page", () => {
     const publisher = new FakeGateway();
     publisher.user = userFromClaims({ sub: "p", name: "Desk", "cognito:groups": ["publisher"] });
     renderApp(publisher, "/people/per_1", api);
-    await screen.findByRole("heading", { name: "Maya Rawat" });
+    await screen.findByRole("heading", { name: "Sita Tamang" });
     expect(screen.queryByRole("button", { name: /Trace where/ })).not.toBeInTheDocument();
   });
 });

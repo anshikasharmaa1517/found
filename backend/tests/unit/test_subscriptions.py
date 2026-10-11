@@ -41,7 +41,7 @@ class World:
     def report(self, claim_type, reported_at, new=False, org="District Police Demo"):
         self.refs += 1
         subject = (
-            {"type": "PERSON", "new": {"name": "Maya Rawat"}}
+            {"type": "PERSON", "new": {"name": "Sita Tamang"}}
             if new
             else {"type": "PERSON", "id": self.person_id}
         )
@@ -55,7 +55,7 @@ class World:
                     "actor": "pub",
                     "subject": subject,
                     "claim_type": claim_type,
-                    "original_text": f"Report {self.refs} about Maya Rawat.",
+                    "original_text": f"Report {self.refs} about Sita Tamang.",
                     "external_reference": f"REF-{self.refs}",
                     "reported_at": reported_at,
                 }
@@ -145,7 +145,7 @@ def test_followers_get_alerts_in_their_feed_and_nobody_elses(world):
     page = world.service.alert_feed(FAMILY)
     assert len(page.alerts) == 1
     alert = page.alerts[0]
-    assert alert.message.startswith("Newer report for Maya Rawat: Central Hospital Demo")
+    assert alert.message.startswith("Newer report for Sita Tamang: Central Hospital Demo")
     assert alert.delivery_status == DeliveryStatus.NOT_REQUIRED
     assert page.next_cursor is None
     assert world.service.alert_feed(OTHER_FAMILY).alerts == []

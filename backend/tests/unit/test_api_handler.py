@@ -30,9 +30,9 @@ class Context:
 
 
 BODY = {
-    "subject": {"type": "PERSON", "new": {"name": "Maya Rawat", "age": 24}},
+    "subject": {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},
     "claim_type": "MISSING",
-    "original_text": "Maya Rawat, 24, missing since the bridge collapse.",
+    "original_text": "Sita Tamang, 24, missing since the bridge collapse.",
     "external_reference": "CH-1",
     "reported_at": "2026-10-02T21:10:00+05:30",
 }
@@ -193,7 +193,7 @@ def get(path, query=None, claims=REVIEWER_CLAIMS):
 
 
 @pytest.fixture
-def maya(repo):
+def sita(repo):
     _, body, _ = publish()
     pid = body["claim"]["subject_id"]
     publish(
@@ -201,7 +201,7 @@ def maya(repo):
             **BODY,
             "subject": {"type": "PERSON", "id": pid},
             "claim_type": "FOUND_SAFE",
-            "original_text": "Maya Rawat admitted to ward 3. " + "Stable condition. " * 20,
+            "original_text": "Sita Tamang admitted to ward 3. " + "Stable condition. " * 20,
             "external_reference": "CH-2",
             "reported_at": "2026-10-03T07:40:00+05:30",
         }
@@ -209,14 +209,14 @@ def maya(repo):
     return pid
 
 
-def test_people_list_and_search(maya):
-    status, body, headers = get("/v1/incidents/inc_1/people", {"q": "rawat", "age": "25"})
+def test_people_list_and_search(sita):
+    status, body, headers = get("/v1/incidents/inc_1/people", {"q": "tamang", "age": "25"})
     assert status == 200
     assert body == {
         "people": [
             {
-                "id": maya,
-                "name": "Maya Rawat",
+                "id": sita,
+                "name": "Sita Tamang",
                 "age": 24,
                 "status": {
                     "label": "Reported found safe",
@@ -233,18 +233,18 @@ def test_people_list_and_search(maya):
     assert headers["x-request-id"] == "req-abc"
 
 
-def test_people_list_pages(maya, repo):
+def test_people_list_pages(sita, repo):
     publish(
         {
             **BODY,
-            "subject": {"type": "PERSON", "new": {"name": "Asha Devi"}},
+            "subject": {"type": "PERSON", "new": {"name": "Laxmi Basnet"}},
             "external_reference": "CH-3",
         }
     )
     _, first, _ = get("/v1/incidents/inc_1/people", {"limit": "1"})
-    assert [p["name"] for p in first["people"]] == ["Asha Devi"]
+    assert [p["name"] for p in first["people"]] == ["Laxmi Basnet"]
     _, second, _ = get("/v1/incidents/inc_1/people", {"limit": "1", "cursor": first["next_cursor"]})
-    assert [p["name"] for p in second["people"]] == ["Maya Rawat"]
+    assert [p["name"] for p in second["people"]] == ["Sita Tamang"]
     assert second["next_cursor"] is None
 
 
@@ -263,12 +263,12 @@ def test_people_requires_sign_in(repo):
     assert status == 401
 
 
-def test_person_profile(maya):
-    status, body, _ = get(f"/v1/people/{maya}")
+def test_person_profile(sita):
+    status, body, _ = get(f"/v1/people/{sita}")
     assert status == 200
     assert body["person"] == {
-        "id": maya,
-        "name": "Maya Rawat",
+        "id": sita,
+        "name": "Sita Tamang",
         "age": 24,
         "incident_id": "inc_1",
         "notes": None,
@@ -279,10 +279,10 @@ def test_person_profile(maya):
     assert body["identity"] == []
 
 
-def test_timeline_matches_design_shape(maya):
-    status, body, _ = get(f"/v1/people/{maya}/timeline")
+def test_timeline_matches_design_shape(sita):
+    status, body, _ = get(f"/v1/people/{sita}/timeline")
     assert status == 200
-    assert body["person"] == {"id": maya, "name": "Maya Rawat", "age": 24}
+    assert body["person"] == {"id": sita, "name": "Sita Tamang", "age": 24}
     summary = body["summary"]
     assert summary["basis"] == "Latest dated status report"
     assert summary["cited_claim_id"] == body["entries"][1]["claim_id"]
@@ -296,21 +296,21 @@ def test_timeline_matches_design_shape(maya):
     assert body["next_cursor"] is None
 
 
-def test_timeline_desc_with_cursor(maya):
-    _, first, _ = get(f"/v1/people/{maya}/timeline", {"order": "desc", "limit": "1"})
+def test_timeline_desc_with_cursor(sita):
+    _, first, _ = get(f"/v1/people/{sita}/timeline", {"order": "desc", "limit": "1"})
     assert first["entries"][0]["claim_type"] == "FOUND_SAFE"
     _, second, _ = get(
-        f"/v1/people/{maya}/timeline",
+        f"/v1/people/{sita}/timeline",
         {"order": "desc", "limit": "1", "cursor": first["next_cursor"]},
     )
     assert second["entries"][0]["claim_type"] == "MISSING"
     assert second["next_cursor"] is None
 
 
-def test_tampered_cursor_is_400(maya):
-    _, first, _ = get(f"/v1/people/{maya}/timeline", {"limit": "1"})
+def test_tampered_cursor_is_400(sita):
+    _, first, _ = get(f"/v1/people/{sita}/timeline", {"limit": "1"})
     status, body, _ = get(
-        f"/v1/people/{maya}/timeline", {"limit": "1", "cursor": first["next_cursor"] + "x"}
+        f"/v1/people/{sita}/timeline", {"limit": "1", "cursor": first["next_cursor"] + "x"}
     )
     assert status == 400 and body["error"]["code"] == "BAD_REQUEST"
 
@@ -320,22 +320,22 @@ def test_unknown_person_is_404(repo):
     assert status == 404 and body["error"]["code"] == "NOT_FOUND"
 
 
-def test_publisher_of_other_incident_is_403(maya, repo):
+def test_publisher_of_other_incident_is_403(sita, repo):
     claims = {"sub": "u9", "cognito:groups": "[publisher]", "custom:org_id": "org_other"}
-    status, _, _ = get(f"/v1/people/{maya}", claims=claims)
+    status, _, _ = get(f"/v1/people/{sita}", claims=claims)
     assert status == 403
 
 
 FAMILY_CLAIMS = {"sub": "fam_1", "cognito:groups": "[family]"}
 
 
-def test_follow_unfollow_and_list(maya):
-    path = f"/v1/people/{maya}/subscriptions"
+def test_follow_unfollow_and_list(sita):
+    path = f"/v1/people/{sita}/subscriptions"
     body = {"channel_sms": True, "phone_e164": "+919876543210"}
     status, created, _ = call(event("POST", path, body, FAMILY_CLAIMS))
     assert status == 201
     sub = created["subscription"]
-    assert sub["person_id"] == maya and sub["channel_inapp"] is True
+    assert sub["person_id"] == sita and sub["channel_inapp"] is True
     assert sub["channel_sms"] is True and sub["created_at"] == "2026-10-05T10:15:00Z"
 
     status, again, _ = call(event("POST", path, {}, FAMILY_CLAIMS))
@@ -352,15 +352,15 @@ def test_follow_unfollow_and_list(maya):
     assert mine["subscriptions"] == []
 
 
-def test_follow_with_sms_but_no_phone_is_422(maya):
+def test_follow_with_sms_but_no_phone_is_422(sita):
     status, body, _ = call(
-        event("POST", f"/v1/people/{maya}/subscriptions", {"channel_sms": True}, FAMILY_CLAIMS)
+        event("POST", f"/v1/people/{sita}/subscriptions", {"channel_sms": True}, FAMILY_CLAIMS)
     )
     assert status == 422 and body["error"]["code"] == "VALIDATION_FAILED"
 
 
-def test_follow_requires_family(maya):
-    status, _, _ = call(event("POST", f"/v1/people/{maya}/subscriptions", {}, REVIEWER_CLAIMS))
+def test_follow_requires_family(sita):
+    status, _, _ = call(event("POST", f"/v1/people/{sita}/subscriptions", {}, REVIEWER_CLAIMS))
     assert status == 403
 
 

@@ -43,13 +43,13 @@ const REPORTS: RecentReport[] = [
     claim_id: "clm_2",
     subject_id: "per_1",
     subject_type: "PERSON",
-    subject_name: "Maya Rawat",
+    subject_name: "Sita Tamang",
     ingested_at: "2026-10-05T10:10:00Z",
     withheld: false,
     claim_type: "FOUND_SAFE",
     source: "Central Hospital Demo",
     reported_at: "2026-10-03T02:10:00Z",
-    excerpt: "Maya Rawat, 24, admitted to ward 3.",
+    excerpt: "Sita Tamang, 24, admitted to ward 3.",
   },
   {
     claim_id: "clm_5",
@@ -113,11 +113,11 @@ describe("sources page", () => {
     const toggle = within(card).getByRole("button", { name: "Show reports" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     await userEvent.setup().click(toggle);
-    expect(await within(card).findByRole("link", { name: "Maya Rawat" })).toHaveAttribute(
+    expect(await within(card).findByRole("link", { name: "Sita Tamang" })).toHaveAttribute(
       "href",
       "/people/per_1",
     );
-    expect(within(card).getByText("Maya Rawat, 24, admitted to ward 3.")).toBeInTheDocument();
+    expect(within(card).getByText("Sita Tamang, 24, admitted to ward 3.")).toBeInTheDocument();
     // Roads and shelters are not people, so they are named, not linked.
     expect(within(card).getByText("Old Bridge")).not.toHaveAttribute("href");
     expect(within(card).getByRole("button", { name: "Hide reports" })).toHaveAttribute(

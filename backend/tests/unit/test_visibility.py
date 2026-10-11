@@ -86,7 +86,7 @@ class World:
     def report(self, org, claim_type, reported_at, new=False):
         self.refs += 1
         subject = (
-            {"type": "PERSON", "new": {"name": "Maya Rawat"}}
+            {"type": "PERSON", "new": {"name": "Sita Tamang"}}
             if new
             else {"type": "PERSON", "id": self.person_id}
         )

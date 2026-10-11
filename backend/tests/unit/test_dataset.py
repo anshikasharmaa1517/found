@@ -80,12 +80,12 @@ def test_load_goes_through_ingest_and_gives_the_story(loaded):
     assert len(result.subjects_by_person) == len(dataset.people)
 
     people = PeopleService(repo, CursorCodec(b"k" * 32))
-    maya = people.profile(REVIEWER, result.subjects_by_person["maya"])
+    sita = people.profile(REVIEWER, result.subjects_by_person["sita"])
     hospital = result.claims_by_reference[reference_key("org_hospital", "CHD-0001")]
     relay = result.claims_by_reference[reference_key("org_ngo", "FRD-0001")]
-    assert maya.summary.label == "Reported found safe"
+    assert sita.summary.label == "Reported found safe"
     # The summary cites the latest dated report, here the relay; tracing it is UC-2.
-    assert maya.summary.cited_claim_id == relay.id
+    assert sita.summary.cited_claim_id == relay.id
     assert relay.mentioned_source_ids == (hospital.source_id,)
     assert relay.location_id is None and hospital.location_id is not None
 
@@ -99,11 +99,11 @@ def test_story_feeds_the_review_queue(loaded):
         c for c in result.claims_by_reference.values() if c.claim_type == "DECEASED"
     )
     assert deceased.id in by_type[ReviewItemType.HELD_ALERT]
-    vikram = result.subjects_by_person["vikram"]
+    hari = result.subjects_by_person["hari"]
     conflicts = {repo.get_claim(ref).subject_id for ref in by_type[ReviewItemType.CONFLICT]}
-    assert vikram in conflicts
+    assert hari in conflicts
     people = PeopleService(repo, CursorCodec(b"k" * 32))
-    ramesh = result.subjects_by_person["ramesh"]
+    ramesh = result.subjects_by_person["gopal"]
     assert deceased.id in people.profile(FAMILY, ramesh).withheld
 
 

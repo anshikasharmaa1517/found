@@ -98,8 +98,8 @@ def test_reset_loads_the_demo_and_logs_it(world):
 
 def test_reset_removes_demo_changes_and_keeps_everything_else(world):
     repo = world.repo
-    maya = world.claim("org_police", "DPD-0001").subject_id
-    repo.add_subscription(Subscription(id="sub_1", subject_id=maya, user_id="fam_1"))
+    sita = world.claim("org_police", "DPD-0001").subject_id
+    repo.add_subscription(Subscription(id="sub_1", subject_id=sita, user_id="fam_1"))
     repo.add_incident("inc_other")
     repo.settings = Settings(live_enabled=True, run_cap=7)
     starter = InvestigationService(repo, InMemoryBudgetLedger(), Queue(), CONFIG, world.clock)

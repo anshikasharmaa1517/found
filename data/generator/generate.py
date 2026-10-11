@@ -3,8 +3,9 @@
     python data/generator/generate.py            # writes data/fixtures/demo-v1/
     python data/generator/generate.py --check    # exits 1 if the files are out of date
 
-The scenario is a flood along a fictional Himalayan river valley. Every person,
-organization and place is invented. Output is deterministic: the same seed always
+The scenario is a flood on the Indrawati river at Melamchi, Sindhupalchok, Nepal. Every
+person, organization, report and place name is invented; only the terrain under the map is
+real. Output is deterministic: the same seed always
 gives byte-identical files, so a demo reset restores exactly the same incident.
 
 Standard library only, so it runs anywhere without the backend installed.
@@ -22,10 +23,10 @@ OUT = Path(__file__).resolve().parents[1] / "fixtures" / VERSION
 
 INCIDENT = {
     "id": "inc_demo",
-    "name": "Kesari Valley flood (fictional demo)",
-    "area": "Kesari valley, Uttarakhand (fictional)",
+    "name": "Melamchi flood (fictional demo)",
+    "area": "Melamchi, Sindhupalchok, Nepal (fictional scenario)",
     "is_demo": True,
-    "started_at": "2026-10-02T18:30:00+05:30",
+    "started_at": "2026-10-02T18:30:00+05:45",
 }
 
 # id, name, type, reference prefix
@@ -39,28 +40,30 @@ ORGANIZATIONS = [
 ]
 ORG = {o[0]: o for o in ORGANIZATIONS}
 
-# Invented places along the valley. The names are fictional; the coordinates put each one
-# on a sensible spot of the real terrain under the map (a bridge on the river, a ghat on
-# the bank by the market road), so pins do not land on empty hillsides.
+# Invented places along the Indrawati at Melamchi bazaar. The names are fictional; the
+# coordinates put each one on a sensible spot of the real terrain under the map (the bridges
+# on the river course in OpenStreetMap, the ghat and steps on the bank below the F30 road,
+# the hospital and school on real hospital and school grounds), so pins do not land on
+# empty hillsides.
 PLACES = {
-    "old_bridge": ("Old Bridge", 30.7312, 78.4328),
-    "upper_village": ("Upper Village", 30.7334, 78.4275),
-    "market_ghat": ("Market Ghat", 30.7289, 78.4368),
-    "temple_steps": ("Temple Steps", 30.7286, 78.4388),
-    "school": ("Valley School Building", 30.7234, 78.4316),
-    "shelter": ("Riverside Shelter", 30.7267, 78.4353),
-    "hospital": ("Central Hospital Demo grounds", 30.7298, 78.4426),
-    "footbridge": ("Upper Footbridge", 30.7290, 78.4471),
+    "old_bridge": ("Old Bridge", 27.8301, 85.5782),
+    "upper_village": ("Upper Village", 27.8385, 85.5752),
+    "market_ghat": ("Market Ghat", 27.8279, 85.5751),
+    "temple_steps": ("Temple Steps", 27.8265, 85.5744),
+    "school": ("Valley School Building", 27.8305, 85.5745),
+    "shelter": ("Riverside Shelter", 27.8291, 85.5754),
+    "hospital": ("Central Hospital Demo grounds", 27.8271, 85.5736),
+    "footbridge": ("Upper Footbridge", 27.8365, 85.5771),
 }
 
 FIRST_NAMES = [
-    "Aarti", "Bhuvan", "Chanda", "Dinesh", "Ekta", "Farhan", "Gita", "Harish", "Isha",
-    "Jagdish", "Kamla", "Lokesh", "Mohan", "Nisha", "Om", "Parvati", "Rajesh", "Savita",
-    "Tarun", "Uma", "Vinod", "Yamini", "Zoya", "Anil", "Beena", "Chetan",
+    "Anita", "Bimal", "Chandra", "Dawa", "Ganga", "Hira", "Ishwor", "Januka", "Kiran",
+    "Lila", "Mina", "Nabin", "Pemba", "Prakash", "Rajan", "Sabina", "Suman", "Tara",
+    "Ujjwal", "Yam", "Binita", "Dhan", "Gita", "Nirmala", "Ramesh", "Saraswati",
 ]  # fmt: skip
 LAST_NAMES = [
-    "Bhandari", "Chauhan", "Dhyani", "Gusain", "Joshi", "Kathait", "Mehra", "Nautiyal",
-    "Panwar", "Rana", "Semwal", "Tomar", "Uniyal", "Bisht", "Negi", "Rawat",
+    "Bhandari", "Dahal", "Gautam", "Ghale", "Hyolmo", "Khadka", "Lama", "Magar",
+    "Nepal", "Pandey", "Rai", "Shrestha", "Sherpa", "Tamang", "Thapa", "Tiwari",
 ]  # fmt: skip
 
 
@@ -113,85 +116,85 @@ class Builder:
 
 def story(b: Builder) -> None:
     """Hand-written people that walk through the design's use cases."""
-    maya = b.person("maya", "Maya Rawat", 24, "Wears a red jacket.")
-    b.report("org_police", maya, "MISSING",
-             "Family reports Maya Rawat, 24, missing since the bridge collapse near the "
-             "Old Bridge.", "2026-10-02T21:10:00+05:30", where="old_bridge")
-    b.report("org_hospital", maya, "FOUND_SAFE",
-             "Maya Rawat, 24, admitted to ward 3 at 07:40. Condition stable.",
-             "2026-10-03T07:40:00+05:30", value="Ward 3, stable", where="hospital")
-    b.report("org_ngo", maya, "FOUND_SAFE",
-             "According to Central Hospital Demo, Maya Rawat was admitted to ward 3 and is "
-             "stable.", "2026-10-03T08:30:00+05:30")
+    sita = b.person("sita", "Sita Tamang", 24, "Wears a red jacket.")
+    b.report("org_police", sita, "MISSING",
+             "Family reports Sita Tamang, 24, missing since the bridge collapse near the "
+             "Old Bridge.", "2026-10-02T21:10:00+05:45", where="old_bridge")
+    b.report("org_hospital", sita, "FOUND_SAFE",
+             "Sita Tamang, 24, admitted to ward 3 at 07:40. Condition stable.",
+             "2026-10-03T07:40:00+05:45", value="Ward 3, stable", where="hospital")
+    b.report("org_ngo", sita, "FOUND_SAFE",
+             "According to Central Hospital Demo, Sita Tamang was admitted to ward 3 and is "
+             "stable.", "2026-10-03T08:30:00+05:45")
 
-    arjun = b.person("arjun", "Arjun Negi", 31)
-    b.report("org_police", arjun, "MISSING",
-             "Arjun Negi, 31, reported missing by his brother after the river rose.",
-             "2026-10-02T22:05:00+05:30", where="market_ghat")
-    b.report("org_volunteers", arjun, "SEEN_AT_LOCATION",
-             "Our team met Arjun Negi at the Upper Footbridge helping neighbours.",
-             "2026-10-03T06:15:00+05:30", where="footbridge")
-    b.report("org_shelter", arjun, "SHELTERED",
-             "Arjun Negi registered at the shelter desk, hall B.",
-             "2026-10-03T11:20:00+05:30", value="Hall B", where="shelter")
+    bikash = b.person("bikash", "Bikash Shrestha", 31)
+    b.report("org_police", bikash, "MISSING",
+             "Bikash Shrestha, 31, reported missing by his brother after the river rose.",
+             "2026-10-02T22:05:00+05:45", where="market_ghat")
+    b.report("org_volunteers", bikash, "SEEN_AT_LOCATION",
+             "Our team met Bikash Shrestha at the Upper Footbridge helping neighbours.",
+             "2026-10-03T06:15:00+05:45", where="footbridge")
+    b.report("org_shelter", bikash, "SHELTERED",
+             "Bikash Shrestha registered at the shelter desk, hall B.",
+             "2026-10-03T11:20:00+05:45", value="Hall B", where="shelter")
 
-    deepak = b.person("deepak", "Deepak Joshi", 45)
-    b.report("org_hospital", deepak, "INJURED",
-             "Deepak Joshi, 45, admitted with leg injuries and taken into surgery.",
-             "2026-10-03T05:50:00+05:30", value="Leg injuries", where="hospital")
-    b.report("org_ngo", deepak, "FOUND_SAFE",
-             "According to Central Hospital Demo, Deepak Joshi is safe and unhurt.",
-             "2026-10-03T09:10:00+05:30")
+    dipak = b.person("dipak", "Dipak Karki", 45)
+    b.report("org_hospital", dipak, "INJURED",
+             "Dipak Karki, 45, admitted with leg injuries and taken into surgery.",
+             "2026-10-03T05:50:00+05:45", value="Leg injuries", where="hospital")
+    b.report("org_ngo", dipak, "FOUND_SAFE",
+             "According to Central Hospital Demo, Dipak Karki is safe and unhurt.",
+             "2026-10-03T09:10:00+05:45")
 
-    sunita = b.person("sunita", "Sunita Rana", 38)
+    sunita = b.person("sunita", "Sunita Magar", 38)
     b.report("org_clinic", sunita, "INJURED",
-             "Sunita Rana treated for a fractured wrist, kept for observation.",
-             "2026-10-03T04:30:00+05:30", value="Fractured wrist")
+             "Sunita Magar treated for a fractured wrist, kept for observation.",
+             "2026-10-03T04:30:00+05:45", value="Fractured wrist")
     b.report("org_ngo", sunita, "INJURED",
-             "Per Hill Clinic Demo, Sunita Rana has a fractured wrist and is under "
-             "observation.", "2026-10-03T07:05:00+05:30")
+             "Per Hill Clinic Demo, Sunita Magar has a fractured wrist and is under "
+             "observation.", "2026-10-03T07:05:00+05:45")
 
-    kavita = b.person("kavita", "Kavita Bisht", 29)
-    b.report("org_police", kavita, "MISSING",
-             "Kavita Bisht, 29, reported missing with her son from Upper Village.",
-             "2026-10-02T23:40:00+05:30", where="upper_village")
-    b.report("org_shelter", kavita, "SHELTERED",
-             "Kavita Bisht and her son registered at the shelter, hall B.",
-             "2026-10-03T10:00:00+05:30", value="Hall B, with son", where="shelter")
+    kamala = b.person("kamala", "Kamala Lama", 29)
+    b.report("org_police", kamala, "MISSING",
+             "Kamala Lama, 29, reported missing with her son from Upper Village.",
+             "2026-10-02T23:40:00+05:45", where="upper_village")
+    b.report("org_shelter", kamala, "SHELTERED",
+             "Kamala Lama and her son registered at the shelter, hall B.",
+             "2026-10-03T10:00:00+05:45", value="Hall B, with son", where="shelter")
 
-    vikram = b.person("vikram", "Vikram Singh", 52)
-    b.report("org_police", vikram, "MISSING",
-             "Vikram Singh, 52, last seen near the market on the evening of the flood.",
-             "2026-10-02T20:30:00+05:30", where="market_ghat")
+    hari = b.person("hari", "Hari Thapa", 52)
+    b.report("org_police", hari, "MISSING",
+             "Hari Thapa, 52, last seen near the market on the evening of the flood.",
+             "2026-10-02T20:30:00+05:45", where="market_ghat")
     # No reported time: the watcher cannot order it, so it goes to a reviewer.
-    b.report("org_volunteers", vikram, "FOUND_SAFE",
-             "Someone at the temple said Vikram Singh is fine.", None, where="temple_steps")
+    b.report("org_volunteers", hari, "FOUND_SAFE",
+             "Someone at the temple said Hari Thapa is fine.", None, where="temple_steps")
 
-    ramesh = b.person("ramesh", "Ramesh Thapliyal", 67)
-    b.report("org_police", ramesh, "MISSING",
-             "Ramesh Thapliyal, 67, missing from his house by the river.",
-             "2026-10-02T21:55:00+05:30", where="old_bridge")
+    gopal = b.person("gopal", "Gopal Adhikari", 67)
+    b.report("org_police", gopal, "MISSING",
+             "Gopal Adhikari, 67, missing from his house by the river.",
+             "2026-10-02T21:55:00+05:45", where="old_bridge")
     # Sensitive: held for a reviewer before anyone else sees it in full.
-    b.report("org_hospital", ramesh, "DECEASED",
-             "Ramesh Thapliyal, 67, was brought in and declared dead at 03:20.",
-             "2026-10-03T03:20:00+05:30", where="hospital")
+    b.report("org_hospital", gopal, "DECEASED",
+             "Gopal Adhikari, 67, was brought in and declared dead at 03:20.",
+             "2026-10-03T03:20:00+05:45", where="hospital")
 
-    pooja = b.person("pooja", "Pooja Rawat", 17)
-    b.report("org_shelter", pooja, "SHELTERED",
-             "Pooja Rawat, 17, is staying at the shelter in hall A.",
-             "2026-10-03T09:30:00+05:30", value="Hall A", where="shelter")
-    b.report("org_volunteers", pooja, "SHELTERED",
-             "Riverside Shelter Demo says Pooja Rawat moved to the school building.",
-             "2026-10-03T12:45:00+05:30", where="school")
+    puja = b.person("puja", "Puja Tamang", 17)
+    b.report("org_shelter", puja, "SHELTERED",
+             "Puja Tamang, 17, is staying at the shelter in hall A.",
+             "2026-10-03T09:30:00+05:45", value="Hall A", where="shelter")
+    b.report("org_volunteers", puja, "SHELTERED",
+             "Riverside Shelter Demo says Puja Tamang moved to the school building.",
+             "2026-10-03T12:45:00+05:45", where="school")
 
-    asha = b.person("asha", "Asha Devi", 58)
-    b.report("org_police", asha, "MISSING",
-             "Asha Devi, 58, missing from Market Ghat.", "2026-10-02T22:40:00+05:30",
+    laxmi = b.person("laxmi", "Laxmi Basnet", 58)
+    b.report("org_police", laxmi, "MISSING",
+             "Laxmi Basnet, 58, missing from Market Ghat.", "2026-10-02T22:40:00+05:45",
              where="market_ghat")
     # The source name is misspelled, so it is not offered as a named source.
-    b.report("org_volunteers", asha, "FOUND_SAFE",
-             "According to Centrel Hospitl Demo, Asha Devi was admitted.",
-             "2026-10-03T13:10:00+05:30")
+    b.report("org_volunteers", laxmi, "FOUND_SAFE",
+             "According to Centrel Hospitl Demo, Laxmi Basnet was admitted.",
+             "2026-10-03T13:10:00+05:45")
 
 
 def background(b: Builder, rng: random.Random, count: int = 22) -> None:
@@ -218,13 +221,13 @@ def background(b: Builder, rng: random.Random, count: int = 22) -> None:
         age_text = f", {age}," if age is not None else ""
         b.report("org_police", key, "MISSING",
                  f"{name}{age_text} reported missing near {place_name}.",
-                 f"2026-10-02T{rng.choice(hours)}:00+05:30", where=where)
+                 f"2026-10-02T{rng.choice(hours)}:00+05:45", where=where)
         if rng.random() < 0.75:
             org = rng.choice(found_by)
             claim_type, template, spot = outcome_text[org]
             hour = rng.randint(5, 16)
             b.report(org, key, claim_type, template.format(name=name, place=place_name),
-                     f"2026-10-03T{hour:02d}:{rng.choice(['00', '20', '45'])}:00+05:30",
+                     f"2026-10-03T{hour:02d}:{rng.choice(['00', '20', '45'])}:00+05:45",
                      where=spot or where)
 
 
@@ -237,56 +240,56 @@ def climate(b: Builder) -> None:
     bridge = b.thing("c_old_bridge", "INFRASTRUCTURE", "Old Bridge")
     b.report("org_police", bridge, "BRIDGE_DAMAGED",
              "Old Bridge closed to all traffic after the collapse of its eastern span.",
-             "2026-10-02T20:10:00+05:30", where="old_bridge")
+             "2026-10-02T20:10:00+05:45", where="old_bridge")
     b.report("org_volunteers", bridge, "BRIDGE_OPEN",
              "Old Bridge open on foot, our team crossed it this morning.",
-             "2026-10-03T08:15:00+05:30", where="old_bridge")
+             "2026-10-03T08:15:00+05:45", where="old_bridge")
 
     road = b.thing("c_village_road", "INFRASTRUCTURE", "Upper Village road")
     b.report("org_police", road, "ROAD_BLOCKED",
              "Upper Village road blocked by a landslide above the temple bend.",
-             "2026-10-02T23:30:00+05:30", where="upper_village")
+             "2026-10-02T23:30:00+05:45", where="upper_village")
     b.report("org_police", road, "ROAD_OPEN",
              "Upper Village road reopened for light vehicles after clearing.",
-             "2026-10-03T15:00:00+05:30", where="upper_village")
+             "2026-10-03T15:00:00+05:45", where="upper_village")
 
     shelter = b.thing("c_riverside_shelter", "SHELTER", "Riverside Shelter")
     b.report("org_shelter", shelter, "SHELTER_OPEN",
              "Riverside Shelter open, 120 places, blankets and hot meals available.",
-             "2026-10-02T22:00:00+05:30", where="shelter")
+             "2026-10-02T22:00:00+05:45", where="shelter")
     b.report("org_shelter", shelter, "SHELTER_FULL",
              "Riverside Shelter full; new arrivals sent to the school building.",
-             "2026-10-03T11:00:00+05:30", where="shelter")
+             "2026-10-03T11:00:00+05:45", where="shelter")
 
     school = b.thing("c_school_shelter", "SHELTER", "Valley School Building")
     b.report("org_ngo", school, "SHELTER_OPEN",
              "Valley School Building opened as an overflow shelter with 60 places.",
-             "2026-10-03T11:30:00+05:30", where="school")
+             "2026-10-03T11:30:00+05:45", where="school")
 
     aid = b.thing("c_ghat_aid", "AID_POINT", "Market Ghat aid point")
     b.report("org_ngo", aid, "AID_AVAILABLE",
              "Drinking water and dry rations available at the Market Ghat aid point.",
-             "2026-10-03T07:00:00+05:30", where="market_ghat")
+             "2026-10-03T07:00:00+05:45", where="market_ghat")
 
-    river = b.thing("c_river_ghat", "HAZARD", "Kesari river at Market Ghat")
+    river = b.thing("c_river_ghat", "HAZARD", "Indrawati river at Market Ghat")
     b.report("org_police", river, "WATER_RISING",
-             "Kesari river rising fast at Market Ghat, residents moved uphill.",
-             "2026-10-02T19:45:00+05:30", where="market_ghat")
+             "Indrawati river rising fast at Market Ghat, residents moved uphill.",
+             "2026-10-02T19:45:00+05:45", where="market_ghat")
     b.report("org_volunteers", river, "WATER_RECEDING",
              "Water at Market Ghat has gone down by about a metre since midnight.",
-             "2026-10-03T06:30:00+05:30", where="market_ghat")
+             "2026-10-03T06:30:00+05:45", where="market_ghat")
 
 
 def duplicate(b: Builder) -> None:
-    """A second record for Maya under a shortened name (design UC-3).
+    """A second record for Sita under a shortened name (design UC-3).
 
     Same age, same place: the resolver proposes the pair and a reviewer decides. Added
     last so every earlier report reference stays the same.
     """
-    maya_r = b.person("maya_r", "Maya R.", 24)
-    b.report("org_ngo", maya_r, "SEEN_AT_LOCATION",
-             "Volunteer desk: Maya R., 24, was seen near the Old Bridge asking for her family.",
-             "2026-10-03T09:30:00+05:30", where="old_bridge")
+    sita_t = b.person("sita_t", "Sita T.", 24)
+    b.report("org_ngo", sita_t, "SEEN_AT_LOCATION",
+             "Volunteer desk: Sita T., 24, was seen near the Old Bridge asking for her family.",
+             "2026-10-03T09:30:00+05:45", where="old_bridge")
 
 
 def build(seed: int = SEED) -> dict[str, object]:

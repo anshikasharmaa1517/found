@@ -59,9 +59,9 @@ class World:
         self.config = InvestigationConfig(model_id="model-a", run_cap=run_cap)
         self.service = self.make_service()
         self.refs = 0
-        self.source_claim = self.publish(HOSPITAL, "Maya Rawat admitted to ward 3, stable.")
+        self.source_claim = self.publish(HOSPITAL, "Sita Tamang admitted to ward 3, stable.")
         self.relay = self.publish(
-            NGO, "According to Central Hospital Demo, Maya R. was admitted.", self.source_claim
+            NGO, "According to Central Hospital Demo, Sita T. was admitted.", self.source_claim
         )
 
     def make_service(self):
@@ -74,7 +74,7 @@ class World:
         subject = (
             {"type": "PERSON", "id": about.subject_id}
             if about
-            else {"type": "PERSON", "new": {"name": "Maya Rawat"}}
+            else {"type": "PERSON", "new": {"name": "Sita Tamang"}}
         )
         return self.ingest.publish(
             PublishCommand.parse(
@@ -147,7 +147,7 @@ def test_failed_runs_are_never_served_from_cache(world):
 def test_new_claim_from_the_mentioned_source_forces_a_fresh_run(world):
     first = world.service.start(REVIEWER, world.relay.id).investigation
     world.finish(first.id)
-    world.publish(HOSPITAL, "Maya Rawat moved to ward 5.", world.source_claim)
+    world.publish(HOSPITAL, "Sita Tamang moved to ward 5.", world.source_claim)
     again = world.service.start(REVIEWER, world.relay.id)
     assert again.mode == InvestigationMode.LIVE
     assert again.investigation.fingerprint != first.fingerprint

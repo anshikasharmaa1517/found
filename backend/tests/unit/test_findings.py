@@ -12,8 +12,8 @@ from found_core.domain.findings import (
 )
 from tests.unit.factories import claim
 
-RELAY_TEXT = "According to Central Hospital Demo, Maya R. was admitted to ward 3."
-SOURCE_TEXT = "Maya Rawat admitted to ward 3 at 07:40, stable."
+RELAY_TEXT = "According to Central Hospital Demo, Sita T. was admitted to ward 3."
+SOURCE_TEXT = "Sita Tamang admitted to ward 3 at 07:40, stable."
 
 
 def relay_claim():

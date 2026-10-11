@@ -81,8 +81,8 @@ def world():
 
 
 def test_a_likely_duplicate_is_proposed_with_reasons_and_queued(world):
-    first = world.person("Maya Rawat", 24, BRIDGE)
-    second = world.person("Maya R.", 24, BRIDGE, org=NGO)
+    first = world.person("Sita Tamang", 24, BRIDGE)
+    second = world.person("Sita T.", 24, BRIDGE, org=NGO)
     key = pair_key(first.subject_id, second.subject_id)
     assert world.last.proposals_created == [key] and world.last.candidates == 1
 
@@ -94,29 +94,29 @@ def test_a_likely_duplicate_is_proposed_with_reasons_and_queued(world):
 
 
 def test_names_alone_never_propose(world):
-    world.person("Maya Rawat")
-    world.person("Maya Rawat", org=NGO)
+    world.person("Sita Tamang")
+    world.person("Sita Tamang", org=NGO)
     assert world.last.candidates == 1 and world.last.proposals_created == []
     assert world.repo.identity_proposals == {} and world.repo.review_items == {}
 
 
 def test_places_only_count_when_they_are_the_same_place(world):
-    world.person("Maya R.", 24, BRIDGE)
-    world.person("Maya Rawat", 30, SCHOOL, org=NGO)
+    world.person("Sita T.", 24, BRIDGE)
+    world.person("Sita Tamang", 30, SCHOOL, org=NGO)
     assert world.last.proposals_created == []
 
 
 def test_a_repeated_event_creates_nothing_new(world):
-    world.person("Maya Rawat", 24, BRIDGE)
-    second = world.person("Maya Rawat", 24, BRIDGE, org=NGO)
+    world.person("Sita Tamang", 24, BRIDGE)
+    second = world.person("Sita Tamang", 24, BRIDGE, org=NGO)
     again = world.resolver.on_person_created(second.subject_id)
     assert again.proposals_created == [] and len(world.repo.identity_proposals) == 1
     assert len(world.repo.review_items) == 1
 
 
 def test_the_earlier_record_finds_the_later_one_without_a_second_proposal(world):
-    first = world.person("Maya Rawat", 24, BRIDGE)
-    world.person("Maya Rawat", 24, BRIDGE, org=NGO)
+    first = world.person("Sita Tamang", 24, BRIDGE)
+    world.person("Sita Tamang", 24, BRIDGE, org=NGO)
     assert world.resolver.on_person_created(first.subject_id).proposals_created == []
     assert len(world.repo.identity_proposals) == 1
 
@@ -127,15 +127,15 @@ def test_missing_records_and_other_subjects_are_skipped(world):
 
 def test_candidates_are_capped(world):
     for _ in range(CANDIDATE_CAP + 3):
-        world.person("Maya Rawat", 24, resolve=False)
-    world.person("Maya Rawat", 24)
+        world.person("Sita Tamang", 24, resolve=False)
+    world.person("Sita Tamang", 24)
     assert world.last.candidates == CANDIDATE_CAP
     assert len(world.last.proposals_created) == CANDIDATE_CAP
 
 
 def proposed(world):
-    first = world.person("Maya Rawat", 24, BRIDGE)
-    second = world.person("Maya Rawat", 24, BRIDGE, org=NGO)
+    first = world.person("Sita Tamang", 24, BRIDGE)
+    second = world.person("Sita Tamang", 24, BRIDGE, org=NGO)
     return first, second, pair_key(first.subject_id, second.subject_id)
 
 
@@ -188,7 +188,7 @@ def test_only_reviewers_decide(world):
 
 def test_evidence_must_be_about_the_pair(world):
     _, _, key = proposed(world)
-    other = world.person("Arjun Negi", 31)
+    other = world.person("Bikash Shrestha", 31)
     with pytest.raises(ValidationFailed):
         world.decide(key, evidence_claim_ids=[other.id])
     with pytest.raises(ValidationFailed):
@@ -214,7 +214,7 @@ def test_bad_bodies_are_refused(world, body):
 
 def test_unknown_pairs_are_not_found(world):
     first, _, _ = proposed(world)
-    lone = world.person("Arjun Negi", 31)
+    lone = world.person("Bikash Shrestha", 31)
     with pytest.raises(NotFound):
         world.decide(pair_key(first.subject_id, lone.subject_id))
     with pytest.raises(NotFound):
@@ -235,7 +235,7 @@ def test_the_person_page_shows_the_decision_and_the_queue_shows_the_pair(world):
     for pid in (first.subject_id, second.subject_id):
         (decision,) = people.profile(FAMILY, pid).identity
         assert decision.pair_key == key
-    assert people.profile(FAMILY, world.person("Arjun Negi", 31).subject_id).identity == ()
+    assert people.profile(FAMILY, world.person("Bikash Shrestha", 31).subject_id).identity == ()
 
 
 def test_subjects_that_are_not_people_are_skipped(world):

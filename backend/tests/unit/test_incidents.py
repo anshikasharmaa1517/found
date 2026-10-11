@@ -37,7 +37,7 @@ class Clock:
 def world():
     repo = InMemoryFoundRepository()
     repo.put_incident(
-        Incident(id="inc_1", name="Kesari Valley flood", area="Kesari valley", is_demo=True)
+        Incident(id="inc_1", name="Melamchi flood", area="Melamchi", is_demo=True)
     )
     clock = Clock()
     ingest = IngestService(repo, clock=clock, sleep=lambda _: None)
@@ -68,8 +68,8 @@ def test_details_name_the_incident_and_check_access(world):
     repo, service, _, _ = world
     incident = service.details(FAMILY, "inc_1")
     assert (incident.name, incident.area, incident.is_demo) == (
-        "Kesari Valley flood",
-        "Kesari valley",
+        "Melamchi flood",
+        "Melamchi",
         True,
     )
     with pytest.raises(Forbidden):
@@ -80,11 +80,11 @@ def test_details_name_the_incident_and_check_access(world):
 
 def test_recent_reports_are_newest_first_with_names_and_sources(world):
     _, service, report, _ = world
-    first = report("R-1", "Maya Rawat", "FOUND_SAFE", "Maya Rawat admitted to ward 3.")
-    second = report("R-2", "Arjun Negi", "INJURED", "Arjun Negi treated for cuts.")
+    first = report("R-1", "Sita Tamang", "FOUND_SAFE", "Sita Tamang admitted to ward 3.")
+    second = report("R-2", "Bikash Shrestha", "INJURED", "Bikash Shrestha treated for cuts.")
     recent = service.recent_reports(REVIEWER, "inc_1")
     assert [r.claim.id for r in recent] == [second.id, first.id]
-    assert recent[0].subject.display_name == "Arjun Negi"
+    assert recent[0].subject.display_name == "Bikash Shrestha"
     assert recent[0].source_name == "Central Hospital Demo" and not recent[0].withheld
     assert len(service.recent_reports(REVIEWER, "inc_1", limit=1)) == 1
 
@@ -98,7 +98,7 @@ def test_the_limit_is_capped(world):
 
 def test_an_unreleased_sensitive_report_is_withheld_from_families(world):
     repo, service, report, clock = world
-    deceased = report("R-1", "Ramesh Thapliyal", "DECEASED", "Declared dead at 03:20.")
+    deceased = report("R-1", "Gopal Adhikari", "DECEASED", "Declared dead at 03:20.")
     (mine,) = service.recent_reports(FAMILY, "inc_1")
     assert mine.withheld
     (theirs,) = service.recent_reports(REVIEWER, "inc_1")
@@ -114,15 +114,15 @@ def test_an_unreleased_sensitive_report_is_withheld_from_families(world):
 def test_routes_show_details_and_mask_withheld_reports(world, monkeypatch):
     _, service, report, _ = world
     monkeypatch.setattr(container, "incident_service", lambda: service)
-    report("R-1", "Ramesh Thapliyal", "DECEASED", "Declared dead at 03:20.")
+    report("R-1", "Gopal Adhikari", "DECEASED", "Declared dead at 03:20.")
     family = {"sub": "fam_1", "cognito:groups": "[family]"}
 
     status, body, _ = call(event("GET", "/v1/incidents/inc_1", claims=family))
     assert status == 200
     assert body == {
         "id": "inc_1",
-        "name": "Kesari Valley flood",
-        "area": "Kesari valley",
+        "name": "Melamchi flood",
+        "area": "Melamchi",
         "is_demo": True,
         "started_at": None,
     }
@@ -131,7 +131,7 @@ def test_routes_show_details_and_mask_withheld_reports(world, monkeypatch):
     (item,) = body["reports"]
     assert status == 200 and item["withheld"] is True
     assert "claim_type" not in item and "excerpt" not in item and "source" not in item
-    assert item["subject_name"] == "Ramesh Thapliyal"
+    assert item["subject_name"] == "Gopal Adhikari"
 
     bad = call(event("GET", "/v1/incidents/inc_1/recent", claims=family, query={"limit": "x"}))
     assert bad[0] == 400
@@ -139,13 +139,13 @@ def test_routes_show_details_and_mask_withheld_reports(world, monkeypatch):
 
 def test_sources_are_busiest_first_with_counts_and_relays(world):
     _, service, report, _ = world
-    report("R-1", "Maya Rawat", "FOUND_SAFE", "Maya Rawat admitted to ward 3.")
-    report("R-2", "Arjun Negi", "INJURED", "Arjun Negi treated for cuts.")
+    report("R-1", "Sita Tamang", "FOUND_SAFE", "Sita Tamang admitted to ward 3.")
+    report("R-2", "Bikash Shrestha", "INJURED", "Bikash Shrestha treated for cuts.")
     relay = report(
         "V-1",
-        "Maya Rawat",
+        "Sita Tamang",
         "FOUND_SAFE",
-        "According to Central Hospital Demo, Maya Rawat is safe.",
+        "According to Central Hospital Demo, Sita Tamang is safe.",
         org=RELIEF,
     )
     hospital, relief = service.sources(REVIEWER, "inc_1")
@@ -162,8 +162,8 @@ def test_sources_are_busiest_first_with_counts_and_relays(world):
 
 def test_recent_reports_can_come_from_one_source(world):
     _, service, report, _ = world
-    report("R-1", "Maya Rawat", "FOUND_SAFE", "Maya Rawat admitted to ward 3.")
-    relay = report("V-1", "Arjun Negi", "MISSING", "Arjun Negi not found.", org=RELIEF)
+    report("R-1", "Sita Tamang", "FOUND_SAFE", "Sita Tamang admitted to ward 3.")
+    relay = report("V-1", "Bikash Shrestha", "MISSING", "Bikash Shrestha not found.", org=RELIEF)
     (only,) = service.recent_reports(REVIEWER, "inc_1", source_id=relay.source_id)
     assert only.claim.id == relay.id
     assert service.recent_reports(REVIEWER, "inc_1", source_id="src_none") == []
@@ -171,7 +171,7 @@ def test_recent_reports_can_come_from_one_source(world):
 
 def test_source_counts_hide_the_type_of_held_reports(world):
     _, service, report, _ = world
-    report("R-1", "Ramesh Thapliyal", "DECEASED", "Declared dead at 03:20.")
+    report("R-1", "Gopal Adhikari", "DECEASED", "Declared dead at 03:20.")
     (mine,) = service.sources(FAMILY, "inc_1")
     assert mine.by_type == {WITHHELD_KEY: 1}
     (theirs,) = service.sources(REVIEWER, "inc_1")
@@ -183,7 +183,7 @@ def test_source_counts_hide_the_type_of_held_reports(world):
 def test_sources_route_lists_each_source(world, monkeypatch):
     _, service, report, _ = world
     monkeypatch.setattr(container, "incident_service", lambda: service)
-    claim = report("R-1", "Maya Rawat", "FOUND_SAFE", "Maya Rawat admitted to ward 3.")
+    claim = report("R-1", "Sita Tamang", "FOUND_SAFE", "Sita Tamang admitted to ward 3.")
     family = {"sub": "fam_1", "cognito:groups": "[family]"}
 
     status, body, _ = call(event("GET", "/v1/incidents/inc_1/sources", claims=family))

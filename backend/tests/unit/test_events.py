@@ -59,8 +59,8 @@ SUBJECT = Subject(
     id="per_1",
     incident_id="inc_1",
     subject_type="PERSON",
-    display_name="Maya Rawat",
-    name_norm="maya rawat",
+    display_name="Sita Tamang",
+    name_norm="sita tamang",
     age=24,
     claim_seq=1,
 )

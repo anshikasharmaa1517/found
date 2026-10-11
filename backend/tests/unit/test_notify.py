@@ -62,7 +62,7 @@ class World:
         subject = (
             {"type": "PERSON", "id": self.person}
             if self.person
-            else {"type": "PERSON", "new": {"name": "Maya Rawat"}}
+            else {"type": "PERSON", "new": {"name": "Sita Tamang"}}
         )
         claim = self.ingest.publish(
             PublishCommand.parse(
@@ -72,7 +72,7 @@ class World:
                     "actor": "pub",
                     "subject": subject,
                     "claim_type": claim_type,
-                    "original_text": f"Report {self.refs} about Maya Rawat.",
+                    "original_text": f"Report {self.refs} about Sita Tamang.",
                     "external_reference": f"REF-{self.refs}",
                     "reported_at": at,
                 }

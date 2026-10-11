@@ -25,9 +25,9 @@ HOSPITAL = Organization(
 PUBLISHER = Caller(user_id="user_1", groups=frozenset({"publisher"}), org_id="org_h")
 
 BODY = {
-    "subject": {"type": "PERSON", "new": {"name": "Maya Rawat", "age": 24}},
+    "subject": {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},
     "claim_type": "MISSING",
-    "original_text": "Maya Rawat, 24, missing since the bridge collapse.",
+    "original_text": "Sita Tamang, 24, missing since the bridge collapse.",
     "external_reference": "CH-1",
     "reported_at": "2026-10-02T21:10:00+05:30",
 }

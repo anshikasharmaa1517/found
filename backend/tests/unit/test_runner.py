@@ -65,9 +65,9 @@ class World:
         self.ledger = InMemoryBudgetLedger()
         self.config = InvestigationConfig(model_id="model-a", model_call_cap=model_call_cap)
         ingest = IngestService(self.repo, clock=self.clock, sleep=lambda _: None)
-        self.source = self.publish(ingest, HOSPITAL, "Maya Rawat admitted to ward 3, stable.")
+        self.source = self.publish(ingest, HOSPITAL, "Sita Tamang admitted to ward 3, stable.")
         self.relay = self.publish(
-            ingest, NGO, "According to Central Hospital Demo, Maya R. was admitted.", self.source
+            ingest, NGO, "According to Central Hospital Demo, Sita T. was admitted.", self.source
         )
         starter = InvestigationService(self.repo, self.ledger, Queue(), self.config, self.clock)
         self.inv = starter.start(REVIEWER, self.relay.id).investigation
@@ -79,7 +79,7 @@ class World:
         subject = (
             {"type": "PERSON", "id": about.subject_id}
             if about
-            else {"type": "PERSON", "new": {"name": "Maya Rawat"}}
+            else {"type": "PERSON", "new": {"name": "Sita Tamang"}}
         )
         return ingest.publish(
             PublishCommand.parse(

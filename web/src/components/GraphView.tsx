@@ -82,9 +82,9 @@ export function GraphView({ incidentId }: { incidentId: string }) {
     () => (graph ? graph.nodes.filter((n) => n.kind === "person").sort((a, b) => a.label.localeCompare(b.label)) : []),
     [graph],
   );
-  // The demo opens on Maya, the person its story follows; elsewhere, everything.
+  // The demo opens on Sita, the person its story follows; elsewhere, everything.
   const centre =
-    focus === undefined ? (people.find((p) => p.label === "Maya Rawat")?.id ?? null) : focus;
+    focus === undefined ? (people.find((p) => p.label === "Sita Tamang")?.id ?? null) : focus;
 
   const view = useMemo(() => {
     if (!graph) return null;

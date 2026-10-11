@@ -38,7 +38,7 @@ describe("userFromClaims", () => {
 describe("initials", () => {
   it("uses the first and last initial, or the first two letters", () => {
     expect(initials("Ananya Rao")).toBe("AR");
-    expect(initials("Maya Devi Rawat")).toBe("MR");
+    expect(initials("Sita Devi Tamang")).toBe("ST");
     expect(initials("asha")).toBe("AS");
     expect(initials("reviewer@example.com")).toBe("RE");
   });

@@ -14,9 +14,9 @@ def _data(**overrides):
         "org_name": "Central Hospital Demo",
         "org_type": "HOSPITAL",
         "actor": "user_1",
-        "subject": {"type": "PERSON", "new": {"name": "Maya Rawat", "age": 24}},
+        "subject": {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},
         "claim_type": "FOUND_SAFE",
-        "original_text": "Maya Rawat, 24, admitted, stable.",
+        "original_text": "Sita Tamang, 24, admitted, stable.",
         "external_reference": "CH-0412",
         "reported_at": "2026-10-03T07:40:00+05:30",
     }

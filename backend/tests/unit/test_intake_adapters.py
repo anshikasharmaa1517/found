@@ -18,7 +18,7 @@ from found_core.adapters.s3_store import S3ObjectStore
 from found_core.adapters.textract_reader import TextractReader
 from found_core.ports.intake import ExtractionFailed
 
-CANDIDATES = [{"subject_name": "Kavita Bisht", "claim_type": "SHELTERED", "span_text": "x"}]
+CANDIDATES = [{"subject_name": "Kamala Lama", "claim_type": "SHELTERED", "span_text": "x"}]
 
 
 def client(service):
@@ -50,9 +50,9 @@ def test_the_upload_form_pins_type_and_size(bucket):
 
 def test_text_round_trips_and_size_is_checked_first(bucket):
     store = S3ObjectStore(bucket, "data")
-    store.put_text("intake/i/ijb_1/pasted.txt", "Kavita Bisht is safe.")
+    store.put_text("intake/i/ijb_1/pasted.txt", "Kamala Lama is safe.")
     stored = store.read("intake/i/ijb_1/pasted.txt", 100)
-    assert stored.content_type == "text/plain" and stored.data == b"Kavita Bisht is safe."
+    assert stored.content_type == "text/plain" and stored.data == b"Kamala Lama is safe."
     with pytest.raises(ValueError):
         store.read("intake/i/ijb_1/pasted.txt", 5)
 
@@ -65,8 +65,8 @@ def test_textract_lines_are_joined():
         {
             "Blocks": [
                 {"BlockType": "PAGE"},
-                {"BlockType": "LINE", "Text": "Kavita Bisht, 29"},
-                {"BlockType": "WORD", "Text": "Kavita"},
+                {"BlockType": "LINE", "Text": "Kamala Lama, 29"},
+                {"BlockType": "WORD", "Text": "Kamala"},
                 {"BlockType": "LINE", "Text": "staying in hall B"},
             ]
         },
@@ -74,7 +74,7 @@ def test_textract_lines_are_joined():
     )
     with stub:
         assert TextractReader(textract, "data").read_text("intake/k") == (
-            "Kavita Bisht, 29\nstaying in hall B"
+            "Kamala Lama, 29\nstaying in hall B"
         )
 
 
@@ -122,9 +122,9 @@ def test_converse_forces_the_tool_and_reads_its_input():
 
 
 def test_mantle_request_forces_the_tool_and_marks_text_untrusted():
-    body = MantleExtractor(mantle_url("ap-south-1"), "key", "model-x").request_body("Kavita")
+    body = MantleExtractor(mantle_url("ap-south-1"), "key", "model-x").request_body("Kamala")
     assert body["tool_choice"] == {"type": "function", "function": {"name": "emit_candidates"}}
-    assert body["messages"][1]["content"] == "<text_untrusted>\nKavita\n</text_untrusted>"
+    assert body["messages"][1]["content"] == "<text_untrusted>\nKamala\n</text_untrusted>"
     assert mantle_url("ap-south-1") == "https://bedrock-mantle.ap-south-1.api.aws/v1"
 
 

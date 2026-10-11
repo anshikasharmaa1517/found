@@ -13,7 +13,7 @@ const SUBS = "/v1/me/subscriptions";
 const FOLLOW = "/v1/people/per_1/subscriptions";
 
 const timeline = () => ({
-  person: { id: "per_1", name: "Maya Rawat", age: 24 },
+  person: { id: "per_1", name: "Sita Tamang", age: 24 },
   summary: { label: "Reported missing", basis: "b", cited_claim_id: null, conflicts: [], needs_review: false },
   identity: [],
   entries: [],
@@ -64,7 +64,7 @@ describe("follow panel", () => {
     await user.clear(screen.getByLabelText("Phone number"));
     await user.type(screen.getByLabelText("Phone number"), "+919876543210");
     await user.click(screen.getByRole("button", { name: "Follow" }));
-    expect(await screen.findByText(/You follow Maya Rawat/)).toHaveTextContent("by text to +919876543210");
+    expect(await screen.findByText(/You follow Sita Tamang/)).toHaveTextContent("by text to +919876543210");
     expect(sent[0]).toEqual({
       path: FOLLOW,
       body: { channel_sms: true, phone_e164: "+919876543210" },
@@ -103,7 +103,7 @@ describe("follow panel", () => {
   it("is shown only to family accounts", async () => {
     const { api } = routedApi({ [TIMELINE]: timeline });
     renderApp(as(REVIEWER), "/people/per_1", api);
-    await screen.findByRole("heading", { name: "Maya Rawat" });
+    await screen.findByRole("heading", { name: "Sita Tamang" });
     expect(screen.queryByRole("heading", { name: /Alerts for/ })).not.toBeInTheDocument();
   });
 });

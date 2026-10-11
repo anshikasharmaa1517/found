@@ -11,7 +11,7 @@ from found_core.services.review import ReviewService
 from handlers import intake as intake_handler
 from tests.unit.test_api_handler import FixedClock, call, event
 from tests.unit.test_api_handler import repo as api_repo  # noqa: F401 - fixture
-from tests.unit.test_intake import KAVITA, ROAD, TEXT, FakeExtractor, FakeReader, FakeStore
+from tests.unit.test_intake import KAMALA, ROAD, TEXT, FakeExtractor, FakeReader, FakeStore
 from tests.unit.test_watcher_handler import Context
 
 PUBLISHER = {"sub": "pub_1", "cognito:groups": "[publisher]", "custom:org_id": "org_h"}
@@ -27,7 +27,7 @@ def world(api_repo, monkeypatch):  # noqa: F811
         IngestService(api_repo, clock=FixedClock(), sleep=lambda _: None),
         store,
         FakeReader(),
-        FakeExtractor([KAVITA, ROAD]),
+        FakeExtractor([KAMALA, ROAD]),
         clock=FixedClock(),
     )
     monkeypatch.setattr(container, "intake_service", lambda: service)
@@ -70,7 +70,7 @@ def test_pasted_text_runs_through_the_workflow_to_the_review_queue(world):
     status, detail, _ = call(event("GET", f"/v1/intake-jobs/{job_id}", claims=PUBLISHER))
     assert status == 200 and detail["job"]["candidate_count"] == 2
     assert [c["subject_name"] for c in detail["candidates"]] == [
-        "Kavita Bisht",
+        "Kamala Lama",
         "Road to Upper Village",
     ]
     assert call(event("GET", f"/v1/intake-jobs/{job_id}", claims=FAMILY))[0] == 404

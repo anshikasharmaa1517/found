@@ -25,7 +25,7 @@ def alert(status: str) -> dict:
             user_id="fam_1",
             relation="UPDATE",
             severity="info",
-            message="Newer report for Maya Rawat.",
+            message="Newer report for Sita Tamang.",
             delivery_status=status,
             created_at=WHEN,
         )

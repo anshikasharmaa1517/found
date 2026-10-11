@@ -12,17 +12,17 @@ function signedIn() {
   return gateway;
 }
 
-const MAYA = { id: "per_1", name: "Maya Rawat", age: 24 };
-const MOHAN = { id: "per_2", name: "Mohan Rawat", age: null };
+const SITA = { id: "per_1", name: "Sita Tamang", age: 24 };
+const MOHAN = { id: "per_2", name: "Mohan Tamang", age: null };
 const RAVI = { id: "per_3", name: "Ravi Kumar", age: 30 };
 
 afterEach(() => localStorage.clear());
 
 describe("people page", () => {
   it("lists people with links and remembers the incident", async () => {
-    const { api } = routedApi({ [PATH]: () => ({ people: [MAYA, MOHAN], next_cursor: null }) });
+    const { api } = routedApi({ [PATH]: () => ({ people: [SITA, MOHAN], next_cursor: null }) });
     renderApp(signedIn(), "/incidents/inc_1/people", api);
-    const link = await screen.findByRole("link", { name: "Maya Rawat" });
+    const link = await screen.findByRole("link", { name: "Sita Tamang" });
     expect(link).toHaveAttribute("href", "/people/per_1");
     expect(screen.getByText("Not reported")).toBeInTheDocument();
     expect(localStorage.getItem("found.incidentId")).toBe("inc_1");
@@ -32,17 +32,17 @@ describe("people page", () => {
   it("searches by name and age through the URL", async () => {
     const { api, calls } = routedApi({
       [PATH]: (q: Query) =>
-        q.q ? { people: [MAYA], next_cursor: null } : { people: [MAYA, RAVI], next_cursor: null },
+        q.q ? { people: [SITA], next_cursor: null } : { people: [SITA, RAVI], next_cursor: null },
     });
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     await screen.findByRole("link", { name: "Ravi Kumar" });
     const user = userEvent.setup();
-    await user.type(screen.getByLabelText("Name"), "rawat");
+    await user.type(screen.getByLabelText("Name"), "tamang");
     await user.type(screen.getByLabelText("Age"), "25");
     await user.click(screen.getByRole("button", { name: "Search" }));
     await screen.findByText(/Ages match within 2 years/);
     expect(screen.queryByRole("link", { name: "Ravi Kumar" })).not.toBeInTheDocument();
-    expect(calls.at(-1)?.query).toMatchObject({ q: "rawat", age: "25" });
+    expect(calls.at(-1)?.query).toMatchObject({ q: "tamang", age: "25" });
   });
 
   it("loads more pages with the cursor", async () => {
@@ -50,7 +50,7 @@ describe("people page", () => {
       [PATH]: (q: Query) =>
         q.cursor === "c2"
           ? { people: [RAVI], next_cursor: null }
-          : { people: [MAYA, MOHAN], next_cursor: "c2" },
+          : { people: [SITA, MOHAN], next_cursor: "c2" },
     });
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     await userEvent.setup().click(await screen.findByRole("button", { name: "Load more" }));
@@ -76,13 +76,13 @@ describe("people page", () => {
   it("opens an incident from the home page", async () => {
     const { api } = routedApi({
       "/v1/health": () => ({ status: "ok" }),
-      [PATH]: () => ({ people: [MAYA], next_cursor: null }),
+      [PATH]: () => ({ people: [SITA], next_cursor: null }),
     });
     renderApp(signedIn(), "/", api);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText("Incident"), "inc_1");
     await user.click(screen.getByRole("button", { name: "Open people" }));
-    expect(await screen.findByRole("link", { name: "Maya Rawat" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Sita Tamang" })).toBeInTheDocument();
   });
 
   it("rejects an incident id that is not id-shaped", async () => {
@@ -96,7 +96,7 @@ describe("people page", () => {
 });
 
 const STATUSED = {
-  ...MAYA,
+  ...SITA,
   status: {
     label: "Reported found safe",
     claim_type: "FOUND_SAFE",
@@ -136,8 +136,8 @@ function overviewRoutes() {
           proposal: {
             pair_key: "per_1|per_9",
             people: [
-              { id: "per_1", name: "Maya Rawat", age: 24, incident_id: "inc_1" },
-              { id: "per_9", name: "Maya R.", age: 24, incident_id: "inc_1" },
+              { id: "per_1", name: "Sita Tamang", age: 24, incident_id: "inc_1" },
+              { id: "per_9", name: "Sita T.", age: 24, incident_id: "inc_1" },
             ],
             reasons: ["GIVEN_EXACT", "AGE_EQUAL"],
             score: 40,
@@ -148,7 +148,7 @@ function overviewRoutes() {
       next_cursor: null,
     }),
     "/v1/people/per_1/timeline": () => ({
-      person: MAYA,
+      person: SITA,
       summary: {
         label: "Reported found safe",
         basis: "Latest dated status report",
@@ -170,7 +170,7 @@ function overviewRoutes() {
           source: "Central Hospital Demo",
           reported_at: "2026-10-03T02:10:00Z",
           relation: "UPDATE",
-          excerpt: "Maya Rawat, 24, admitted to ward 3.",
+          excerpt: "Sita Tamang, 24, admitted to ward 3.",
         },
       ],
       next_cursor: null,
@@ -199,10 +199,10 @@ describe("people overview", () => {
     expect(within(stats).getByText("Latest report: missing")).toBeInTheDocument();
     expect(within(stats).getByText("Possible matches to review")).toBeInTheDocument();
     const list = await screen.findByRole("list", { name: "People" });
-    const card = within(list).getByRole("link", { name: "Maya Rawat" }).closest("li")!;
+    const card = within(list).getByRole("link", { name: "Sita Tamang" }).closest("li")!;
     expect(within(card).getByText("Reported found safe")).toBeInTheDocument();
     expect(within(card).getByText("3 reports")).toBeInTheDocument();
-    expect(within(card).getByText("MR")).toBeInTheDocument();
+    expect(within(card).getByText("ST")).toBeInTheDocument();
     expect(card).toHaveClass("ok");
     expect(within(card).getByText("Reports differ")).toBeInTheDocument();
     const ravi = within(list).getByRole("link", { name: "Ravi Kumar" }).closest("li")!;
@@ -224,12 +224,12 @@ describe("people overview", () => {
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     expect(await screen.findByText("Pick someone to see what is known")).toBeInTheDocument();
     const list = await screen.findByRole("list", { name: "People" });
-    await userEvent.setup().click(within(list).getByRole("link", { name: "Maya Rawat" }));
-    const preview = (await screen.findByRole("heading", { name: "Maya Rawat", level: 2 })).closest(
+    await userEvent.setup().click(within(list).getByRole("link", { name: "Sita Tamang" }));
+    const preview = (await screen.findByRole("heading", { name: "Sita Tamang", level: 2 })).closest(
       "section",
     )!;
     expect(within(preview).getByText(/District Police Demo, Missing/)).toBeInTheDocument();
-    expect(within(preview).getByText("Maya Rawat, 24, admitted to ward 3.")).toBeInTheDocument();
+    expect(within(preview).getByText("Sita Tamang, 24, admitted to ward 3.")).toBeInTheDocument();
     expect(within(preview).getByRole("link", { name: "Open the full timeline" })).toHaveAttribute(
       "href",
       "/people/per_1",
@@ -243,7 +243,7 @@ describe("people overview", () => {
     const { api } = overviewRoutes();
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     const list = await screen.findByRole("list", { name: "People" });
-    await userEvent.setup().click(within(list).getByRole("link", { name: "Maya Rawat" }));
-    expect(await screen.findByRole("heading", { name: "Maya Rawat", level: 1 })).toBeInTheDocument();
+    await userEvent.setup().click(within(list).getByRole("link", { name: "Sita Tamang" }));
+    expect(await screen.findByRole("heading", { name: "Sita Tamang", level: 1 })).toBeInTheDocument();
   });
 });

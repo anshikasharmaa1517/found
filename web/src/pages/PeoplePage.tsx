@@ -29,7 +29,7 @@ function statusTone(person: PersonRow): string {
   return TONE[status.claim_type ?? ""] ?? "";
 }
 
-/** "Maya Rawat" -> "MR"; a dot or a single name still gives something to show. */
+/** "Sita Tamang" -> "ST"; a dot or a single name still gives something to show. */
 function nameInitials(name: string): string {
   const parts = name.replace(/\./g, " ").split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
@@ -228,7 +228,7 @@ export function PeoplePage() {
       <form className="search" role="search" onSubmit={onSearch} key={key}>
         <label>
           Name
-          <input name="q" type="search" defaultValue={q} placeholder="For example: Rawat" />
+          <input name="q" type="search" defaultValue={q} placeholder="For example: Tamang" />
         </label>
         <label className="narrow">
           Age

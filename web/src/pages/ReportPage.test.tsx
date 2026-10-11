@@ -40,10 +40,10 @@ function stored(replayed = false) {
 }
 
 async function fillNewPerson(user: UserEvent) {
-  await user.type(await screen.findByLabelText("Name as reported"), "Maya Rawat");
+  await user.type(await screen.findByLabelText("Name as reported"), "Sita Tamang");
   await user.type(screen.getByLabelText("Age (optional)"), "24");
   await user.selectOptions(screen.getByLabelText("Report type"), "FOUND_SAFE");
-  await user.type(screen.getByLabelText("Report text as received"), "Maya Rawat admitted, stable.");
+  await user.type(screen.getByLabelText("Report text as received"), "Sita Tamang admitted, stable.");
   await user.click(screen.getByLabelText("The time is not known"));
   await user.type(screen.getByLabelText("Your reference"), "CH-2026-0412");
 }
@@ -66,9 +66,9 @@ describe("report page", () => {
     );
     const body = sent[0]!.body as ReportBody;
     expect(body).toEqual({
-      subject: { type: "PERSON", new: { name: "Maya Rawat", age: 24 } },
+      subject: { type: "PERSON", new: { name: "Sita Tamang", age: 24 } },
       claim_type: "FOUND_SAFE",
-      original_text: "Maya Rawat admitted, stable.",
+      original_text: "Sita Tamang admitted, stable.",
       external_reference: "CH-2026-0412",
     });
   });
@@ -147,16 +147,16 @@ describe("report page", () => {
 
   it("finds an existing person and sends the reported time with its offset", async () => {
     const { api, sent } = routedApi(
-      { [PEOPLE]: () => ({ people: [{ id: "per_1", name: "Maya Rawat", age: 24 }], next_cursor: null }) },
+      { [PEOPLE]: () => ({ people: [{ id: "per_1", name: "Sita Tamang", age: 24 }], next_cursor: null }) },
       { [REPORTS]: stored() },
     );
     renderApp(as(), "/incidents/inc_1/report", api);
     const user = userEvent.setup();
     await user.click(await screen.findByLabelText("A person already listed"));
-    await user.type(screen.getByLabelText("Name"), "rawat");
+    await user.type(screen.getByLabelText("Name"), "tamang");
     await user.click(screen.getByRole("button", { name: "Find" }));
-    await user.click(await screen.findByRole("button", { name: "Maya Rawat" }));
-    expect(screen.getByText(/Report about/)).toHaveTextContent("Report about Maya Rawat");
+    await user.click(await screen.findByRole("button", { name: "Sita Tamang" }));
+    expect(screen.getByText(/Report about/)).toHaveTextContent("Report about Sita Tamang");
 
     await user.selectOptions(screen.getByLabelText("Report type"), "FOUND_SAFE");
     await user.type(screen.getByLabelText("Report text as received"), "Admitted.");
@@ -172,8 +172,8 @@ describe("report page", () => {
 
   it("starts from a person when linked from their timeline", async () => {
     const { api } = routedApi({}, { [REPORTS]: stored() });
-    renderApp(as(), "/incidents/inc_1/report?person=per_1&name=Maya%20Rawat", api);
-    expect(await screen.findByText(/Report about/)).toHaveTextContent("Report about Maya Rawat");
+    renderApp(as(), "/incidents/inc_1/report?person=per_1&name=Sita%20Tamang", api);
+    expect(await screen.findByText(/Report about/)).toHaveTextContent("Report about Sita Tamang");
   });
 
   it("warns that deceased reports are held for a reviewer", async () => {

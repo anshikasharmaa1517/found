@@ -30,10 +30,10 @@ function sent(fetchImpl: ReturnType<typeof setup>["fetchImpl"]) {
 describe("api client", () => {
   it("sends the bearer token and query, and parses JSON", async () => {
     const { client, fetchImpl } = setup(json(200, { people: [] }));
-    const body = await client.get("/v1/people", { q: "maya", age: 24, cursor: undefined });
+    const body = await client.get("/v1/people", { q: "sita", age: 24, cursor: undefined });
     expect(body).toEqual({ people: [] });
     const { url, headers } = sent(fetchImpl);
-    expect(url).toBe("https://api.example.org/v1/people?q=maya&age=24");
+    expect(url).toBe("https://api.example.org/v1/people?q=sita&age=24");
     expect(headers.authorization).toBe("Bearer tok");
   });
 

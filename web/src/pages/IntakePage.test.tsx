@@ -55,13 +55,13 @@ describe("intake page", () => {
     renderApp(signedIn(), "/incidents/inc_1/upload", api);
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.click(await screen.findByRole("button", { name: "Pasted text" }));
-    await user.type(screen.getByLabelText("Report text"), "Kavita Bisht, 29, is in hall B.");
+    await user.type(screen.getByLabelText("Report text"), "Kamala Lama, 29, is in hall B.");
     await user.click(screen.getByRole("button", { name: "Send for review" }));
 
     expect(await screen.findByRole("heading", { name: "Reading the report" })).toBeInTheDocument();
     expect(sent[0]).toEqual({
       path: "/v1/incidents/inc_1/intake-text",
-      body: { text: "Kavita Bisht, 29, is in hall B." },
+      body: { text: "Kamala Lama, 29, is in hall B." },
     });
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS));
     expect(await screen.findByRole("heading", { name: "Ready for a reviewer" })).toBeInTheDocument();

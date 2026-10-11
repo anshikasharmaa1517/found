@@ -110,12 +110,17 @@ def test_disagreeing_bridge_reports_both_stay_visible_and_are_flagged(world):
 
 def test_types_without_status_are_labelled_as_the_latest_report(world):
     world.report(
-        "river", "HAZARD", "Kesari river", "WATER_RISING", "2026-10-02T19:45:00+05:30", where=GHAT
+        "river",
+        "HAZARD",
+        "Indrawati river",
+        "WATER_RISING",
+        "2026-10-02T19:45:00+05:30",
+        where=GHAT,
     )
     latest = world.report(
         "river",
         "HAZARD",
-        "Kesari river",
+        "Indrawati river",
         "WATER_RECEDING",
         "2026-10-03T06:30:00+05:30",
         org=VOLUNTEERS,
@@ -144,7 +149,7 @@ def test_a_subject_without_reports_is_labelled_plainly():
 
 def test_people_are_not_in_the_climate_layer_and_climate_is_not_in_people_counts(world):
     world.report(
-        "maya", "PERSON", "Maya Rawat", "MISSING", "2026-10-02T21:10:00+05:30", where=BRIDGE
+        "sita", "PERSON", "Sita Tamang", "MISSING", "2026-10-02T21:10:00+05:30", where=BRIDGE
     )
     world.report(
         "bridge",
@@ -187,7 +192,7 @@ def test_the_demo_dataset_has_a_sourced_climate_picture():
     load_dataset(dataset, repo, IngestService(repo, sleep=lambda _: None))
     layer = ClimateService(repo).layer(FAMILY, "inc_demo")
     by_name = {f.subject.display_name: f for f in layer.features}
-    assert set(by_name) >= {"Old Bridge", "Riverside Shelter", "Kesari river at Market Ghat"}
+    assert set(by_name) >= {"Old Bridge", "Riverside Shelter", "Indrawati river at Market Ghat"}
     bridge = by_name["Old Bridge"]
     assert bridge.label == "Reported bridge open" and len(bridge.conflicts) == 1
     assert all(f.location is not None for f in layer.features)

@@ -58,7 +58,7 @@ class World:
         subject = (
             {"type": "PERSON", "id": self.person}
             if self.person
-            else {"type": "PERSON", "new": {"name": "Maya Rawat"}}
+            else {"type": "PERSON", "new": {"name": "Sita Tamang"}}
         )
         claim = self.ingest.publish(
             PublishCommand.parse(
@@ -68,7 +68,7 @@ class World:
                     "actor": "pub",
                     "subject": subject,
                     "claim_type": claim_type,
-                    "original_text": text or f"Report {self.refs} about Maya Rawat.",
+                    "original_text": text or f"Report {self.refs} about Sita Tamang.",
                     "external_reference": f"REF-{self.refs}",
                     "reported_at": reported_at,
                 }
@@ -107,7 +107,7 @@ def test_queue_lists_open_items_most_urgent_first_with_context(world):
         ReviewItemType.CONFLICT,
     ]
     held = page.entries[0]
-    assert held.claim.id == deceased.id and held.subject.display_name == "Maya Rawat"
+    assert held.claim.id == deceased.id and held.subject.display_name == "Sita Tamang"
     assert held.source.name == "Central Hospital Demo"
     only = world.review.queue(REVIEWER, "inc_1", item_type="conflict")
     assert [e.item.item_type for e in only.entries] == [ReviewItemType.CONFLICT]
@@ -213,9 +213,9 @@ def test_resolve_needs_a_reviewer_and_a_known_item(world):
 
 
 def finished_finding(world):
-    source = world.report("FOUND_SAFE", org=HOSPITAL, text="Maya Rawat admitted to ward 3.")
+    source = world.report("FOUND_SAFE", org=HOSPITAL, text="Sita Tamang admitted to ward 3.")
     relay = world.report(
-        "FOUND_SAFE", org=NGO, text="According to Central Hospital Demo, Maya Rawat was admitted."
+        "FOUND_SAFE", org=NGO, text="According to Central Hospital Demo, Sita Tamang was admitted."
     )
     config = InvestigationConfig(model_id="model-a")
     starter = InvestigationService(world.repo, InMemoryBudgetLedger(), Queue(), config, world.clock)

@@ -30,7 +30,7 @@ class World:
         self.watch = WatchService(self.repo, clock=FixedClock())
         self.refs = 0
         self.subject_id = self.report(
-            claim_type="MISSING", subject={"type": "PERSON", "new": {"name": "Maya Rawat"}}
+            claim_type="MISSING", subject={"type": "PERSON", "new": {"name": "Sita Tamang"}}
         ).subject_id
 
     def report(self, org=POLICE, claim_type="MISSING", reported_at=T1, subject=None):
@@ -41,7 +41,7 @@ class World:
             "actor": "user_1",
             "subject": subject or {"type": "PERSON", "id": self.subject_id},
             "claim_type": claim_type,
-            "original_text": f"Report {self.refs} about Maya Rawat.",
+            "original_text": f"Report {self.refs} about Sita Tamang.",
             "external_reference": f"REF-{self.refs}",
             "reported_at": reported_at,
         }
@@ -87,7 +87,7 @@ def test_first_report_alerts_each_active_follower(world):
     assert alerts["sub_b"].delivery_status == DeliveryStatus.NOT_REQUIRED
     alert = alerts["sub_a"]
     assert alert.user_id == "user_sub_a" and alert.incident_id == "inc_1"
-    expected = "First report for Maya Rawat: District Police Demo says missing"
+    expected = "First report for Sita Tamang: District Police Demo says missing"
     assert alert.message.startswith(expected)
     assert "Earlier reports are retained." in alert.message
 
@@ -106,7 +106,7 @@ def test_newer_different_status_is_an_update(world):
     result = world.run(found)
     assert result.relation == Relation.UPDATE and result.alerts_created == 2
     message = world.alerts_for(found)[0].message
-    assert message.startswith("Newer report for Maya Rawat: Central Hospital Demo says found safe")
+    assert message.startswith("Newer report for Sita Tamang: Central Hospital Demo says found safe")
 
 
 def test_repeat_of_same_status_does_not_alert(world):
@@ -121,7 +121,7 @@ def test_late_earlier_report_is_historical(world):
     result = world.run(late)
     assert result.relation == Relation.HISTORICAL
     alert = world.alerts_for(late)[0]
-    assert alert.message.startswith("Earlier report received for Maya Rawat")
+    assert alert.message.startswith("Earlier report received for Sita Tamang")
     assert alert.severity == Severity.HIGH
 
 

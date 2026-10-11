@@ -16,19 +16,19 @@ from found_core.domain.intake import (
 )
 
 TEXT = """Riverside Shelter Demo register, 3 Oct.
-Kavita Bisht, 29, arrived with her son at 08:00 and is staying in hall B.
+Kamala Lama, 29, arrived with her son at 08:00 and is staying in hall B.
 Road to Upper Village blocked by a landslide."""
 
 
 def candidate(**overrides):
     return {
         "subject_type": "PERSON",
-        "subject_name": "Kavita Bisht",
+        "subject_name": "Kamala Lama",
         "age": 29,
         "claim_type": "SHELTERED",
         "reported_at_text": "2026-10-03T08:00:00+05:30",
         "location_name": "Riverside Shelter Demo",
-        "span_text": "Kavita Bisht, 29, arrived with her son at 08:00 and is staying in hall B.",
+        "span_text": "Kamala Lama, 29, arrived with her son at 08:00 and is staying in hall B.",
         **overrides,
     }
 
@@ -61,7 +61,7 @@ def test_only_allowed_types_are_accepted():
         ("image/png", b"\x89PNG\r\n\x1a\nrest", True),
         ("application/pdf", b"%PDF-1.7 rest", True),
         ("image/jpeg", b"%PDF-1.7 pretending", False),
-        ("text/plain", b"Kavita Bisht is safe.", True),
+        ("text/plain", b"Kamala Lama is safe.", True),
         ("text/plain", b"\x00\x01binary", False),
         ("text/plain", b"\xff\xfe not utf-8", False),
     ],
@@ -82,13 +82,13 @@ def test_reported_times_need_an_offset_and_are_never_guessed():
 def test_a_good_candidate_is_kept_with_its_time_parsed():
     (kept,), dropped = validate_candidates([candidate()], TEXT)
     assert dropped == []
-    assert kept.subject_name == "Kavita Bisht" and kept.claim_type == "SHELTERED"
+    assert kept.subject_name == "Kamala Lama" and kept.claim_type == "SHELTERED"
     assert kept.reported_at == datetime(2026, 10, 3, 2, 30, tzinfo=UTC)
 
 
 def test_spans_must_occur_in_the_text_whitespace_and_case_aside():
-    loose = candidate(span_text="kavita bisht, 29, arrived   with her son at 08:00")
-    invented = candidate(span_text="Kavita Bisht was taken to Central Hospital Demo.")
+    loose = candidate(span_text="kamala lama, 29, arrived   with her son at 08:00")
+    invented = candidate(span_text="Kamala Lama was taken to Central Hospital Demo.")
     kept, dropped = validate_candidates([loose, invented], TEXT)
     assert len(kept) == 1 and dropped == [{"index": 1, "reason": "SPAN_NOT_IN_TEXT"}]
 

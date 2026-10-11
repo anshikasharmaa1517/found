@@ -26,7 +26,7 @@ FAMILY = Caller(user_id="fam", groups=frozenset({"family"}))
 PUBLISHER = Caller(user_id="pub", groups=frozenset({"publisher"}), org_id="org_h")
 OTHER_PUBLISHER = Caller(user_id="pub2", groups=frozenset({"publisher"}), org_id="org_x")
 
-PEOPLE = [("Maya Rawat", 24), ("Mohan Rawat", 60), ("Asha Devi", None), ("Ravi Kumar", 30)]
+PEOPLE = [("Sita Tamang", 24), ("Mohan Tamang", 60), ("Laxmi Basnet", None), ("Ravi Kumar", 30)]
 
 
 class World:
@@ -71,7 +71,7 @@ class World:
 def world():
     w = World()
     w.ids = {name: w.person(name, age) for name, age in PEOPLE}
-    w.person("Maya Sharma", 24, incident="inc_2")
+    w.person("Sita Sharma", 24, incident="inc_2")
     return w
 
 
@@ -81,15 +81,15 @@ def names(page):
 
 def test_list_is_sorted_by_name_and_scoped_to_incident(world):
     page = world.service.list_people(REVIEWER, "inc_1")
-    assert names(page) == ["Asha Devi", "Maya Rawat", "Mohan Rawat", "Ravi Kumar"]
+    assert names(page) == ["Laxmi Basnet", "Mohan Tamang", "Ravi Kumar", "Sita Tamang"]
     assert page.next_cursor is None
 
 
 def test_list_pages_with_cursor(world):
     first = world.service.list_people(REVIEWER, "inc_1", limit="3")
-    assert names(first) == ["Asha Devi", "Maya Rawat", "Mohan Rawat"]
+    assert names(first) == ["Laxmi Basnet", "Mohan Tamang", "Ravi Kumar"]
     second = world.service.list_people(REVIEWER, "inc_1", limit="3", cursor=first.next_cursor)
-    assert names(second) == ["Ravi Kumar"] and second.next_cursor is None
+    assert names(second) == ["Sita Tamang"] and second.next_cursor is None
 
 
 def test_exact_page_size_has_no_next_cursor(world):
@@ -99,25 +99,25 @@ def test_exact_page_size_has_no_next_cursor(world):
 
 def test_age_filter_keeps_near_ages_and_unknown(world):
     page = world.service.list_people(REVIEWER, "inc_1", age="26")
-    assert names(page) == ["Asha Devi", "Maya Rawat"]
+    assert names(page) == ["Laxmi Basnet", "Sita Tamang"]
 
 
 def test_age_filter_pages_past_filtered_people(world):
     first = world.service.list_people(REVIEWER, "inc_1", age="60", limit="1")
-    assert names(first) == ["Asha Devi"]
+    assert names(first) == ["Laxmi Basnet"]
     second = world.service.list_people(
         REVIEWER, "inc_1", age="60", limit="1", cursor=first.next_cursor
     )
-    assert names(second) == ["Mohan Rawat"] and second.next_cursor is None
+    assert names(second) == ["Mohan Tamang"] and second.next_cursor is None
 
 
 @pytest.mark.parametrize(
     ("q", "expected"),
     [
-        ("rawat", ["Maya Rawat", "Mohan Rawat"]),
-        ("RAW", ["Maya Rawat", "Mohan Rawat"]),
-        ("ma ra", ["Maya Rawat"]),
-        ("rawat maya", ["Maya Rawat"]),
+        ("tamang", ["Mohan Tamang", "Sita Tamang"]),
+        ("TAM", ["Mohan Tamang", "Sita Tamang"]),
+        ("si ta", ["Sita Tamang"]),
+        ("tamang sita", ["Sita Tamang"]),
         ("kumar", ["Ravi Kumar"]),
         ("zed", []),
     ],
@@ -127,24 +127,26 @@ def test_search_matches_every_token_by_prefix(world, q, expected):
 
 
 def test_search_never_crosses_incidents(world):
-    assert names(world.service.list_people(REVIEWER, "inc_2", q="maya")) == ["Maya Sharma"]
+    assert names(world.service.list_people(REVIEWER, "inc_2", q="sita")) == ["Sita Sharma"]
 
 
 def test_search_with_age_and_paging(world):
-    first = world.service.list_people(REVIEWER, "inc_1", q="rawat", limit="1")
-    assert names(first) == ["Maya Rawat"]
+    first = world.service.list_people(REVIEWER, "inc_1", q="tamang", limit="1")
+    assert names(first) == ["Mohan Tamang"]
     second = world.service.list_people(
-        REVIEWER, "inc_1", q="rawat", limit="1", cursor=first.next_cursor
+        REVIEWER, "inc_1", q="tamang", limit="1", cursor=first.next_cursor
     )
-    assert names(second) == ["Mohan Rawat"] and second.next_cursor is None
-    aged = world.service.list_people(REVIEWER, "inc_1", q="rawat", age="59")
-    assert names(aged) == ["Mohan Rawat"]
+    assert names(second) == ["Sita Tamang"] and second.next_cursor is None
+    aged = world.service.list_people(REVIEWER, "inc_1", q="tamang", age="59")
+    assert names(aged) == ["Mohan Tamang"]
 
 
 def test_cursor_from_another_listing_is_rejected(world):
     first = world.service.list_people(REVIEWER, "inc_1", limit="1")
     with pytest.raises(BadRequest):
-        world.service.list_people(REVIEWER, "inc_1", q="rawat", limit="1", cursor=first.next_cursor)
+        world.service.list_people(
+            REVIEWER, "inc_1", q="tamang", limit="1", cursor=first.next_cursor
+        )
 
 
 @pytest.mark.parametrize(
@@ -175,14 +177,14 @@ def test_caller_without_a_role_is_forbidden(world):
 
 
 @pytest.fixture
-def maya(world):
-    pid = world.ids["Maya Rawat"]
+def sita(world):
+    pid = world.ids["Sita Tamang"]
     subject = {"type": "PERSON", "id": pid}
     world.publish(
         subject,
         org=HOSPITAL,
         claim_type="FOUND_SAFE",
-        original_text="Maya Rawat, 24, admitted to Central Hospital Demo ward 3, stable.",
+        original_text="Sita Tamang, 24, admitted to Central Hospital Demo ward 3, stable.",
         reported_at="2026-10-03T07:40:00+05:30",
     )
     world.publish(
@@ -200,9 +202,9 @@ def maya(world):
     return pid
 
 
-def test_profile_cites_latest_report_and_names_conflicting_source(world, maya):
-    profile = world.service.profile(FAMILY, maya)
-    assert profile.person.display_name == "Maya Rawat"
+def test_profile_cites_latest_report_and_names_conflicting_source(world, sita):
+    profile = world.service.profile(FAMILY, sita)
+    assert profile.person.display_name == "Sita Tamang"
     assert profile.claim_count == 4
     assert profile.summary.label == "Reported found safe"
     assert profile.summary.basis == "Latest dated status report"
@@ -212,8 +214,8 @@ def test_profile_cites_latest_report_and_names_conflicting_source(world, maya):
     assert profile.sources[profile.conflicts[0].source_id].name == "District Police Demo"
 
 
-def test_timeline_is_ordered_by_reported_time_with_relations(world, maya):
-    timeline = world.service.timeline(FAMILY, maya)
+def test_timeline_is_ordered_by_reported_time_with_relations(world, sita):
+    timeline = world.service.timeline(FAMILY, sita)
     got = [(e.claim.seq, e.relation) for e in timeline.entries]
     assert got == [
         (4, Relation.HISTORICAL),
@@ -225,11 +227,11 @@ def test_timeline_is_ordered_by_reported_time_with_relations(world, maya):
     assert timeline.profile.summary.cited_claim_id == timeline.entries[-1].claim.id
 
 
-def test_timeline_desc_and_paging(world, maya):
+def test_timeline_desc_and_paging(world, sita):
     seqs = []
     cursor = None
     while True:
-        page = world.service.timeline(REVIEWER, maya, order="desc", limit="3", cursor=cursor)
+        page = world.service.timeline(REVIEWER, sita, order="desc", limit="3", cursor=cursor)
         seqs += [e.claim.seq for e in page.entries]
         cursor = page.next_cursor
         if cursor is None:
@@ -237,18 +239,18 @@ def test_timeline_desc_and_paging(world, maya):
     assert seqs == [2, 3, 1, 4]
 
 
-def test_timeline_cursor_is_bound_to_person_and_order(world, maya):
-    page = world.service.timeline(REVIEWER, maya, limit="1")
+def test_timeline_cursor_is_bound_to_person_and_order(world, sita):
+    page = world.service.timeline(REVIEWER, sita, limit="1")
     with pytest.raises(BadRequest):
-        world.service.timeline(REVIEWER, maya, order="desc", limit="1", cursor=page.next_cursor)
-    other = world.ids["Mohan Rawat"]
+        world.service.timeline(REVIEWER, sita, order="desc", limit="1", cursor=page.next_cursor)
+    other = world.ids["Mohan Tamang"]
     with pytest.raises(BadRequest):
         world.service.timeline(REVIEWER, other, limit="1", cursor=page.next_cursor)
 
 
-def test_timeline_rejects_bad_order(world, maya):
+def test_timeline_rejects_bad_order(world, sita):
     with pytest.raises(BadRequest):
-        world.service.timeline(REVIEWER, maya, order="sideways")
+        world.service.timeline(REVIEWER, sita, order="sideways")
 
 
 def test_unknown_person_is_not_found(world):

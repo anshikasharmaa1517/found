@@ -23,7 +23,7 @@ function alert(n: number, overrides: Partial<Alert> = {}): Alert {
     claim_id: `clm_${n}`,
     relation: "UPDATE",
     severity: "info",
-    message: `Newer report ${n} for Maya Rawat.`,
+    message: `Newer report ${n} for Sita Tamang.`,
     delivery_status: "NOT_REQUIRED",
     created_at: "2026-10-05T10:15:00Z",
     ...overrides,
@@ -35,7 +35,7 @@ const ALERT_MESSAGE = {
   alert_id: "alr_9",
   subject_id: "per_1",
   severity: "info",
-  message: "Newer report for Maya Rawat: Central Hospital Demo says found safe.",
+  message: "Newer report for Sita Tamang: Central Hospital Demo says found safe.",
 };
 
 function count(calls: Call[], path: string) {
@@ -60,7 +60,7 @@ describe("live alerts", () => {
       excerpt: "",
     });
     const timeline = {
-      person: { id: "per_1", name: "Maya Rawat", age: 24 },
+      person: { id: "per_1", name: "Sita Tamang", age: 24 },
       summary: { label: "", basis: "", cited_claim_id: null, conflicts: [], needs_review: false },
       identity: [],
       entries: [
@@ -93,7 +93,7 @@ describe("live alerts", () => {
     expect(await within(banner).findByText("District Police Demo · Missing")).toBeInTheDocument();
     expect(within(banner).queryByText(/Central Hospital Demo ·/)).toBeNull();
     expect(within(banner).queryByText(/Flood Relief Demo/)).toBeNull();
-    expect(within(banner).getByText("New report about Maya Rawat")).toBeInTheDocument();
+    expect(within(banner).getByText("New report about Sita Tamang")).toBeInTheDocument();
     expect(banner).toHaveClass("ok");
     expect(screen.getByRole("link", { name: "Alerts, 1 new" })).toBeInTheDocument();
 
@@ -129,7 +129,7 @@ describe("live alerts", () => {
     const { sockets, createSocket } = fakeSockets();
     const path = "/v1/people/per_1/timeline";
     const timeline = {
-      person: { id: "per_1", name: "Maya Rawat", age: 24 },
+      person: { id: "per_1", name: "Sita Tamang", age: 24 },
       summary: { label: "Reported missing", basis: "b", cited_claim_id: null, conflicts: [], needs_review: false },
       identity: [],
       entries: [],
@@ -137,7 +137,7 @@ describe("live alerts", () => {
     };
     const { api, calls } = routedApi({ [path]: () => timeline });
     renderApp(as(REVIEWER), "/people/per_1", api, { wsUrl: WS, createSocket });
-    await screen.findByRole("heading", { name: "Maya Rawat" });
+    await screen.findByRole("heading", { name: "Sita Tamang" });
     await waitFor(() => expect(sockets).toHaveLength(1));
     act(() => sockets[0]!.open());
     const before = count(calls, path);
@@ -145,7 +145,7 @@ describe("live alerts", () => {
     act(() => sockets[0]!.push({ type: "claim.created", incident_id: "inc_1", claim_id: "c", subject_id: "per_2", at: "x" }));
     act(() => sockets[0]!.push({ type: "claim.created", incident_id: "inc_1", claim_id: "c", subject_id: "per_1", at: "x" }));
     await waitFor(() => expect(count(calls, path)).toBe(before + 1));
-    expect(screen.getByRole("heading", { name: "Maya Rawat" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sita Tamang" })).toBeInTheDocument();
   });
 
   it("works without live updates when no WebSocket URL is set", async () => {
@@ -161,7 +161,7 @@ describe("alerts page", () => {
     let page = [alert(1, { severity: "high", delivery_status: "HELD" }), alert(2, { delivery_status: "SENT" })];
     const { api, calls } = routedApi({ "/v1/me/alerts": () => ({ alerts: page, next_cursor: null }) });
     renderApp(as(), "/alerts", api, { wsUrl: WS, createSocket });
-    expect(await screen.findByText("Newer report 1 for Maya Rawat.")).toBeInTheDocument();
+    expect(await screen.findByText("Newer report 1 for Sita Tamang.")).toBeInTheDocument();
     expect(screen.getByText(/A coordinator will contact you/)).toBeInTheDocument();
     expect(screen.getByText(/Also sent by text or email/)).toBeInTheDocument();
 
@@ -169,7 +169,7 @@ describe("alerts page", () => {
     act(() => sockets[0]!.open());
     page = [alert(3), ...page];
     act(() => sockets[0]!.push(ALERT_MESSAGE));
-    expect(await screen.findByText("Newer report 3 for Maya Rawat.")).toBeInTheDocument();
+    expect(await screen.findByText("Newer report 3 for Sita Tamang.")).toBeInTheDocument();
     expect(count(calls, "/v1/me/alerts")).toBe(2);
     // Already on the alerts page, so nothing counts as unread.
     expect(screen.getByRole("link", { name: "Alerts" })).toBeInTheDocument();
@@ -184,7 +184,7 @@ describe("alerts page", () => {
     });
     renderApp(as(), "/alerts", api);
     await userEvent.setup().click(await screen.findByRole("button", { name: "Load more" }));
-    expect(await screen.findByText("Newer report 3 for Maya Rawat.")).toBeInTheDocument();
+    expect(await screen.findByText("Newer report 3 for Sita Tamang.")).toBeInTheDocument();
 
     const empty = routedApi({ "/v1/me/alerts": () => ({ alerts: [], next_cursor: null }) });
     renderApp(as(), "/alerts", empty.api);

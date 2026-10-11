@@ -67,7 +67,7 @@ class World:
             **BODY,
             "subject": {"type": "PERSON", "id": self.person},
             "claim_type": "FOUND_SAFE",
-            "original_text": "According to Central Hospital Demo, Maya Rawat was admitted.",
+            "original_text": "According to Central Hospital Demo, Sita Tamang was admitted.",
             "external_reference": "NGO-1",
         }
         _, body, _ = publish(relay, claims=NGO_CLAIMS)

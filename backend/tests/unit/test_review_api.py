@@ -32,7 +32,7 @@ def test_queue_shows_the_held_report_to_reviewers(world):
     assert item["type"] == "held_alert" and item["status"] == "OPEN" and item["priority"] == 1
     assert item["claim"]["id"] == claim.id and item["claim"]["claim_type"] == "DECEASED"
     assert item["claim"]["source"] == "Central Hospital Demo"
-    assert item["person"]["name"] == "Maya Rawat"
+    assert item["person"]["name"] == "Sita Tamang"
     assert item["investigation"] is None
 
 

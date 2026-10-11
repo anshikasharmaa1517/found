@@ -57,8 +57,8 @@ def claim(cid, sid, src, claim_type="MISSING", loc=None, mentions=()):
 
 
 SUBJECTS = [
-    subject("per_a", "Maya Rawat"),
-    subject("per_b", "Maya R."),
+    subject("per_a", "Sita Tamang"),
+    subject("per_b", "Sita T."),
     subject("inf_1", "Old Bridge", "INFRASTRUCTURE"),
 ]
 SOURCES = [
@@ -177,7 +177,7 @@ def test_a_decision_replaces_the_proposal_and_everyone_sees_it():
         assert [e.kind for e in pair] == ["same_person"]
 
 
-def test_the_demo_incident_graph_links_maya_her_sources_and_the_proposed_match():
+def test_the_demo_incident_graph_links_sita_her_sources_and_the_proposed_match():
     from found_core.fixtures import load_dataset
     from tests.unit.test_dataset import read_dataset
 
@@ -188,10 +188,10 @@ def test_the_demo_incident_graph_links_maya_her_sources_and_the_proposed_match()
         resolver.on_person_created(person_id)
     graph = GraphService(repo).graph(REVIEWER, "inc_demo")
     by_label = {(n.kind, n.label): n for n in graph.nodes}
-    maya = by_label[("person", "Maya Rawat")]
-    other = by_label[("person", "Maya R.")]
+    sita = by_label[("person", "Sita Tamang")]
+    other = by_label[("person", "Sita T.")]
     assert any(
-        {e.source, e.target} == {maya.id, other.id} and e.kind == "possibly_same"
+        {e.source, e.target} == {sita.id, other.id} and e.kind == "possibly_same"
         for e in graph.edges
     )
     assert any(e.kind == "mentions" for e in graph.edges)

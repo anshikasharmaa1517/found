@@ -12,12 +12,12 @@ import {
 const NEW_PERSON: ReportValues = {
   subjectMode: "new",
   personId: "",
-  name: "  Maya Rawat ",
+  name: "  Sita Tamang ",
   age: "24",
   notes: "",
   claimType: "MISSING",
   value: "",
-  originalText: " Family reports Maya Rawat, 24, missing. ",
+  originalText: " Family reports Sita Tamang, 24, missing. ",
   reference: "UKPD-FIR-0091",
   reportedAt: "2026-10-02T21:10",
   timeUnknown: false,
@@ -74,9 +74,9 @@ describe("validate", () => {
 describe("buildBody", () => {
   it("builds a new-person report with trimmed text and the reported offset", () => {
     expect(buildBody(NEW_PERSON, IST)).toEqual({
-      subject: { type: "PERSON", new: { name: "Maya Rawat", age: 24 } },
+      subject: { type: "PERSON", new: { name: "Sita Tamang", age: 24 } },
       claim_type: "MISSING",
-      original_text: "Family reports Maya Rawat, 24, missing.",
+      original_text: "Family reports Sita Tamang, 24, missing.",
       external_reference: "UKPD-FIR-0091",
       reported_at: "2026-10-02T21:10:00+05:30",
     });

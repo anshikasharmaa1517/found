@@ -35,7 +35,7 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
 
 ## 1.3 Motivation
 
-- Climate-driven floods in Himalayan river corridors (for example, Kedarnath 2013, and recent floods in Nepal and Uttarakhand) repeatedly show that the information problem is as hard as the logistics problem.
+- Climate-driven floods in Himalayan river corridors (for example, the Koshi flood of 2008 and the Melamchi flood of 2021 in Nepal) repeatedly show that the information problem is as hard as the logistics problem.
 - Existing tools (person finders, spreadsheets, WhatsApp groups) collect reports but rarely preserve **lineage**: who said what, when, and based on whom.
 - An agent is genuinely useful here because tracing a relay requires reading free text, choosing what to look up next and comparing two accounts. Equally important, the agent must be **bounded and auditable**, because wrong answers about people's lives are costly.
 
@@ -208,7 +208,7 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
 ## UC-1: Hospital publishes a "found safe" report
 
 - **Actor**: Publisher (Central Hospital Demo)
-- **Preconditions**: Publisher signed in; person "Maya R." exists with a police `MISSING` claim; a family member follows her.
+- **Preconditions**: Publisher signed in; person "Sita T." exists with a police `MISSING` claim; a family member follows her.
 - **Main flow**:
   1. Publisher opens Sources, fills the form: person, `FOUND_SAFE`, reported time, text, reference `CH-2026-0412`.
   2. API validates and stores the claim atomically with its sequence number.
@@ -227,7 +227,7 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
 ## UC-2: Reviewer investigates a relayed report
 
 - **Actor**: Reviewer
-- **Preconditions**: An NGO report says "According to Central Hospital Demo, Maya R. was admitted in stable condition."
+- **Preconditions**: An NGO report says "According to Central Hospital Demo, Sita T. was admitted in stable condition."
 - **Main flow**:
   1. Reviewer clicks Investigate on the NGO claim.
   2. API computes the evidence fingerprint. No cached result. Budget reserved. Investigation queued.
@@ -248,7 +248,7 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
 ## UC-3: Reviewer decides a possible duplicate person
 
 - **Actor**: Reviewer
-- **Preconditions**: "Maya Rawat, 24" (police) and "Maya R., 24" (NGO) exist as two records.
+- **Preconditions**: "Sita Tamang, 24" (police) and "Sita T., 24" (NGO) exist as two records.
 - **Main flow**: Resolver proposed the pair with reasons `SURNAME_INITIAL_MATCH`, `AGE_EQUAL`, `SAME_PLACE_MENTIONED`. Reviewer opens both timelines side by side, confirms with a note.
 - **Alternative flows**: Reviewer rejects; later another reviewer changes the decision; history keeps both decisions.
 - **Failure scenarios**: Two reviewers decide at the same time: optimistic locking makes the second request fail with `409 VERSION_CONFLICT`; UI reloads.
@@ -813,7 +813,7 @@ Request (existing person):
   "subject": { "type": "PERSON", "id": "per_01J9YQ8K2M" },
   "claim_type": "FOUND_SAFE",
   "value": "Admitted, stable condition",
-  "original_text": "Maya Rawat, 24, admitted to Central Hospital Demo ward 3 at 07:40, stable.",
+  "original_text": "Sita Tamang, 24, admitted to Central Hospital Demo ward 3 at 07:40, stable.",
   "external_reference": "CH-2026-0412",
   "reported_at": "2026-10-03T07:40:00+05:30",
   "location": { "name": "Central Hospital Demo", "lat": 30.7268, "lon": 78.4354 }
@@ -824,9 +824,9 @@ Request (new person):
 
 ```json
 {
-  "subject": { "type": "PERSON", "new": { "name": "Maya Rawat", "age": 24, "notes": "Wearing a blue jacket" } },
+  "subject": { "type": "PERSON", "new": { "name": "Sita Tamang", "age": 24, "notes": "Wearing a blue jacket" } },
   "claim_type": "MISSING",
-  "original_text": "Family reports Maya Rawat, 24, missing since the bridge collapse on 2 Oct evening.",
+  "original_text": "Family reports Sita Tamang, 24, missing since the bridge collapse on 2 Oct evening.",
   "external_reference": "UKPD-FIR-0091",
   "reported_at": "2026-10-02T21:10:00+05:30"
 }
@@ -867,7 +867,7 @@ Response `200`:
 
 ```json
 {
-  "person": { "id": "per_01J9YQ8K2M", "name": "Maya Rawat", "age": 24 },
+  "person": { "id": "per_01J9YQ8K2M", "name": "Sita Tamang", "age": 24 },
   "summary": {
     "label": "Reported safe",
     "basis": "Latest dated status report",
@@ -877,8 +877,8 @@ Response `200`:
   },
   "identity": [ { "pair_key": "per_01J9YQ8K2M|per_01J9YR2D0C", "decision": "CONFIRMED", "reviewer": "rev_ananya", "decided_at": "2026-10-05T09:02:11Z" } ],
   "entries": [
-    { "claim_id": "clm_01J9YQ9A11", "seq": 1, "claim_type": "MISSING", "source": "District Police Demo", "reported_at": "2026-10-02T15:40:00Z", "relation": "FIRST", "excerpt": "Family reports Maya Rawat..." },
-    { "claim_id": "clm_01J9Z3T0QF", "seq": 2, "claim_type": "FOUND_SAFE", "source": "Central Hospital Demo", "reported_at": "2026-10-03T02:10:00Z", "relation": "UPDATE", "excerpt": "Maya Rawat, 24, admitted..." }
+    { "claim_id": "clm_01J9YQ9A11", "seq": 1, "claim_type": "MISSING", "source": "District Police Demo", "reported_at": "2026-10-02T15:40:00Z", "relation": "FIRST", "excerpt": "Family reports Sita Tamang..." },
+    { "claim_id": "clm_01J9Z3T0QF", "seq": 2, "claim_type": "FOUND_SAFE", "source": "Central Hospital Demo", "reported_at": "2026-10-03T02:10:00Z", "relation": "UPDATE", "excerpt": "Sita Tamang, 24, admitted..." }
   ],
   "next_cursor": null
 }
@@ -935,7 +935,7 @@ Response `200`:
     "comparison": "SUPPORTS",
     "summary": "The NGO report repeats the hospital's admission report. Both give the same ward time and condition.",
     "citations": [
-      { "claim_id": "clm_01JA0B2", "excerpt": "According to Central Hospital Demo, Maya R. was admitted" },
+      { "claim_id": "clm_01JA0B2", "excerpt": "According to Central Hospital Demo, Sita T. was admitted" },
       { "claim_id": "clm_01J9Z3T0QF", "excerpt": "admitted to Central Hospital Demo ward 3 at 07:40, stable" }
     ]
   },
@@ -1048,7 +1048,7 @@ Server to client (notifications only; the client refetches details if needed):
 
 ```json
 { "type": "claim.created", "incident_id": "inc_01J9X0", "claim_id": "clm_01J9Z3T0QF", "subject_id": "per_01J9YQ8K2M", "at": "2026-10-05T10:15:22Z" }
-{ "type": "alert.created", "alert_id": "alr_01J9Z3V", "subject_id": "per_01J9YQ8K2M", "severity": "info", "message": "Newer report for Maya Rawat: Central Hospital Demo says found safe. Earlier reports retained." }
+{ "type": "alert.created", "alert_id": "alr_01J9Z3V", "subject_id": "per_01J9YQ8K2M", "severity": "info", "message": "Newer report for Sita Tamang: Central Hospital Demo says found safe. Earlier reports retained." }
 { "type": "investigation.step", "investigation_id": "inv_01JA0D7", "seq": 3, "tool": "find_reports_by_source", "summary": "2 reports by Central Hospital Demo" }
 { "type": "investigation.updated", "investigation_id": "inv_01JA0D7", "status": "NEEDS_REVIEW" }
 { "type": "review.created", "review_id": "rev_01JA0E1", "item_type": "conflict" }

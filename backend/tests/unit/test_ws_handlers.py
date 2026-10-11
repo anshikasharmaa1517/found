@@ -153,7 +153,7 @@ def test_push_handler_sends_alert_to_its_user(world):
         user_id="fam_1",
         relation="UPDATE",
         severity="info",
-        message="Newer report for Maya Rawat.",
+        message="Newer report for Sita Tamang.",
         delivery_status="NOT_REQUIRED",
         created_at=datetime(2026, 10, 5, 10, 15, tzinfo=UTC),
     )
@@ -167,7 +167,7 @@ def test_push_handler_sends_alert_to_its_user(world):
                 "alert_id": "alr_1",
                 "subject_id": "per_1",
                 "severity": "info",
-                "message": "Newer report for Maya Rawat.",
+                "message": "Newer report for Sita Tamang.",
             },
         )
     ]

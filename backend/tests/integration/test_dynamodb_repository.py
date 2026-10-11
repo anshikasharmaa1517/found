@@ -51,9 +51,9 @@ def cmd(org=POLICE, ref="REF-1", subject=None, **overrides) -> PublishCommand:
         "incident_id": "inc_1",
         **org,
         "actor": "user_1",
-        "subject": subject or {"type": "PERSON", "new": {"name": "Maya Rawat", "age": 24}},
+        "subject": subject or {"type": "PERSON", "new": {"name": "Sita Tamang", "age": 24}},
         "claim_type": "MISSING",
-        "original_text": "Maya Rawat, 24, missing since the bridge collapse.",
+        "original_text": "Sita Tamang, 24, missing since the bridge collapse.",
         "external_reference": ref,
         "reported_at": "2026-10-02T21:10:00+05:30",
         **overrides,
@@ -70,8 +70,8 @@ def subject(seq=1):
         id="per_1",
         incident_id="inc_1",
         subject_type="PERSON",
-        display_name="Maya Rawat",
-        name_norm="maya rawat",
+        display_name="Sita Tamang",
+        name_norm="sita tamang",
         age=24,
         claim_seq=seq,
     )
@@ -148,7 +148,7 @@ def test_ensure_source_is_put_if_absent(repo):
 
 def test_publish_writes_items_under_design_keys(repo, table):
     repo.ensure_source(SOURCE)
-    repo.publish_claim_tx(plan(tokens=("maya", "rawat"), mentions=("src_hosp",)))
+    repo.publish_claim_tx(plan(tokens=("sita", "tamang"), mentions=("src_hosp",)))
 
     claim_item = table.get_item(Key={"PK": "SUBJ#per_1", "SK": "CLM#0000000001"})["Item"]
     assert claim_item["GSI1PK"] == "INC#inc_1#CLAIM"
@@ -160,13 +160,13 @@ def test_publish_writes_items_under_design_keys(repo, table):
 
     subject_item = table.get_item(Key={"PK": "SUBJ#per_1", "SK": "META"})["Item"]
     assert subject_item["GSI1PK"] == "INC#inc_1#PERSON"
-    assert subject_item["GSI1SK"] == "maya rawat#per_1"
+    assert subject_item["GSI1SK"] == "sita tamang#per_1"
     assert "status" not in subject_item
 
     assert "Item" in table.get_item(Key={"PK": "IDEM#org_p#REF-1", "SK": "META"})
     assert "Item" in table.get_item(Key={"PK": "SRCMENT#src_hosp", "SK": "CLM#clm_1"})
     tokens = table.query(KeyConditionExpression=Key("PK").eq("NTOK#inc_1"))["Items"]
-    assert sorted(t["SK"] for t in tokens) == ["maya#per_1", "rawat#per_1"]
+    assert sorted(t["SK"] for t in tokens) == ["sita#per_1", "tamang#per_1"]
 
 
 def test_unknown_reported_time_sorts_first_by_source(repo, table):
@@ -243,7 +243,7 @@ def test_ingest_service_end_to_end(service, repo):
             ref="NGO-1",
             subject=person(hospital.subject_id),
             claim_type="FOUND_SAFE",
-            original_text="According to Central Hospital Demo, Maya R. was admitted.",
+            original_text="According to Central Hospital Demo, Sita T. was admitted.",
         )
     ).claim
     assert relay.seq == 2
@@ -284,7 +284,7 @@ def publish_people(service, *names):
 
 
 def test_list_subjects_pages_by_name(service, repo):
-    ids = publish_people(service, "Ravi Kumar", "Maya Rawat", "Asha Devi")
+    ids = publish_people(service, "Ravi Kumar", "Sita Tamang", "Laxmi Basnet")
     service.publish(
         cmd(
             ref="S-1",
@@ -293,28 +293,28 @@ def test_list_subjects_pages_by_name(service, repo):
         )
     )
     first = repo.list_subjects("inc_1", "PERSON", 2)
-    assert [s.display_name for s in first] == ["Asha Devi", "Maya Rawat"]
+    assert [s.display_name for s in first] == ["Laxmi Basnet", "Ravi Kumar"]
     after = NamePosition(name_norm=first[-1].name_norm, subject_id=first[-1].id)
     rest = repo.list_subjects("inc_1", "PERSON", 2, after)
-    assert [s.id for s in rest] == [ids["Ravi Kumar"]]
+    assert [s.id for s in rest] == [ids["Sita Tamang"]]
     assert repo.list_subjects("inc_2", "PERSON", 10) == []
 
 
 def test_find_subject_ids_by_token_prefix(service, repo):
-    ids = publish_people(service, "Maya Rawat", "Mohan Rawat", "Ravi Kumar")
-    assert repo.find_subject_ids_by_token("inc_1", "raw") == sorted(
-        [ids["Maya Rawat"], ids["Mohan Rawat"]]
+    ids = publish_people(service, "Sita Tamang", "Mohan Tamang", "Tara Kumar")
+    assert repo.find_subject_ids_by_token("inc_1", "tam") == sorted(
+        [ids["Sita Tamang"], ids["Mohan Tamang"]]
     )
-    assert repo.find_subject_ids_by_token("inc_1", "ra") == sorted(ids.values())
+    assert repo.find_subject_ids_by_token("inc_1", "ta") == sorted(ids.values())
     assert repo.find_subject_ids_by_token("inc_1", "zz") == []
-    assert repo.find_subject_ids_by_token("inc_2", "raw") == []
+    assert repo.find_subject_ids_by_token("inc_2", "tam") == []
 
 
 def test_get_subjects_keeps_order_and_skips_unknown(service, repo):
-    ids = publish_people(service, "Maya Rawat", "Ravi Kumar")
-    wanted = [ids["Ravi Kumar"], "per_missing", ids["Maya Rawat"], ids["Ravi Kumar"]]
+    ids = publish_people(service, "Sita Tamang", "Ravi Kumar")
+    wanted = [ids["Ravi Kumar"], "per_missing", ids["Sita Tamang"], ids["Ravi Kumar"]]
     got = repo.get_subjects(wanted)
-    assert [s.display_name for s in got] == ["Ravi Kumar", "Maya Rawat"]
+    assert [s.display_name for s in got] == ["Ravi Kumar", "Sita Tamang"]
     assert repo.get_subjects([]) == []
 
 
