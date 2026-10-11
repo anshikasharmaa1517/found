@@ -502,3 +502,44 @@ def test_timeline_lists_source_checks_for_reviewers_only(sita, repo):
     ]
     _, family, _ = get(f"/v1/people/{sita}/timeline", claims=FAMILY_CLAIMS)
     assert family["investigations"] == []
+
+
+def test_timeline_shows_open_matches_to_every_role(sita, repo):
+    from datetime import UTC, datetime
+
+    from found_core.domain.models import IdentityProposal
+
+    _, other, _ = publish(
+        {
+            **BODY,
+            "subject": {"type": "PERSON", "new": {"name": "Sita T.", "age": 24}},
+            "external_reference": "CH-9",
+        }
+    )
+    other_id = other["claim"]["subject_id"]
+    a, b = sorted([sita, other_id])
+    repo.put_identity_proposal_if_absent(
+        IdentityProposal(
+            pair_key=f"{a}|{b}",
+            incident_id="inc_1",
+            person_a_id=a,
+            person_b_id=b,
+            reasons=("GIVEN_EXACT", "AGE_EQUAL"),
+            score=55,
+            proposed_by="resolver",
+            created_at=datetime(2026, 10, 3, 4, 0, tzinfo=UTC),
+        )
+    )
+    for claims in (REVIEWER_CLAIMS, FAMILY_CLAIMS):
+        _, body, _ = get(f"/v1/people/{sita}/timeline", claims=claims)
+        assert body["open_matches"] == [
+            {
+                "pair_key": f"{a}|{b}",
+                "other": {"id": other_id, "name": "Sita T.", "age": 24},
+                "reasons": ["GIVEN_EXACT", "AGE_EQUAL"],
+                "proposed_by": "resolver",
+            }
+        ]
+    # The other record sees the same pair from its side.
+    _, theirs, _ = get(f"/v1/people/{other_id}/timeline")
+    assert theirs["open_matches"][0]["other"]["id"] == sita

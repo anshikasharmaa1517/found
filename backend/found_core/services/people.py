@@ -15,6 +15,7 @@ from found_core.domain.ids import review_item_id
 from found_core.domain.models import (
     Claim,
     IdentityDecision,
+    IdentityProposal,
     Investigation,
     Location,
     Source,
@@ -85,12 +86,22 @@ class TimelineEntry:
 
 
 @dataclass(frozen=True)
+class OpenMatch:
+    """A proposal that this person and another record may be the same, not yet decided."""
+
+    proposal: IdentityProposal
+    other: Subject
+
+
+@dataclass(frozen=True)
 class Timeline:
     profile: PersonProfile
     entries: list[TimelineEntry]
     next_cursor: str | None
     # Source checks on this person's reports, oldest first. Reviewer work: empty for others.
     investigations: tuple[Investigation, ...] = ()
+    # Undecided proposals that include this person. The records stay separate (rule 6).
+    open_matches: tuple[OpenMatch, ...] = ()
 
 
 def _parse_age(raw: str | None) -> int | None:
@@ -262,6 +273,7 @@ class PeopleService:
         return Timeline(
             profile=profile,
             investigations=investigations,
+            open_matches=self._open_matches(person),
             entries=[
                 TimelineEntry(
                     claim=c, relation=relation_of[c.id], withheld=c.id in profile.withheld
@@ -270,6 +282,27 @@ class PeopleService:
             ],
             next_cursor=next_cursor,
         )
+
+    def _open_matches(self, person: Subject) -> tuple[OpenMatch, ...]:
+        proposals, decisions = self._repo.list_incident_identity(person.incident_id)
+        decided = {d.pair_key for d in decisions}
+        mine = [
+            p
+            for p in proposals
+            if person.id in (p.person_a_id, p.person_b_id) and p.pair_key not in decided
+        ]
+        others = {
+            s.id: s
+            for s in self._repo.get_subjects(
+                [p.person_b_id if p.person_a_id == person.id else p.person_a_id for p in mine]
+            )
+        }
+        matches = []
+        for p in sorted(mine, key=lambda p: (p.created_at, p.pair_key)):
+            other = others.get(p.person_b_id if p.person_a_id == person.id else p.person_a_id)
+            if other is not None:
+                matches.append(OpenMatch(proposal=p, other=other))
+        return tuple(matches)
 
     def _person_with_claims(self, caller: Caller, person_id: str) -> tuple[Subject, list[Claim]]:
         person = self._repo.get_subject(person_id)

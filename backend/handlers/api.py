@@ -430,6 +430,19 @@ def get_timeline(person_id: str) -> Response:
             "summary": summary_view(profile),
             "identity": identity_view(profile),
             "entries": [entry_view(profile, e) for e in timeline.entries],
+            "open_matches": [
+                {
+                    "pair_key": m.proposal.pair_key,
+                    "other": {
+                        "id": m.other.id,
+                        "name": m.other.display_name,
+                        "age": m.other.age,
+                    },
+                    "reasons": list(m.proposal.reasons),
+                    "proposed_by": m.proposal.proposed_by,
+                }
+                for m in timeline.open_matches
+            ],
             "investigations": [
                 {
                     "id": i.id,
