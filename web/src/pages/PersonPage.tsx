@@ -4,32 +4,18 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../api/context";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
-import {
-  getTimeline,
-  type IdentityLink,
-  type Order,
-  type Summary,
-  type TimelineEntry,
-} from "../api/people";
+import { getTimeline, type IdentityLink, type Order, type Summary } from "../api/people";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { FollowPanel } from "../components/FollowPanel";
+import { ReportTimeline } from "../components/ReportTimeline";
 import { TraceButton } from "../components/TraceButton";
 import { PageHeader, SkeletonRows } from "../components/ui";
 import { rememberedIncident } from "../incident";
-import {
-  claimTypeLabel,
-  formatTime,
-  IDENTITY_DECISION_LABELS,
-  labelFor,
-  relationLabel,
-} from "../labels";
+import { claimTypeLabel, formatTime, IDENTITY_DECISION_LABELS, labelFor } from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
+import { entryAnchor } from "../timeline";
 import { useLoad } from "../useLoad";
 import { usePager } from "../usePager";
-
-function anchor(claimId: string): string {
-  return `entry-${claimId}`;
-}
 
 /** Reviewers' decisions about other records of this person. Nothing is merged. */
 function IdentityLinks({ links }: { links: IdentityLink[] }) {
@@ -59,7 +45,7 @@ function SummaryCard({ summary }: { summary: Summary }) {
         {summary.cited_claim_id && (
           <>
             {". "}
-            <a href={`#${anchor(summary.cited_claim_id)}`}>See the report this is based on</a>
+            <a href={`#${entryAnchor(summary.cited_claim_id)}`}>See the report this is based on</a>
           </>
         )}
       </p>
@@ -74,7 +60,7 @@ function SummaryCard({ summary }: { summary: Summary }) {
           <ul>
             {summary.conflicts.map((c) => (
               <li key={c.claim_id}>
-                <a href={`#${anchor(c.claim_id)}`}>
+                <a href={`#${entryAnchor(c.claim_id)}`}>
                   {c.withheld ? "A sensitive report" : `${c.source}: ${claimTypeLabel(c.claim_type)}`}
                 </a>
               </li>
@@ -86,54 +72,6 @@ function SummaryCard({ summary }: { summary: Summary }) {
         Found shows what each source reported and when. It does not decide which report is true.
       </p>
     </section>
-  );
-}
-
-function Entries({
-  entries,
-  citedId,
-  canTrace,
-}: {
-  entries: TimelineEntry[];
-  citedId: string | null;
-  canTrace: boolean;
-}) {
-  return (
-    <>
-      {entries.map((entry) =>
-        entry.withheld ? (
-          <li key={entry.claim_id} id={anchor(entry.claim_id)} className="entry withheld">
-            <div className="entry-head">
-              <strong>Sensitive report</strong>
-              {entry.claim_id === citedId && <span className="tag tag-cited">Used for summary</span>}
-            </div>
-            <p className="meta">{formatTime(entry.reported_at)}</p>
-            <p>{entry.notice}</p>
-          </li>
-        ) : (
-        <li
-          key={entry.claim_id}
-          id={anchor(entry.claim_id)}
-          className={entry.claim_id === citedId ? "entry cited" : "entry"}
-        >
-          <div className="entry-head">
-            <strong>{claimTypeLabel(entry.claim_type)}</strong>
-            <span className={`tag tag-${entry.relation.toLowerCase()}`}>
-              {relationLabel(entry.relation)}
-            </span>
-            {entry.claim_id === citedId && <span className="tag tag-cited">Used for summary</span>}
-          </div>
-          <p className="meta">
-            {entry.source}
-            <span className="meta-sep">{formatTime(entry.reported_at)}</span>
-          </p>
-          {entry.value && <p>{entry.value}</p>}
-          <blockquote>{entry.excerpt}</blockquote>
-          {canTrace && <TraceButton claimId={entry.claim_id} />}
-        </li>
-        ),
-      )}
-    </>
   );
 }
 
@@ -231,10 +169,14 @@ export function PersonPage() {
       {entries.length === 0 ? (
         <p className="empty">No reports yet.</p>
       ) : (
-        <ol className="timeline">
-          <Entries entries={entries} citedId={summary.cited_claim_id} canTrace={canTrace} />
-          <Entries entries={pager.items} citedId={summary.cited_claim_id} canTrace={canTrace} />
-        </ol>
+        <ReportTimeline
+          entries={[...entries, ...pager.items]}
+          newestFirst={order === "desc"}
+          incidentId={incidentId}
+          citedId={summary.cited_claim_id}
+          showRelation
+          actions={canTrace ? (entry) => <TraceButton claimId={entry.claim_id} /> : undefined}
+        />
       )}
       {pager.error && <ErrorNotice error={pager.error} onRetry={pager.loadMore} />}
       {pager.hasMore && (

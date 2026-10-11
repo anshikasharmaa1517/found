@@ -144,43 +144,69 @@ function Stats({ incidentId }: { incidentId: string }) {
   );
 }
 
-/** Open identity proposals, for reviewers: two records that may be the same person. */
+const MATCHES_SHOWN = 5;
+
+/**
+ * Open identity proposals, for reviewers: two records that may be the same person, with
+ * the rule-based reasons. The records stay separate until a reviewer decides.
+ */
 function PossibleMatches({ incidentId }: { incidentId: string }) {
   const api = useApi();
   const [queue] = useLoad(`matches|${incidentId}`, () =>
     listReviewQueue(api, incidentId, { type: "identity", status: "OPEN" }),
   );
   if (queue.status !== "ready") return null;
-  const proposals = queue.data.items.filter((i) => i.proposal).slice(0, 2);
+  const proposals = queue.data.items.filter((i) => i.proposal);
   if (proposals.length === 0) return null;
+  const review = `/incidents/${encodeURIComponent(incidentId)}/review?type=identity`;
   return (
     <section className="matches" aria-labelledby="matches-title">
-      <h2 id="matches-title">Could these be the same person?</h2>
-      <ul className="rail-list">
-        {proposals.map((item) => (
-          <li key={item.id}>
-            <div className="row-head">
-              {item.proposal!.people.map((p, i) => (
-                <span key={p.id}>
-                  {i > 0 && <span className="meta">and </span>}
-                  <Link to={`/people/${encodeURIComponent(p.id)}`}>{p.name}</Link>
-                  {p.age !== null && <span className="meta">, {p.age}</span>}
+      <h2 id="matches-title" className="visually-hidden">
+        Possible matches
+      </h2>
+      <ul className="match-cards">
+        {proposals.slice(0, MATCHES_SHOWN).map((item) => {
+          const proposal = item.proposal!;
+          const ages = [...new Set(proposal.people.map((p) => p.age))];
+          return (
+            <li key={item.id} className="match-card">
+              <div className="match-head">
+                <span className="match-icon" aria-hidden="true">
+                  <PersonSearchIcon />
                 </span>
-              ))}
-            </div>
-            <p className="meta">
-              Why: {item.proposal!.reasons.map((r) => labelFor(MATCH_REASON_LABELS, r)).join(", ")}.
-              The records stay separate until someone who knows them confirms.
-            </p>
-          </li>
-        ))}
+                <h3>Could these be the same person?</h3>
+              </div>
+              <p className="match-pair">
+                {proposal.people.map((p, i) => (
+                  <span key={p.id} className="match-person">
+                    {i > 0 && <span className="meta">and</span>}
+                    <span className="person-initials" aria-hidden="true">
+                      {nameInitials(p.name)}
+                    </span>
+                    <Link to={`/people/${encodeURIComponent(p.id)}`}>{p.name}</Link>
+                  </span>
+                ))}
+              </p>
+              <p className="meta">
+                Why we think so:{" "}
+                {proposal.reasons.map((r) => labelFor(MATCH_REASON_LABELS, r).toLowerCase()).join(", ")}
+                {ages.length === 1 && ages[0] !== null && ` (${ages[0]})`}.
+              </p>
+              <p className="meta match-note">
+                We keep them separate until someone who knows them confirms.
+              </p>
+              <Link className="button-link" to={review}>
+                Review match
+              </Link>
+            </li>
+          );
+        })}
       </ul>
-      <Link
-        className="button-link"
-        to={`/incidents/${encodeURIComponent(incidentId)}/review?type=identity`}
-      >
-        Review matches
-      </Link>
+      {proposals.length > MATCHES_SHOWN && (
+        <p className="meta">
+          {proposals.length - MATCHES_SHOWN} more waiting. <Link to={review}>See them all</Link>
+        </p>
+      )}
     </section>
   );
 }
@@ -286,7 +312,7 @@ export function PeoplePage() {
       </div>
       <aside className="people-side">
         {selected ? (
-          <PersonPreview personId={selected} />
+          <PersonPreview personId={selected} incidentId={incidentId} />
         ) : (
           <div className="empty empty-small">
             <h3>Pick someone to see what is known</h3>

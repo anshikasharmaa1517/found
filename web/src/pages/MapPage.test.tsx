@@ -174,6 +174,18 @@ describe("map page", () => {
     expect(screen.getByText(/Trishuli river that flooded/)).toBeInTheDocument();
   });
 
+  it("opens with a place chosen when a report links to it", async () => {
+    const { api } = routedApi({ [PATH]: () => body(), [CLIMATE]: climate() });
+    const gateway = new FakeGateway();
+    gateway.user = REVIEWER;
+    renderApp(gateway, "/incidents/inc_1/map?place=loc_bridge", api);
+    expect(await screen.findByRole("region", { name: "Reports at Old Bridge" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Old Bridge · 41 reports" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("draws the map only when a basemap is configured", async () => {
     const { api } = routedApi({ [PATH]: () => body(), [CLIMATE]: climate() });
     const view = renderMap(api);

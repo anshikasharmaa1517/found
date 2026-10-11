@@ -1,6 +1,7 @@
 /** People and timeline endpoints (design Sections 7.3 and 7.4). */
 
 import type { ApiClient } from "./client";
+import type { SourceType } from "./sources";
 
 /** A person's cited status, as the list shows it; masked for roles that may not see it. */
 export interface PersonStatus {
@@ -66,7 +67,15 @@ export interface VisibleEntry {
   value: string | null;
   source_id: string;
   source: string;
+  /** What kind of organization the source is, for "From X (Police)". */
+  source_type?: SourceType | null;
   reported_at: string | null;
+  /** When Found received the report, which can differ from when it says it happened. */
+  ingested_at?: string;
+  /** The source's own id for the report. */
+  external_reference?: string;
+  /** Where the report was made, when it named a place. */
+  location?: { id: string; name: string } | null;
   relation: Relation;
   excerpt: string;
 }

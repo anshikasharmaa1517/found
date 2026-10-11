@@ -42,6 +42,10 @@ const HOSPITAL = entry({
   relation: "UPDATE",
   value: "Admitted, stable condition",
   excerpt: "Sita Tamang, 24, admitted to ward 3.",
+  source_type: "HOSPITAL",
+  ingested_at: "2026-10-03T03:00:00Z",
+  external_reference: "CHD-0001",
+  location: { id: "loc_h", name: "Central Hospital Demo grounds" },
 });
 const UNDATED = entry({
   claim_id: "clm_3",
@@ -139,14 +143,35 @@ describe("person page", () => {
     const items = await screen.findAllByRole("listitem");
     const hospital = items.find((li) => li.id === "entry-clm_2")!;
     expect(hospital).toHaveClass("cited");
-    expect(within(hospital).getByText("Found safe")).toBeInTheDocument();
+    expect(within(hospital).getByText("Reported safe")).toBeInTheDocument();
     expect(within(hospital).getByText("Newer report")).toBeInTheDocument();
     expect(within(hospital).getByText("Used for summary")).toBeInTheDocument();
     expect(within(hospital).getByText("Admitted, stable condition")).toBeInTheDocument();
-    expect(within(hospital).getByText(/Central Hospital Demo/)).toBeInTheDocument();
+    // Who said it, what kind of source it is, when it arrived and its own reference.
+    expect(within(hospital).getByText(/^From/)).toHaveTextContent(
+      "From Central Hospital Demo (Hospital)",
+    );
+    expect(within(hospital).getByText(/^Received/)).toHaveTextContent("Reference CHD-0001");
+    // What changed since the report before it, which stays on the page too.
+    expect(within(hospital).getByText("Changed from Missing")).toBeInTheDocument();
+    const police = items.find((li) => li.id === "entry-clm_1")!;
+    expect(within(police).queryByText(/Changed from/)).toBeNull();
+    // No incident remembered in this test, so no map link.
+    expect(within(hospital).queryByRole("link", { name: /on the map/ })).toBeNull();
     const undated = items.find((li) => li.id === "entry-clm_3")!;
     expect(within(undated).getByText(/Reported time unknown/)).toBeInTheDocument();
     expect(within(undated).getByText("Other information", { selector: ".tag" })).toBeInTheDocument();
+    expect(within(undated).getByText("Changed from Found safe")).toBeInTheDocument();
+  });
+
+  it("links a report's place to the incident map", async () => {
+    localStorage.setItem("found.incidentId", "inc_1");
+    const { api } = routedApi({ [PATH]: () => timeline() });
+    renderApp(signedIn(), "/people/per_1", api);
+    expect(
+      await screen.findByRole("link", { name: "Show Central Hospital Demo grounds on the map" }),
+    ).toHaveAttribute("href", "/incidents/inc_1/map?place=loc_h");
+    localStorage.clear();
   });
 
   it("flags reports waiting for review", async () => {

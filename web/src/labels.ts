@@ -18,6 +18,20 @@ export function claimTypeLabel(code: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+const REPORT_SENTENCES: Record<string, string> = {
+  MISSING: "Reported missing",
+  FOUND_SAFE: "Reported safe",
+  INJURED: "Reported injured",
+  DECEASED: "Reported deceased",
+  SEEN_AT_LOCATION: "Reported seen",
+  SHELTERED: "Reported sheltered",
+};
+
+/** A report as a sentence, as a timeline heading: "Reported missing". */
+export function reportSentence(code: string): string {
+  return REPORT_SENTENCES[code] ?? claimTypeLabel(code);
+}
+
 export const RELATION_LABELS: Record<Relation, string> = {
   FIRST: "First report",
   UPDATE: "Newer report",

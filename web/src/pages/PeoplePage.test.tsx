@@ -211,8 +211,10 @@ describe("people overview", () => {
     const matches = (await screen.findByRole("heading", { name: "Could these be the same person?" })).closest(
       "section",
     )!;
-    expect(within(matches).getByText(/Same given name, Same age/)).toBeInTheDocument();
-    expect(within(matches).getByRole("link", { name: "Review matches" })).toHaveAttribute(
+    expect(within(matches).getByText(/same given name, same age \(24\)/)).toBeInTheDocument();
+    expect(within(matches).getByText(/keep them separate/)).toBeInTheDocument();
+    expect(within(matches).getAllByText("ST")).toHaveLength(2);
+    expect(within(matches).getByRole("link", { name: "Review match" })).toHaveAttribute(
       "href",
       "/incidents/inc_1/review?type=identity",
     );
@@ -225,9 +227,10 @@ describe("people overview", () => {
     expect(await screen.findByText("Pick someone to see what is known")).toBeInTheDocument();
     const list = await screen.findByRole("list", { name: "People" });
     await userEvent.setup().click(within(list).getByRole("link", { name: "Sita Tamang" }));
-    const preview = (await screen.findByRole("heading", { name: "Sita Tamang", level: 2 })).closest(
-      "section",
-    )!;
+    const preview = (
+      await screen.findByRole("heading", { name: "What we know about Sita Tamang", level: 2 })
+    ).closest("section")!;
+    expect(within(preview).getByText(/say different things/)).toBeInTheDocument();
     expect(within(preview).getByText(/District Police Demo, Missing/)).toBeInTheDocument();
     expect(within(preview).getByText("Sita Tamang, 24, admitted to ward 3.")).toBeInTheDocument();
     expect(within(preview).getByRole("link", { name: "Open the full timeline" })).toHaveAttribute(

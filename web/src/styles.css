@@ -2897,11 +2897,6 @@ tbody tr.selected {
 }
 
 .matches {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--warn);
-  border-radius: var(--r-3);
-  padding: var(--s-4) var(--s-5);
   margin: var(--s-2) 0 var(--s-4);
 }
 
@@ -2938,6 +2933,235 @@ tbody tr.selected {
 
 .preview .button-link {
   margin-top: var(--s-3);
+}
+
+/* Reports as cards on a line, as in Trace: a status stripe, a dot on the line, the
+   sentence, the time, who said it and what changed. */
+
+.report-cards {
+  list-style: none;
+  position: relative;
+  display: grid;
+  gap: var(--s-3);
+  margin: var(--s-3) 0 var(--s-4);
+  padding: 0 0 0 var(--s-6);
+}
+
+.report-cards::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: var(--s-2);
+  bottom: var(--s-2);
+  width: 1px;
+  background: var(--line);
+}
+
+.report-card {
+  --tone: var(--neutral);
+  position: relative;
+  scroll-margin-top: var(--s-6);
+}
+
+.report-card.ok {
+  --tone: var(--ok);
+}
+
+.report-card.bad {
+  --tone: var(--bad);
+}
+
+.report-card.warn {
+  --tone: var(--warn);
+}
+
+.report-dot {
+  position: absolute;
+  left: calc(-1 * var(--s-6) + 1px);
+  top: var(--s-4);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 0 4px var(--bg);
+}
+
+.report-body {
+  position: relative;
+  display: grid;
+  gap: var(--s-1);
+  min-width: 0;
+  padding: var(--s-3) var(--s-4) var(--s-3) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.report-body::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--tone);
+}
+
+.report-card.cited .report-body {
+  border-color: var(--accent);
+}
+
+.report-card:target .report-body {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.report-body p {
+  margin: 0;
+}
+
+.report-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-1) var(--s-3);
+}
+
+.report-sentence {
+  color: var(--tone);
+  font-size: var(--fs-16);
+}
+
+.report-card.withheld .report-head strong {
+  color: var(--text-2);
+}
+
+.report-time {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: var(--fs-13);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.report-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.report-value {
+  font-weight: 500;
+}
+
+.report-source {
+  color: var(--text);
+}
+
+.report-place {
+  justify-self: start;
+  font-size: var(--fs-13);
+}
+
+/* Two sources say different things: shown, never resolved by the app. */
+
+.disagree {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin: var(--s-3) 0;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid color-mix(in oklch, var(--warn) 40%, transparent);
+  border-radius: var(--r-3);
+  background: var(--warn-soft);
+}
+
+.disagree > .icon {
+  margin-top: 3px;
+  color: var(--warn);
+}
+
+.disagree p {
+  margin: var(--s-1) 0 0;
+}
+
+/* Possible duplicates, as in Trace: the pair, the reasons, and a reviewer's button. */
+
+.match-cards {
+  list-style: none;
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+}
+
+.match-card {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+  border-radius: var(--r-3);
+  background: var(--accent-soft);
+}
+
+.match-card p {
+  margin: 0;
+}
+
+.match-card > .button-link {
+  justify-self: start;
+  background: var(--surface);
+}
+
+.match-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.match-head h3 {
+  margin: 0;
+  font-size: var(--fs-16);
+}
+
+.match-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex: none;
+}
+
+.match-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+}
+
+.match-person {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 500;
+}
+
+.match-person .person-initials {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.match-note {
+  font-style: italic;
 }
 
 /* Map: the busiest places as chips, and the counts for the one chosen. */

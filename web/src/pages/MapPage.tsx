@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import {
   CLIMATE_TYPE_LABELS,
@@ -81,8 +81,9 @@ function plural(n: number, word: string): string {
 }
 
 /** The busiest places as chips; choosing one shows its counts. */
-function BusiestPlaces({ data }: { data: IncidentMap }) {
-  const [selected, setSelected] = useState<string | null>(null);
+function BusiestPlaces({ data, initial }: { data: IncidentMap; initial: string | null }) {
+  // A report's "Show on the map" link arrives with its place already chosen.
+  const [selected, setSelected] = useState<string | null>(initial);
   const places = [...data.places].sort(
     (a, b) => b.reports - a.reports || a.name.localeCompare(b.name),
   );
@@ -173,6 +174,7 @@ type Layer = "PEOPLE" | ClimateType;
 
 export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
   const incidentId = useParams().incidentId ?? "";
+  const [params] = useSearchParams();
   const api = useApi();
   const [state, reload] = useLoad(incidentId, () => getIncidentMap(api, incidentId));
   const [climate, reloadClimate] = useLoad(`climate|${incidentId}`, () =>
@@ -269,7 +271,7 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
           ) : (
             <p className="hint">The basemap is not set up here, so places are listed below.</p>
           )}
-          <BusiestPlaces data={state.data} />
+          <BusiestPlaces data={state.data} initial={params.get("place")} />
           <PlacesTable data={state.data} />
           <h2>Roads, shelters and hazards</h2>
           {climate.status === "loading" && <p className="muted">Loading conditions</p>}
