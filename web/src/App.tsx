@@ -20,6 +20,7 @@ import { PersonPage } from "./pages/PersonPage";
 import { ReportPage } from "./pages/ReportPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { SignInPage } from "./pages/SignInPage";
+import { SourcesPage } from "./pages/SourcesPage";
 import { useTheme } from "./theme";
 import { ThemeProvider } from "./ThemeProvider";
 
@@ -74,6 +75,7 @@ export function AppRoutes({
         <Route path="incidents/:incidentId/people" element={<PeoplePage />} />
         <Route path="people/:personId" element={<PersonPage />} />
         <Route path="incidents/:incidentId/map" element={<MapPage mapStyleUrl={mapStyleUrl} />} />
+        <Route path="incidents/:incidentId/sources" element={<SourcesPage />} />
         <Route path="incidents/:incidentId/graph" element={<GraphPage />} />
         <Route
           path="incidents/:incidentId/report"

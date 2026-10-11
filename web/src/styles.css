@@ -1337,6 +1337,7 @@ button.menu-button[aria-expanded="true"] {
 .button-link {
   display: inline-flex;
   align-items: center;
+  gap: var(--s-2);
   min-height: 36px;
   padding: var(--s-2) var(--s-4);
   border-radius: var(--r-2);
@@ -2727,6 +2728,120 @@ tbody tr.selected {
 
 .preview .button-link {
   margin-top: var(--s-3);
+}
+
+/* Sources: one card per publisher, busiest first. */
+
+.search-field {
+  display: grid;
+  gap: var(--s-1);
+  max-width: 36rem;
+  margin: 0 0 var(--s-5);
+  font-weight: 500;
+}
+
+.search-input {
+  position: relative;
+  display: block;
+}
+
+.search-input .icon {
+  position: absolute;
+  left: var(--s-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.search-input input {
+  width: 100%;
+  min-height: 44px;
+  padding-left: var(--s-10);
+  font-size: var(--fs-16);
+}
+
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: var(--s-4);
+  align-items: start;
+}
+
+.source-card {
+  display: grid;
+  gap: var(--s-3);
+  min-width: 0;
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere;
+}
+
+.source-card p {
+  margin: 0;
+}
+
+.source-card > button.link {
+  justify-self: start;
+}
+
+.source-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.source-head h2 {
+  margin: 0;
+}
+
+.source-count {
+  flex: none;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.source-count .num {
+  font-family: var(--display);
+  font-size: var(--fs-28);
+  line-height: 1;
+}
+
+.pill-row {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+}
+
+.source-reports {
+  list-style: none;
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+}
+
+.source-reports li {
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--accent);
+}
+
+.source-reports .row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.source-reports p {
+  margin: var(--s-1) 0 0;
 }
 
 /* Graph: stored records and the typed links between them. */

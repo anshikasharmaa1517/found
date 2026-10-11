@@ -181,17 +181,17 @@ describe("app shell", () => {
     const { api } = routes({ "/v1/me/alerts": () => ({ alerts: [], next_cursor: null }) });
     const view = renderApp(as(), "/incidents/inc_demo/map", api);
     await screen.findByRole("heading", { name: "Map" });
-    expect(tabNames()).toEqual(["Map", "People", "Graph", "Review"]);
+    expect(tabNames()).toEqual(["Map", "People", "Sources", "Graph", "Review"]);
     view.unmount();
 
     const publisher = renderApp(as(PUBLISHER), "/incidents/inc_demo/map", api);
     await screen.findByRole("heading", { name: "Map" });
-    expect(tabNames()).toEqual(["Map", "People", "Graph", "Report", "Upload"]);
+    expect(tabNames()).toEqual(["Map", "People", "Sources", "Graph", "Report", "Upload"]);
     publisher.unmount();
 
     renderApp(as(FAMILY), "/incidents/inc_demo/map", api);
     await screen.findByRole("heading", { name: "Map" });
-    expect(tabNames()).toEqual(["Map", "People", "Graph", "Alerts"]);
+    expect(tabNames()).toEqual(["Map", "People", "Sources", "Graph", "Alerts"]);
   });
 
   it("keeps the People tab current on a person's page", async () => {

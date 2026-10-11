@@ -37,6 +37,10 @@ export function getRecentReports(
   api: ApiClient,
   incidentId: string,
   limit = 8,
+  sourceId?: string,
 ): Promise<{ reports: RecentReport[] }> {
-  return api.get(`/v1/incidents/${encodeURIComponent(incidentId)}/recent`, { limit });
+  return api.get(`/v1/incidents/${encodeURIComponent(incidentId)}/recent`, {
+    limit,
+    source_id: sourceId,
+  });
 }

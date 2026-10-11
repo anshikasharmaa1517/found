@@ -16,6 +16,7 @@ import { AlertBanner } from "./AlertBanner";
 import { DemoStory } from "./DemoStory";
 import {
   BellIcon,
+  BuildingIcon,
   GraphIcon,
   MapIcon,
   MoonIcon,
@@ -210,6 +211,9 @@ function Shell({ incidentId }: { incidentId: string | null }) {
             </Tab>
             <Tab to={`${base}/people`} icon={<PeopleIcon />} active={aboutPeople}>
               People
+            </Tab>
+            <Tab to={`${base}/sources`} icon={<BuildingIcon />}>
+              Sources
             </Tab>
             <Tab to={`${base}/graph`} icon={<GraphIcon />}>
               Graph
