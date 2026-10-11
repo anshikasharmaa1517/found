@@ -35,7 +35,7 @@ Found keeps an incident as a persistent graph of **sources, claims, subjects (pe
 
 ## 1.3 Motivation
 
-- Climate-driven floods in Himalayan river corridors (for example, the Koshi flood of 2008 and the Melamchi flood of 2021 in Nepal) repeatedly show that the information problem is as hard as the logistics problem.
+- Climate-driven floods in Himalayan river corridors (for example, the Melamchi flood of 2021 and the Trishuli flood of August 2026 in Nepal) repeatedly show that the information problem is as hard as the logistics problem.
 - Existing tools (person finders, spreadsheets, WhatsApp groups) collect reports but rarely preserve **lineage**: who said what, when, and based on whom.
 - An agent is genuinely useful here because tracing a relay requires reading free text, choosing what to look up next and comparing two accounts. Equally important, the agent must be **bounded and auditable**, because wrong answers about people's lives are costly.
 
@@ -826,7 +826,7 @@ Request (new person):
 {
   "subject": { "type": "PERSON", "new": { "name": "Sita Tamang", "age": 24, "notes": "Wearing a blue jacket" } },
   "claim_type": "MISSING",
-  "original_text": "Family reports Sita Tamang, 24, missing since the bridge collapse on 2 Oct evening.",
+  "original_text": "Family reports Sita Tamang, 24, missing since the bridge collapse on 26 Aug evening.",
   "external_reference": "UKPD-FIR-0091",
   "reported_at": "2026-10-02T21:10:00+05:30"
 }

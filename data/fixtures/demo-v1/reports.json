@@ -6,11 +6,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Family reports Sita Tamang, 24, missing since the bridge collapse near the Old Bridge.",
-    "reported_at": "2026-10-02T21:10:00+05:45",
+    "reported_at": "2026-08-26T21:10:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -20,11 +20,11 @@
     "claim_type": "FOUND_SAFE",
     "value": "Ward 3, stable",
     "original_text": "Sita Tamang, 24, admitted to ward 3 at 07:40. Condition stable.",
-    "reported_at": "2026-10-03T07:40:00+05:45",
+    "reported_at": "2026-08-27T07:40:00+05:45",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 27.8271,
-      "lon": 85.5736
+      "lat": 27.9246,
+      "lon": 85.1408
     }
   },
   {
@@ -34,7 +34,7 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "According to Central Hospital Demo, Sita Tamang was admitted to ward 3 and is stable.",
-    "reported_at": "2026-10-03T08:30:00+05:45",
+    "reported_at": "2026-08-27T08:30:00+05:45",
     "location": null
   },
   {
@@ -44,11 +44,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Bikash Shrestha, 31, reported missing by his brother after the river rose.",
-    "reported_at": "2026-10-02T22:05:00+05:45",
+    "reported_at": "2026-08-26T22:05:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -58,11 +58,11 @@
     "claim_type": "SEEN_AT_LOCATION",
     "value": null,
     "original_text": "Our team met Bikash Shrestha at the Upper Footbridge helping neighbours.",
-    "reported_at": "2026-10-03T06:15:00+05:45",
+    "reported_at": "2026-08-27T06:15:00+05:45",
     "location": {
       "name": "Upper Footbridge",
-      "lat": 27.8365,
-      "lon": 85.5771
+      "lat": 27.929,
+      "lon": 85.1491
     }
   },
   {
@@ -72,11 +72,11 @@
     "claim_type": "SHELTERED",
     "value": "Hall B",
     "original_text": "Bikash Shrestha registered at the shelter desk, hall B.",
-    "reported_at": "2026-10-03T11:20:00+05:45",
+    "reported_at": "2026-08-27T11:20:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -86,11 +86,11 @@
     "claim_type": "INJURED",
     "value": "Leg injuries",
     "original_text": "Dipak Karki, 45, admitted with leg injuries and taken into surgery.",
-    "reported_at": "2026-10-03T05:50:00+05:45",
+    "reported_at": "2026-08-27T05:50:00+05:45",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 27.8271,
-      "lon": 85.5736
+      "lat": 27.9246,
+      "lon": 85.1408
     }
   },
   {
@@ -100,7 +100,7 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "According to Central Hospital Demo, Dipak Karki is safe and unhurt.",
-    "reported_at": "2026-10-03T09:10:00+05:45",
+    "reported_at": "2026-08-27T09:10:00+05:45",
     "location": null
   },
   {
@@ -110,7 +110,7 @@
     "claim_type": "INJURED",
     "value": "Fractured wrist",
     "original_text": "Sunita Magar treated for a fractured wrist, kept for observation.",
-    "reported_at": "2026-10-03T04:30:00+05:45",
+    "reported_at": "2026-08-27T04:30:00+05:45",
     "location": null
   },
   {
@@ -120,7 +120,7 @@
     "claim_type": "INJURED",
     "value": null,
     "original_text": "Per Hill Clinic Demo, Sunita Magar has a fractured wrist and is under observation.",
-    "reported_at": "2026-10-03T07:05:00+05:45",
+    "reported_at": "2026-08-27T07:05:00+05:45",
     "location": null
   },
   {
@@ -130,11 +130,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Kamala Lama, 29, reported missing with her son from Upper Village.",
-    "reported_at": "2026-10-02T23:40:00+05:45",
+    "reported_at": "2026-08-26T23:40:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -144,11 +144,11 @@
     "claim_type": "SHELTERED",
     "value": "Hall B, with son",
     "original_text": "Kamala Lama and her son registered at the shelter, hall B.",
-    "reported_at": "2026-10-03T10:00:00+05:45",
+    "reported_at": "2026-08-27T10:00:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -158,11 +158,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Hari Thapa, 52, last seen near the market on the evening of the flood.",
-    "reported_at": "2026-10-02T20:30:00+05:45",
+    "reported_at": "2026-08-26T20:30:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -175,8 +175,8 @@
     "reported_at": null,
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -186,11 +186,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Gopal Adhikari, 67, missing from his house by the river.",
-    "reported_at": "2026-10-02T21:55:00+05:45",
+    "reported_at": "2026-08-26T21:55:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -200,11 +200,11 @@
     "claim_type": "DECEASED",
     "value": null,
     "original_text": "Gopal Adhikari, 67, was brought in and declared dead at 03:20.",
-    "reported_at": "2026-10-03T03:20:00+05:45",
+    "reported_at": "2026-08-27T03:20:00+05:45",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 27.8271,
-      "lon": 85.5736
+      "lat": 27.9246,
+      "lon": 85.1408
     }
   },
   {
@@ -214,11 +214,11 @@
     "claim_type": "SHELTERED",
     "value": "Hall A",
     "original_text": "Puja Tamang, 17, is staying at the shelter in hall A.",
-    "reported_at": "2026-10-03T09:30:00+05:45",
+    "reported_at": "2026-08-27T09:30:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -228,11 +228,11 @@
     "claim_type": "SHELTERED",
     "value": null,
     "original_text": "Riverside Shelter Demo says Puja Tamang moved to the school building.",
-    "reported_at": "2026-10-03T12:45:00+05:45",
+    "reported_at": "2026-08-27T12:45:00+05:45",
     "location": {
       "name": "Valley School Building",
-      "lat": 27.8305,
-      "lon": 85.5745
+      "lat": 27.9226,
+      "lon": 85.139
     }
   },
   {
@@ -242,11 +242,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Laxmi Basnet, 58, missing from Market Ghat.",
-    "reported_at": "2026-10-02T22:40:00+05:45",
+    "reported_at": "2026-08-26T22:40:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -256,7 +256,7 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "According to Centrel Hospitl Demo, Laxmi Basnet was admitted.",
-    "reported_at": "2026-10-03T13:10:00+05:45",
+    "reported_at": "2026-08-27T13:10:00+05:45",
     "location": null
   },
   {
@@ -266,11 +266,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Hira Hyolmo, 73, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T22:35:00+05:45",
+    "reported_at": "2026-08-26T22:35:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -280,11 +280,11 @@
     "claim_type": "SHELTERED",
     "value": null,
     "original_text": "Hira Hyolmo registered at the shelter desk.",
-    "reported_at": "2026-10-03T15:20:00+05:45",
+    "reported_at": "2026-08-27T15:20:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -294,11 +294,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Mina Nepal, 82, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T21:15:00+05:45",
+    "reported_at": "2026-08-26T21:15:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -308,11 +308,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Dhan Thapa, 40, reported missing near Temple Steps.",
-    "reported_at": "2026-10-02T23:05:00+05:45",
+    "reported_at": "2026-08-26T23:05:00+05:45",
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -322,11 +322,11 @@
     "claim_type": "SHELTERED",
     "value": null,
     "original_text": "Dhan Thapa registered at the shelter desk.",
-    "reported_at": "2026-10-03T05:00:00+05:45",
+    "reported_at": "2026-08-27T05:00:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -336,11 +336,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Binita Ghale, 20, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T21:15:00+05:45",
+    "reported_at": "2026-08-26T21:15:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -350,11 +350,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Bimal Hyolmo, 58, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T22:10:00+05:45",
+    "reported_at": "2026-08-26T22:10:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -364,11 +364,11 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "Bimal Hyolmo treated for exposure and discharged.",
-    "reported_at": "2026-10-03T12:45:00+05:45",
+    "reported_at": "2026-08-27T12:45:00+05:45",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 27.8271,
-      "lon": 85.5736
+      "lat": 27.9246,
+      "lon": 85.1408
     }
   },
   {
@@ -378,11 +378,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Pemba Sherpa, 28, reported missing near Old Bridge.",
-    "reported_at": "2026-10-02T23:05:00+05:45",
+    "reported_at": "2026-08-26T23:05:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -392,11 +392,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Januka Tiwari, 5, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T21:40:00+05:45",
+    "reported_at": "2026-08-26T21:40:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -406,11 +406,11 @@
     "claim_type": "SHELTERED",
     "value": null,
     "original_text": "Januka Tiwari registered at the shelter desk.",
-    "reported_at": "2026-10-03T10:45:00+05:45",
+    "reported_at": "2026-08-27T10:45:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -420,11 +420,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Tara Lama, 34, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T22:10:00+05:45",
+    "reported_at": "2026-08-26T22:10:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -434,11 +434,11 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "Our team found Tara Lama safe near Market Ghat.",
-    "reported_at": "2026-10-03T11:20:00+05:45",
+    "reported_at": "2026-08-27T11:20:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -448,11 +448,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Gita Khadka, 58, reported missing near Temple Steps.",
-    "reported_at": "2026-10-02T21:15:00+05:45",
+    "reported_at": "2026-08-26T21:15:00+05:45",
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -462,11 +462,11 @@
     "claim_type": "SHELTERED",
     "value": null,
     "original_text": "Gita Khadka registered at the shelter desk.",
-    "reported_at": "2026-10-03T06:00:00+05:45",
+    "reported_at": "2026-08-27T06:00:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -476,11 +476,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Bimal Dahal, 11, reported missing near Old Bridge.",
-    "reported_at": "2026-10-02T23:50:00+05:45",
+    "reported_at": "2026-08-26T23:50:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -490,11 +490,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Ganga Sherpa, 45, reported missing near Temple Steps.",
-    "reported_at": "2026-10-02T22:35:00+05:45",
+    "reported_at": "2026-08-26T22:35:00+05:45",
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -504,11 +504,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Bimal Sherpa, 74, reported missing near Upper Village.",
-    "reported_at": "2026-10-02T22:35:00+05:45",
+    "reported_at": "2026-08-26T22:35:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -518,11 +518,11 @@
     "claim_type": "INJURED",
     "value": null,
     "original_text": "Bimal Sherpa treated for cuts and bruises.",
-    "reported_at": "2026-10-03T09:20:00+05:45",
+    "reported_at": "2026-08-27T09:20:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -532,11 +532,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Nirmala Tiwari, 48, reported missing near Temple Steps.",
-    "reported_at": "2026-10-02T23:50:00+05:45",
+    "reported_at": "2026-08-26T23:50:00+05:45",
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -546,11 +546,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Suman Khadka, 66, reported missing near Temple Steps.",
-    "reported_at": "2026-10-02T21:15:00+05:45",
+    "reported_at": "2026-08-26T21:15:00+05:45",
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -560,11 +560,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Januka Tamang, 18, reported missing near Upper Village.",
-    "reported_at": "2026-10-02T22:35:00+05:45",
+    "reported_at": "2026-08-26T22:35:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -574,11 +574,11 @@
     "claim_type": "SHELTERED",
     "value": null,
     "original_text": "Januka Tamang registered at the shelter desk.",
-    "reported_at": "2026-10-03T11:00:00+05:45",
+    "reported_at": "2026-08-27T11:00:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -588,11 +588,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Yam Tamang, 75, reported missing near Old Bridge.",
-    "reported_at": "2026-10-02T22:35:00+05:45",
+    "reported_at": "2026-08-26T22:35:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -602,11 +602,11 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "Our team found Yam Tamang safe near Old Bridge.",
-    "reported_at": "2026-10-03T10:20:00+05:45",
+    "reported_at": "2026-08-27T10:20:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -616,11 +616,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Kiran Hyolmo, 45, reported missing near Upper Village.",
-    "reported_at": "2026-10-02T23:50:00+05:45",
+    "reported_at": "2026-08-26T23:50:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -630,11 +630,11 @@
     "claim_type": "INJURED",
     "value": null,
     "original_text": "Kiran Hyolmo treated for cuts and bruises.",
-    "reported_at": "2026-10-03T15:45:00+05:45",
+    "reported_at": "2026-08-27T15:45:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -644,11 +644,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Nabin Tamang, 11, reported missing near Old Bridge.",
-    "reported_at": "2026-10-02T21:40:00+05:45",
+    "reported_at": "2026-08-26T21:40:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -658,11 +658,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Mina Hyolmo, 79, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T22:35:00+05:45",
+    "reported_at": "2026-08-26T22:35:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -672,11 +672,11 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "Mina Hyolmo treated for exposure and discharged.",
-    "reported_at": "2026-10-03T10:00:00+05:45",
+    "reported_at": "2026-08-27T10:00:00+05:45",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 27.8271,
-      "lon": 85.5736
+      "lat": 27.9246,
+      "lon": 85.1408
     }
   },
   {
@@ -686,11 +686,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Prakash Magar, 37, reported missing near Market Ghat.",
-    "reported_at": "2026-10-02T22:35:00+05:45",
+    "reported_at": "2026-08-26T22:35:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -700,11 +700,11 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "Prakash Magar treated for exposure and discharged.",
-    "reported_at": "2026-10-03T13:20:00+05:45",
+    "reported_at": "2026-08-27T13:20:00+05:45",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 27.8271,
-      "lon": 85.5736
+      "lat": 27.9246,
+      "lon": 85.1408
     }
   },
   {
@@ -714,11 +714,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Yam Gautam, 7, reported missing near Old Bridge.",
-    "reported_at": "2026-10-02T21:15:00+05:45",
+    "reported_at": "2026-08-26T21:15:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -728,11 +728,11 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "Yam Gautam treated for exposure and discharged.",
-    "reported_at": "2026-10-03T10:20:00+05:45",
+    "reported_at": "2026-08-27T10:20:00+05:45",
     "location": {
       "name": "Central Hospital Demo grounds",
-      "lat": 27.8271,
-      "lon": 85.5736
+      "lat": 27.9246,
+      "lon": 85.1408
     }
   },
   {
@@ -742,11 +742,11 @@
     "claim_type": "MISSING",
     "value": null,
     "original_text": "Mina Magar, 68, reported missing near Temple Steps.",
-    "reported_at": "2026-10-02T23:05:00+05:45",
+    "reported_at": "2026-08-26T23:05:00+05:45",
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -756,11 +756,11 @@
     "claim_type": "FOUND_SAFE",
     "value": null,
     "original_text": "Our team found Mina Magar safe near Temple Steps.",
-    "reported_at": "2026-10-03T12:20:00+05:45",
+    "reported_at": "2026-08-27T12:20:00+05:45",
     "location": {
       "name": "Temple Steps",
-      "lat": 27.8265,
-      "lon": 85.5744
+      "lat": 27.9206,
+      "lon": 85.1426
     }
   },
   {
@@ -770,11 +770,11 @@
     "claim_type": "BRIDGE_DAMAGED",
     "value": null,
     "original_text": "Old Bridge closed to all traffic after the collapse of its eastern span.",
-    "reported_at": "2026-10-02T20:10:00+05:45",
+    "reported_at": "2026-08-26T20:10:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -784,11 +784,11 @@
     "claim_type": "BRIDGE_OPEN",
     "value": null,
     "original_text": "Old Bridge open on foot, our team crossed it this morning.",
-    "reported_at": "2026-10-03T08:15:00+05:45",
+    "reported_at": "2026-08-27T08:15:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   },
   {
@@ -798,11 +798,11 @@
     "claim_type": "ROAD_BLOCKED",
     "value": null,
     "original_text": "Upper Village road blocked by a landslide above the temple bend.",
-    "reported_at": "2026-10-02T23:30:00+05:45",
+    "reported_at": "2026-08-26T23:30:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -812,11 +812,11 @@
     "claim_type": "ROAD_OPEN",
     "value": null,
     "original_text": "Upper Village road reopened for light vehicles after clearing.",
-    "reported_at": "2026-10-03T15:00:00+05:45",
+    "reported_at": "2026-08-27T15:00:00+05:45",
     "location": {
       "name": "Upper Village",
-      "lat": 27.8385,
-      "lon": 85.5752
+      "lat": 27.93,
+      "lon": 85.148
     }
   },
   {
@@ -826,11 +826,11 @@
     "claim_type": "SHELTER_OPEN",
     "value": null,
     "original_text": "Riverside Shelter open, 120 places, blankets and hot meals available.",
-    "reported_at": "2026-10-02T22:00:00+05:45",
+    "reported_at": "2026-08-26T22:00:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -840,11 +840,11 @@
     "claim_type": "SHELTER_FULL",
     "value": null,
     "original_text": "Riverside Shelter full; new arrivals sent to the school building.",
-    "reported_at": "2026-10-03T11:00:00+05:45",
+    "reported_at": "2026-08-27T11:00:00+05:45",
     "location": {
       "name": "Riverside Shelter",
-      "lat": 27.8291,
-      "lon": 85.5754
+      "lat": 27.9232,
+      "lon": 85.144
     }
   },
   {
@@ -854,11 +854,11 @@
     "claim_type": "SHELTER_OPEN",
     "value": null,
     "original_text": "Valley School Building opened as an overflow shelter with 60 places.",
-    "reported_at": "2026-10-03T11:30:00+05:45",
+    "reported_at": "2026-08-27T11:30:00+05:45",
     "location": {
       "name": "Valley School Building",
-      "lat": 27.8305,
-      "lon": 85.5745
+      "lat": 27.9226,
+      "lon": 85.139
     }
   },
   {
@@ -868,11 +868,11 @@
     "claim_type": "AID_AVAILABLE",
     "value": null,
     "original_text": "Drinking water and dry rations available at the Market Ghat aid point.",
-    "reported_at": "2026-10-03T07:00:00+05:45",
+    "reported_at": "2026-08-27T07:00:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -881,12 +881,12 @@
     "person": "c_river_ghat",
     "claim_type": "WATER_RISING",
     "value": null,
-    "original_text": "Indrawati river rising fast at Market Ghat, residents moved uphill.",
-    "reported_at": "2026-10-02T19:45:00+05:45",
+    "original_text": "Trishuli river rising fast at Market Ghat, residents moved uphill.",
+    "reported_at": "2026-08-26T19:45:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -896,11 +896,11 @@
     "claim_type": "WATER_RECEDING",
     "value": null,
     "original_text": "Water at Market Ghat has gone down by about a metre since midnight.",
-    "reported_at": "2026-10-03T06:30:00+05:45",
+    "reported_at": "2026-08-27T06:30:00+05:45",
     "location": {
       "name": "Market Ghat",
-      "lat": 27.8279,
-      "lon": 85.5751
+      "lat": 27.9217,
+      "lon": 85.1484
     }
   },
   {
@@ -910,11 +910,11 @@
     "claim_type": "SEEN_AT_LOCATION",
     "value": null,
     "original_text": "Volunteer desk: Sita T., 24, was seen near the Old Bridge asking for her family.",
-    "reported_at": "2026-10-03T09:30:00+05:45",
+    "reported_at": "2026-08-27T09:30:00+05:45",
     "location": {
       "name": "Old Bridge",
-      "lat": 27.8301,
-      "lon": 85.5782
+      "lat": 27.9206,
+      "lon": 85.1463
     }
   }
 ]

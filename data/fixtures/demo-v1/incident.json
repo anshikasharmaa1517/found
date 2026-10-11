@@ -1,9 +1,9 @@
 {
   "id": "inc_demo",
-  "name": "Melamchi flood (fictional demo)",
-  "area": "Melamchi, Sindhupalchok, Nepal (fictional scenario)",
+  "name": "Trishuli flood (fictional demo)",
+  "area": "Trishuli Bazar, Nuwakot, Nepal (real place, fictional reports)",
   "is_demo": true,
-  "started_at": "2026-10-02T18:30:00+05:45",
+  "started_at": "2026-08-26T18:30:00+05:45",
   "version": "demo-v1",
   "seed": 20261002
 }

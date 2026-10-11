@@ -37,7 +37,7 @@ class Clock:
 def world():
     repo = InMemoryFoundRepository()
     repo.put_incident(
-        Incident(id="inc_1", name="Melamchi flood", area="Melamchi", is_demo=True)
+        Incident(id="inc_1", name="Trishuli flood", area="Trishuli Bazar", is_demo=True)
     )
     clock = Clock()
     ingest = IngestService(repo, clock=clock, sleep=lambda _: None)
@@ -68,8 +68,8 @@ def test_details_name_the_incident_and_check_access(world):
     repo, service, _, _ = world
     incident = service.details(FAMILY, "inc_1")
     assert (incident.name, incident.area, incident.is_demo) == (
-        "Melamchi flood",
-        "Melamchi",
+        "Trishuli flood",
+        "Trishuli Bazar",
         True,
     )
     with pytest.raises(Forbidden):
@@ -121,8 +121,8 @@ def test_routes_show_details_and_mask_withheld_reports(world, monkeypatch):
     assert status == 200
     assert body == {
         "id": "inc_1",
-        "name": "Melamchi flood",
-        "area": "Melamchi",
+        "name": "Trishuli flood",
+        "area": "Trishuli Bazar",
         "is_demo": True,
         "started_at": None,
     }

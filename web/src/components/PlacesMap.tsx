@@ -19,8 +19,8 @@ import { claimTypeLabel, formatTime } from "../labels";
 
 setWorkerUrl(workerUrl);
 
-// Fallback view when there is nothing to fit: the demo region at Melamchi, Nepal.
-const DEFAULT_CENTER: [number, number] = [85.576, 27.83];
+// Fallback view when there is nothing to fit: the demo region at Trishuli Bazar, Nepal.
+const DEFAULT_CENTER: [number, number] = [85.146, 27.922];
 
 /** Built from text nodes only: place names come from reports and are never treated as HTML. */
 function popupContent(place: MapPlace): HTMLElement {

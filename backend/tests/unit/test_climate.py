@@ -112,7 +112,7 @@ def test_types_without_status_are_labelled_as_the_latest_report(world):
     world.report(
         "river",
         "HAZARD",
-        "Indrawati river",
+        "Trishuli river",
         "WATER_RISING",
         "2026-10-02T19:45:00+05:30",
         where=GHAT,
@@ -120,7 +120,7 @@ def test_types_without_status_are_labelled_as_the_latest_report(world):
     latest = world.report(
         "river",
         "HAZARD",
-        "Indrawati river",
+        "Trishuli river",
         "WATER_RECEDING",
         "2026-10-03T06:30:00+05:30",
         org=VOLUNTEERS,
@@ -192,7 +192,7 @@ def test_the_demo_dataset_has_a_sourced_climate_picture():
     load_dataset(dataset, repo, IngestService(repo, sleep=lambda _: None))
     layer = ClimateService(repo).layer(FAMILY, "inc_demo")
     by_name = {f.subject.display_name: f for f in layer.features}
-    assert set(by_name) >= {"Old Bridge", "Riverside Shelter", "Indrawati river at Market Ghat"}
+    assert set(by_name) >= {"Old Bridge", "Riverside Shelter", "Trishuli river at Market Ghat"}
     bridge = by_name["Old Bridge"]
     assert bridge.label == "Reported bridge open" and len(bridge.conflicts) == 1
     assert all(f.location is not None for f in layer.features)

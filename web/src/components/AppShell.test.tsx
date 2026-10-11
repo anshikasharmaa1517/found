@@ -21,8 +21,8 @@ vi.mock("./PlacesMap", () => ({
 const BASE = "/v1/incidents/inc_demo";
 const INCIDENT = {
   id: "inc_demo",
-  name: "Melamchi flood (fictional demo)",
-  area: "Melamchi, Sindhupalchok, Nepal (fictional scenario)",
+  name: "Trishuli flood (fictional demo)",
+  area: "Trishuli Bazar, Nuwakot, Nepal (real place, fictional reports)",
   is_demo: true,
   started_at: "2026-10-02T13:00:00Z",
 };
@@ -149,9 +149,9 @@ describe("app shell", () => {
     renderApp(as(), "/incidents/inc_demo", api, { mapStyleUrl: "https://tiles.example/style" });
     const masthead = await screen.findByRole("banner");
     expect(
-      await within(masthead).findByText("Melamchi flood (fictional demo)"),
+      await within(masthead).findByText("Trishuli flood (fictional demo)"),
     ).toBeInTheDocument();
-    expect(within(masthead).getByText(/Melamchi, Sindhupalchok, Nepal/)).toBeInTheDocument();
+    expect(within(masthead).getByText(/Trishuli Bazar, Nuwakot, Nepal/)).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Map", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Map" })).toHaveAttribute("aria-current", "page");
 
@@ -277,7 +277,7 @@ describe("app shell", () => {
   it("has no story outside the demo and explains a missing incident", async () => {
     const { api } = routes({ [BASE]: () => ({ ...INCIDENT, is_demo: false }) });
     const view = renderApp(as(), "/incidents/inc_demo", api);
-    await screen.findByText("Melamchi flood (fictional demo)");
+    await screen.findByText("Trishuli flood (fictional demo)");
     await screen.findByRole("heading", { name: "Map" });
     expect(screen.queryByText(/Step 1 of 4/)).toBeNull();
     view.unmount();
