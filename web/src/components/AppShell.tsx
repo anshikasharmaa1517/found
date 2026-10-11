@@ -256,7 +256,6 @@ function Shell({ incidentId }: { incidentId: string | null }) {
       </div>
       <footer className="site-foot">
         <span>Every report keeps who said it and when. Reports can be wrong: confirm with the source.</span>
-        <span>All people and organizations in the demo are fictional.</span>
       </footer>
     </div>
   );

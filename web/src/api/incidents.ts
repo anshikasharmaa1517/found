@@ -11,6 +11,20 @@ export interface RiverCourse {
   coordinates: [number, number][];
 }
 
+/** A line from open map data, drawn only for context: another river, or a boundary. */
+export interface MapLine {
+  name: string | null;
+  /** [lon, lat] points; a boundary ends where it starts. */
+  coordinates: [number, number][];
+}
+
+/** Nearby rivers and the district around the incident, for orientation on the map. */
+export interface MapContext {
+  attribution: string;
+  rivers: MapLine[];
+  district: MapLine | null;
+}
+
 export interface IncidentInfo {
   id: string;
   name: string;
@@ -18,6 +32,7 @@ export interface IncidentInfo {
   is_demo: boolean;
   started_at: string | null;
   river?: RiverCourse | null;
+  map_context?: MapContext | null;
 }
 
 interface RecentBase {

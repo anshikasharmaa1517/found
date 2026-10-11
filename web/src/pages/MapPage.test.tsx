@@ -152,7 +152,7 @@ describe("map page", () => {
       [CLIMATE]: climate([]),
       "/v1/incidents/inc_1": () => ({
         id: "inc_1",
-        name: "Trishuli flood (fictional demo)",
+        name: "Trishuli flood",
         area: "Trishuli Bazar",
         is_demo: true,
         started_at: null,
@@ -165,13 +165,32 @@ describe("map page", () => {
             [85.14, 27.92],
           ],
         },
+        map_context: {
+          attribution: "OpenStreetMap contributors",
+          rivers: [{ name: "Tadi Khola", coordinates: [[85.2, 27.9], [85.18, 27.88]] }],
+          district: { name: "Nuwakot district", coordinates: [[85.0, 27.8], [85.4, 28.0]] },
+        },
       }),
     });
     renderMap(api, "https://tiles.example/style");
     // No pins yet, but the river alone is worth a map.
     expect(await screen.findByTestId("map")).toHaveTextContent("0 pins, 0 conditions, Trishuli river");
     expect(screen.getByText(/not the flood's extent\./)).toBeInTheDocument();
-    expect(screen.getByText(/Trishuli river that flooded/)).toBeInTheDocument();
+    const legend = screen.getByText("Legend").closest("details")!;
+    for (const label of [
+      "Missing",
+      "Needs review",
+      "Reported safe",
+      "No current status",
+      "Flooded river: Trishuli",
+      "Other rivers",
+      "Nuwakot district",
+    ]) {
+      expect(within(legend).getByText(label)).toBeInTheDocument();
+    }
+    expect(legend).toHaveTextContent(/Fewer reports\s*More/);
+    // No roads, shelters or hazards here, so nothing explains their squares.
+    expect(within(legend).queryByText("Road or bridge")).toBeNull();
   });
 
   it("opens with a place chosen when a report links to it", async () => {

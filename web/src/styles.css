@@ -44,6 +44,12 @@
 
   /* The flooded river on the map; a hex color because the map paints it directly. */
   --river: #1f6feb;
+  /* Map-only colors are plain hex: the map cannot read oklch. */
+  --flood-river: #d9a514;
+  --district: #4f46e5;
+  --heat-low: #2f6bff;
+  --heat-mid: #f2c94c;
+  --heat-high: #ff5a5f;
 
   /* Type. */
   --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -124,6 +130,10 @@
     --g-investigation: oklch(0.58 0.2 320);
     --g-subject: oklch(0.78 0.12 90);
     --river: #58a6ff;
+  --flood-river: #f2c94c;
+  --district: #8b8cf8;
+    --flood-river: #f2c94c;
+    --district: #8b8cf8;
 
     --shadow-card: none;
     --shadow-float: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 45%);
@@ -167,6 +177,8 @@
   --g-investigation: oklch(0.58 0.2 320);
   --g-subject: oklch(0.78 0.12 90);
   --river: #58a6ff;
+  --flood-river: #f2c94c;
+  --district: #8b8cf8;
 
   --shadow-card: none;
   --shadow-float: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 45%);
@@ -2084,6 +2096,52 @@ button.menu-button[aria-expanded="true"] {
   background: var(--accent-hover);
 }
 
+/* A place: a dot in its status color, its name in a tag beside it. */
+.pin-place {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  background: var(--neutral);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 35%), 0 1px 4px rgb(0 0 0 / 40%);
+}
+
+.pin-place.pin-missing,
+.pin-place.pin-missing:hover {
+  background: var(--bad);
+}
+
+.pin-place.pin-needs-review,
+.pin-place.pin-needs-review:hover {
+  background: var(--warn);
+}
+
+.pin-place.pin-found-safe,
+.pin-place.pin-found-safe:hover {
+  background: var(--ok);
+}
+
+.pin-place.pin-none:hover {
+  background: var(--neutral);
+}
+
+.pin-label {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 1px var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  background: color-mix(in oklch, var(--surface) 88%, transparent);
+  color: var(--text);
+  font-size: var(--fs-12);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .pin-review {
   background: var(--warn);
 }
@@ -2499,11 +2557,24 @@ button.story-step.active {
 }
 
 .map-legend summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
   cursor: pointer;
+  list-style: none;
   font-weight: 600;
   color: var(--text-2);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.map-legend summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-legend[open] summary .icon {
+  transform: rotate(180deg);
 }
 
 .map-legend ul {
@@ -2512,6 +2583,13 @@ button.story-step.active {
   margin: var(--s-2) 0;
   display: grid;
   gap: var(--s-1);
+}
+
+.map-legend ul.legend-statuses {
+  grid-template-columns: auto auto;
+  gap: var(--s-1) var(--s-4);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line);
 }
 
 .map-legend li {
@@ -2525,16 +2603,67 @@ button.story-step.active {
   color: var(--text-3);
 }
 
-.legend-pin {
-  width: 12px;
-  height: 12px;
+.map-legend .legend-heat {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--text-2);
+}
+
+.heat-step {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--accent);
+}
+
+.heat-step:first-of-type {
+  margin-left: var(--s-1);
+}
+
+.heat-step:last-of-type {
+  margin-right: var(--s-1);
+}
+
+.heat-low {
+  background: var(--heat-low);
+}
+
+.heat-mid {
+  background: var(--heat-mid);
+}
+
+.heat-high {
+  background: var(--heat-high);
+}
+
+.map-legend .legend-conditions {
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line);
+}
+
+.map-legend .legend-note {
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--neutral);
   flex: none;
 }
 
-.legend-review {
+.legend-missing {
+  background: var(--bad);
+}
+
+.legend-needs_review {
   background: var(--warn);
+}
+
+.legend-found_safe {
+  background: var(--ok);
 }
 
 .legend-square {
@@ -2554,12 +2683,35 @@ button.story-step.active {
   font-weight: 600;
 }
 
+.legend-line {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  flex: none;
+}
+
+.legend-flood {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--flood-river);
+  box-shadow: 0 0 6px var(--flood-river);
+}
+
+.legend-other-river {
+  background: var(--river);
+}
+
+.legend-district {
+  background: var(--district);
+}
+
 .legend-river {
   display: inline-block;
   width: 18px;
-  height: 6px;
+  height: 5px;
   border-radius: 3px;
-  background: var(--river);
+  background: var(--flood-river);
   flex: none;
 }
 

@@ -105,9 +105,12 @@ describe("PlacesMap", () => {
     expect(made.maps[0]!.options.style).toBe("https://tiles.example/style");
     const [bridge, camp] = made.markers;
     expect(bridge!.at).toEqual([78.44, 30.73]);
-    expect(bridge!.element).toHaveAccessibleName("Old Bridge: 4 reports");
-    expect(bridge!.element).toHaveClass("pin-review");
-    expect(camp!.element).not.toHaveClass("pin-review");
+    // Each dot takes the most urgent status at the place, and is named for screen readers.
+    expect(bridge!.element).toHaveAccessibleName("Old Bridge: 4 reports, missing");
+    expect(bridge!.element).toHaveClass("pin-place", "pin-missing");
+    expect(bridge!.element).toHaveTextContent("Old Bridge");
+    expect(camp!.element).toHaveAccessibleName("Relief Camp: 1 report, reported safe");
+    expect(camp!.element).toHaveClass("pin-found-safe");
     expect(bridge!.popup).toHaveTextContent("Missing: 3");
     expect(bridge!.popup).not.toHaveTextContent("Found safe");
     expect(made.maps[0]!.fitted).toBeTruthy();
@@ -188,7 +191,8 @@ describe("PlacesMap", () => {
     const source = map.sources.river as { attribution: string; data: { geometry: unknown } };
     expect(source.attribution).toBe("River course: OpenStreetMap contributors (ODbL)");
     expect(source.data.geometry).toEqual({ type: "LineString", coordinates: river.coordinates });
-    expect(map.layers.map((l) => l.id)).toEqual(["river-casing", "river"]);
+    // The river under a glow of report counts, so the pins stay on top.
+    expect(map.layers.map((l) => l.id)).toEqual(["river-glow", "river", "report-heat"]);
     // The view fits the river as well as the pins.
     expect((map.fitted as { points: unknown[] }).points).toEqual([
       [85.14, 27.92],
@@ -200,6 +204,47 @@ describe("PlacesMap", () => {
   it("adds no river when the incident has none", () => {
     made.maps.length = 0;
     render(<PlacesMap styleUrl="s" places={[place({})]} />);
-    expect(made.maps[0]!.handlers.load).toBeUndefined();
+    made.maps[0]!.handlers.load!();
+    expect(made.maps[0]!.layers.map((l) => l.id)).toEqual(["report-heat"]);
+  });
+
+  it("draws the district and other rivers faintly, beneath the flooded river", () => {
+    made.maps.length = 0;
+    const context = {
+      attribution: "OpenStreetMap contributors",
+      rivers: [{ name: "Tadi Khola", coordinates: [[85.2, 27.9], [85.18, 27.88]] as [number, number][] }],
+      district: {
+        name: "Nuwakot district",
+        coordinates: [[85.0, 27.8], [85.4, 28.0]] as [number, number][],
+      },
+    };
+    const river = {
+      name: "Trishuli river",
+      note: "Course.",
+      attribution: "OpenStreetMap contributors",
+      coordinates: [[85.15, 27.93], [85.14, 27.92]] as [number, number][],
+    };
+    render(<PlacesMap styleUrl="s" places={[]} river={river} context={context} />);
+    const map = made.maps[0]!;
+    map.handlers.load!();
+    expect(map.layers.map((l) => l.id)).toEqual(["district", "other-rivers", "river-glow", "river"]);
+    // The view stays on the town: the district is far larger and is not fitted.
+    expect((map.fitted as { points: unknown[] }).points).toEqual(river.coordinates);
+  });
+
+  it("weights the report glow by each place's share of the busiest", () => {
+    made.maps.length = 0;
+    render(
+      <PlacesMap
+        styleUrl="s"
+        places={[place({ reports: 8 }), place({ location_id: "loc_2", reports: 2 })]}
+      />,
+    );
+    const map = made.maps[0]!;
+    map.handlers.load!();
+    const heat = map.sources["report-heat"] as {
+      data: { features: { properties: { weight: number } }[] };
+    };
+    expect(heat.data.features.map((f) => f.properties.weight)).toEqual([1, 0.25]);
   });
 });

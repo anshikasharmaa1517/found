@@ -14,8 +14,10 @@ import {
   BUCKET_LABELS,
   BUCKETS,
   getIncidentMap,
+  placeStatus,
   type IncidentMap,
   type MapPlace,
+  type PlaceStatus,
 } from "../api/map";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { MapLegend } from "../components/MapLegend";
@@ -68,12 +70,16 @@ function PlacesTable({ data }: { data: IncidentMap }) {
 
 const BUSIEST_MAX = 20;
 
-/** One color per place, most urgent first; the counts beside it say the rest. */
+const TONES: Record<PlaceStatus, string> = {
+  MISSING: "bad",
+  NEEDS_REVIEW: "warn",
+  FOUND_SAFE: "ok",
+  NONE: "",
+};
+
+/** The same color as the place's pin on the map. */
 function placeTone(place: MapPlace): string {
-  if (place.by_status.MISSING > 0) return "bad";
-  if (place.by_status.NEEDS_REVIEW > 0) return "warn";
-  if (place.by_status.FOUND_SAFE > 0) return "ok";
-  return "";
+  return TONES[placeStatus(place)];
 }
 
 function plural(n: number, word: string): string {
@@ -183,6 +189,7 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
   // The flooded river comes with the incident; the map works without it.
   const [incident] = useLoad(`map-incident|${incidentId}`, () => getIncident(api, incidentId));
   const river = incident.status === "ready" ? (incident.data.river ?? null) : null;
+  const context = incident.status === "ready" ? (incident.data.map_context ?? null) : null;
   const [hidden, setHidden] = useState<Set<Layer>>(new Set());
   const features = useMemo(
     () =>
@@ -262,10 +269,15 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
                     places={hidden.has("PEOPLE") ? [] : state.data.places}
                     features={features}
                     river={river}
+                    context={context}
                     styleUrl={mapStyleUrl}
                   />
                 </Suspense>
-                <MapLegend river={river?.name} />
+                <MapLegend
+                  river={river?.name}
+                  context={context}
+                  conditions={features.length > 0}
+                />
               </div>
             )
           ) : (
