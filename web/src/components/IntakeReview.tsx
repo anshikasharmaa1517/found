@@ -158,7 +158,17 @@ export function IntakeReview({
   return (
     <div className="intake-review">
       <p>
-        {job.filename}, received {formatTime(job.created_at)}.{" "}
+        {job.source_url ? (
+          <>
+            Article at{" "}
+            <a href={job.source_url} target="_blank" rel="noreferrer noopener">
+              {new URL(job.source_url).hostname}
+            </a>
+          </>
+        ) : (
+          job.filename
+        )}
+        , received {formatTime(job.created_at)}.{" "}
         {job.dropped_count > 0 &&
           `${job.dropped_count} suggestion${job.dropped_count === 1 ? " was" : "s were"} left out because the text did not support ${job.dropped_count === 1 ? "it" : "them"}. `}
         Each quote below appears in the text; confirm only what the text says.

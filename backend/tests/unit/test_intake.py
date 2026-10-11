@@ -22,7 +22,7 @@ from found_core.domain.errors import (
 from found_core.domain.ids import review_item_id
 from found_core.domain.intake import MAX_BYTES, UPLOAD_EXPIRES_SECONDS
 from found_core.domain.models import Organization
-from found_core.ports.intake import ExtractionFailed, StoredObject
+from found_core.ports.intake import ArticleUnavailable, ExtractionFailed, FetchedPage, StoredObject
 from found_core.services.ingest import IngestService
 from found_core.services.intake import IntakeService
 from found_core.services.review import ReviewService
@@ -104,8 +104,31 @@ class FakeExtractor:
         return result
 
 
+ARTICLE_URL = "https://news.example/flood"
+ARTICLE = (
+    "<html><head><title>Flood update</title></head><body><article>"
+    "<p>Kamala Lama, 29, arrived with her son at 08:00 and is staying in hall B.</p>"
+    "<p>Road to Upper Village blocked by a landslide, officials said on Saturday morning.</p>"
+    "<p>Rescue teams continued searching the riverbanks through the night.</p>"
+    "</article></body></html>"
+)
+
+
+class FakeFetcher:
+    def __init__(self, page=None, error=None):
+        self.page = page or FetchedPage(url=ARTICLE_URL + "?amp=1", html=ARTICLE)
+        self.error = error
+        self.urls = []
+
+    def fetch(self, url):
+        self.urls.append(url)
+        if self.error:
+            raise self.error
+        return self.page
+
+
 class World:
-    def __init__(self, *model_results, reader=None):
+    def __init__(self, *model_results, reader=None, fetcher=None):
         self.repo = InMemoryFoundRepository()
         self.repo.add_incident("inc_1")
         self.repo.add_organization(
@@ -113,7 +136,7 @@ class World:
                 id="org_s",
                 incident_id="inc_1",
                 name="Riverside Shelter",
-                name_norm="riverside shelter demo",
+                name_norm="riverside shelter",
                 org_type="SHELTER_OPERATOR",
             )
         )
@@ -121,8 +144,15 @@ class World:
         self.reader = reader or FakeReader()
         self.extractor = FakeExtractor(*(model_results or ([KAMALA, ROAD, INVENTED],)))
         ingest = IngestService(self.repo, clock=Clock(), sleep=lambda _: None)
+        self.fetcher = fetcher or FakeFetcher()
         self.intake = IntakeService(
-            self.repo, ingest, self.store, self.reader, self.extractor, clock=Clock()
+            self.repo,
+            ingest,
+            self.store,
+            self.reader,
+            self.extractor,
+            clock=Clock(),
+            fetcher=self.fetcher,
         )
 
     def pasted(self, text=TEXT):
@@ -179,6 +209,39 @@ def test_only_registered_publishers_upload():
             world.intake.submit_text(caller, "inc_1", {"text": TEXT})
     with pytest.raises(NotFound):
         world.intake.submit_text(PUBLISHER, "inc_9", {"text": TEXT})
+
+
+def test_a_news_article_is_read_once_and_reviewed_like_pasted_text():
+    world = World()
+    job = world.intake.submit_url(PUBLISHER, "inc_1", {"url": ARTICLE_URL})
+    assert world.fetcher.urls == [ARTICLE_URL]
+    # The address after redirects is kept with the job for reviewers.
+    assert job.source_url == ARTICLE_URL + "?amp=1" and job.filename == "article.txt"
+    assert job.organization_id == "org_s"
+    world.run(job.s3_key)
+    job = world.repo.get_intake_job(job.id)
+    assert job.status == IntakeStatus.READY_FOR_REVIEW
+    assert job.extracted_text.startswith("Flood update")
+    assert job.extracted_text.endswith(f"Source: {ARTICLE_URL}?amp=1")
+    # Only quotes found in the article survive, exactly as for pasted text.
+    names = [c.subject_name for c in world.repo.list_intake_candidates(job.id)]
+    assert names == ["Kamala Lama"]
+
+
+def test_articles_that_cannot_be_read_are_refused_with_the_reason():
+    blocked = ArticleUnavailable("Only public web addresses can be read.")
+    world = World(fetcher=FakeFetcher(error=blocked))
+    with pytest.raises(BadRequest, match="public web addresses"):
+        world.intake.submit_url(PUBLISHER, "inc_1", {"url": ARTICLE_URL})
+    empty = World(fetcher=FakeFetcher(page=FetchedPage(url=ARTICLE_URL, html="<p>Menu</p>")))
+    with pytest.raises(BadRequest, match="No article text"):
+        empty.intake.submit_url(PUBLISHER, "inc_1", {"url": ARTICLE_URL})
+    for body in ({"url": "ftp://x.example/"}, {"url": ARTICLE_URL, "org_id": "org_x"}, {}):
+        with pytest.raises(BadRequest):
+            world.intake.submit_url(PUBLISHER, "inc_1", body)
+    for caller in (REVIEWER, FAMILY, OTHER_ORG):
+        with pytest.raises(Forbidden):
+            world.intake.submit_url(caller, "inc_1", {"url": ARTICLE_URL})
 
 
 def test_pasted_text_becomes_candidates_checked_against_the_text():

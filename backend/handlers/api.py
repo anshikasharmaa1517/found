@@ -659,6 +659,7 @@ def intake_job_view(job: IntakeJob) -> dict[str, Any]:
         "organization_id": job.organization_id,
         "filename": job.filename,
         "content_type": job.content_type,
+        "source_url": job.source_url,
         "status": data["status"],
         "sha256": job.sha256,
         "size_bytes": job.size_bytes,
@@ -818,6 +819,12 @@ def request_upload(incident_id: str) -> Response:
 @app.post("/v1/incidents/<incident_id>/intake-text")
 def submit_text(incident_id: str) -> Response:
     job = container.intake_service().submit_text(_caller(), incident_id, _body())
+    return _json(HTTPStatus.ACCEPTED, {"job": intake_job_view(job)})
+
+
+@app.post("/v1/incidents/<incident_id>/intake-url")
+def submit_url(incident_id: str) -> Response:
+    job = container.intake_service().submit_url(_caller(), incident_id, _body())
     return _json(HTTPStatus.ACCEPTED, {"job": intake_job_view(job)})
 
 

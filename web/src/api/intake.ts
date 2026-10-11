@@ -15,6 +15,8 @@ export interface IntakeJob {
   organization_id: string;
   filename: string;
   content_type: string;
+  /** The news article the text was read from, when it came from a web address. */
+  source_url?: string | null;
   status: IntakeStatus;
   sha256: string | null;
   size_bytes: number | null;
@@ -84,6 +86,18 @@ export function submitText(
   return api.post<{ job: IntakeJob }>(
     `/v1/incidents/${encodeURIComponent(incidentId)}/intake-text`,
     { text },
+  );
+}
+
+/** The server reads the article once; from then on it is reviewed like pasted text. */
+export function submitUrl(
+  api: ApiClient,
+  incidentId: string,
+  url: string,
+): Promise<{ job: IntakeJob }> {
+  return api.post<{ job: IntakeJob }>(
+    `/v1/incidents/${encodeURIComponent(incidentId)}/intake-url`,
+    { url },
   );
 }
 

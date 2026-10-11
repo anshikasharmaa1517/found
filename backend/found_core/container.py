@@ -248,6 +248,7 @@ def intake_service() -> IntakeService:
     import boto3
 
     from found_core.adapters.extractors import ConverseExtractor, MantleExtractor, mantle_url
+    from found_core.adapters.http_fetcher import HttpArticleFetcher
     from found_core.adapters.s3_store import S3ObjectStore
     from found_core.adapters.textract_reader import TextractReader
 
@@ -269,6 +270,7 @@ def intake_service() -> IntakeService:
         S3ObjectStore(boto3.client("s3"), bucket),
         TextractReader(boto3.client("textract"), bucket),
         extractor,
+        fetcher=HttpArticleFetcher(),
     )
 
 

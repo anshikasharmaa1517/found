@@ -278,6 +278,8 @@ class IntakeJob(_Entity):
     s3_key: str
     filename: str
     content_type: str
+    # The news article the text was read from, when it came from a web address.
+    source_url: str | None = None
     status: IntakeStatus = IntakeStatus.RECEIVED
     sha256: str | None = None
     size_bytes: int | None = None

@@ -48,6 +48,7 @@ SIGNED_IN_ROUTES = (
     ("POST", "/v1/identity-proposals/{pair_key}/decision"),
     ("POST", "/v1/incidents/{incident_id}/uploads"),
     ("POST", "/v1/incidents/{incident_id}/intake-text"),
+    ("POST", "/v1/incidents/{incident_id}/intake-url"),
     ("GET", "/v1/intake-jobs/{job_id}"),
     ("POST", "/v1/intake-candidates/{candidate_id}/decision"),
     ("GET", "/v1/incidents/{incident_id}/activity"),

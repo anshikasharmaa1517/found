@@ -13,6 +13,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from found_core.domain.article import article_text, check_article_url, has_article
 from found_core.domain.auth import ADMIN, PUBLISHER, REVIEWER, Caller
 from found_core.domain.commands import PublishCommand
 from found_core.domain.enums import (
@@ -46,13 +47,21 @@ from found_core.domain.intake import (
 from found_core.domain.models import IntakeCandidate, IntakeJob, Organization, ReviewItem
 from found_core.domain.rules import REVIEW_PRIORITY
 from found_core.ports.clock import Clock, SystemClock
-from found_core.ports.intake import CandidateExtractor, ExtractionFailed, ObjectStore, TextReader
+from found_core.ports.intake import (
+    ArticleFetcher,
+    ArticleUnavailable,
+    CandidateExtractor,
+    ExtractionFailed,
+    ObjectStore,
+    TextReader,
+)
 from found_core.ports.repository import FoundRepository
 from found_core.services.ingest import IngestService
 
 NOTE_MAX = 500
 FILENAME_MAX = 200
 PASTED_NAME = "pasted.txt"
+ARTICLE_NAME = "article.txt"
 # One more try when the model's output is unusable, then the job fails (design 6.8).
 _RETRY_ON = frozenset({"MODEL_INVALID_JSON", "MODEL_INVALID_OUTPUT", "MODEL_NO_TOOL_CALL"})
 EDITABLE = frozenset({"subject_name", "age", "claim_type", "reported_at"})
@@ -84,6 +93,7 @@ class IntakeService:
         reader: TextReader | None = None,
         extractor: CandidateExtractor | None = None,
         clock: Clock | None = None,
+        fetcher: ArticleFetcher | None = None,
     ) -> None:
         self._repo = repo
         self._ingest = ingest
@@ -91,6 +101,7 @@ class IntakeService:
         self._reader = reader
         self._extractor = extractor
         self._clock = clock or SystemClock()
+        self._fetcher = fetcher
 
     # Publisher side (API).
 
@@ -120,6 +131,27 @@ class IntakeService:
         self._store.put_text(job.s3_key, text)
         return job
 
+    def submit_url(self, caller: Caller, incident_id: str, body: dict[str, Any]) -> IntakeJob:
+        """Read a news article once and treat its text as pasted text, with its address kept."""
+        org = self._publisher_org(caller, incident_id)
+        if set(body) - {"url"}:
+            raise BadRequest("The body may only hold url.")
+        url = check_article_url(body.get("url"))
+        if self._fetcher is None:
+            raise BadRequest("Reading web articles is not set up here.")
+        try:
+            page = self._fetcher.fetch(url)
+        except ArticleUnavailable as err:
+            raise BadRequest(str(err), url=url) from None
+        text = article_text(page.html, page.url)
+        if not has_article(text, page.url):
+            raise BadRequest("No article text was found at that address.", url=page.url)
+        job = self._new_job(
+            caller, incident_id, org, ARTICLE_NAME, TEXT_TYPE, source_url=page.url
+        )
+        self._store.put_text(job.s3_key, text)
+        return job
+
     def detail(self, caller: Caller, job_id: str) -> IntakeDetail:
         job = self._repo.get_intake_job(job_id)
         if job is None:
@@ -140,7 +172,13 @@ class IntakeService:
         return org
 
     def _new_job(
-        self, caller: Caller, incident_id: str, org: Organization, filename: str, content_type: str
+        self,
+        caller: Caller,
+        incident_id: str,
+        org: Organization,
+        filename: str,
+        content_type: str,
+        source_url: str | None = None,
     ) -> IntakeJob:
         job_id = new_id("ijb")
         job = IntakeJob(
@@ -150,6 +188,7 @@ class IntakeService:
             s3_key=intake_key(incident_id, job_id, filename),
             filename=filename,
             content_type=content_type,
+            source_url=source_url,
             created_by=caller.user_id,
             created_at=self._clock.now(),
         )

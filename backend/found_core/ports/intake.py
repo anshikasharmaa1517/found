@@ -43,3 +43,20 @@ class CandidateExtractor(Protocol):
     def extract(self, text: str) -> list[Any]:
         """Raw candidates from the model's forced `emit_candidates` call."""
         ...
+
+
+@dataclass(frozen=True)
+class FetchedPage:
+    # Where the page was found, after any redirects.
+    url: str
+    html: str
+
+
+class ArticleUnavailable(Exception):
+    """The page could not be read: blocked address, error status, not HTML, too large."""
+
+
+class ArticleFetcher(Protocol):
+    def fetch(self, url: str) -> FetchedPage:
+        """One public web page as text. Raises ArticleUnavailable with a reason to show."""
+        ...

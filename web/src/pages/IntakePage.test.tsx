@@ -2,6 +2,7 @@ import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "../api/client";
 import type { IntakeJob } from "../api/intake";
 import { userFromClaims } from "../auth/user";
 import { FakeGateway, renderApp, routedApi } from "../test/fakes";
@@ -66,6 +67,45 @@ describe("intake page", () => {
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS));
     expect(await screen.findByRole("heading", { name: "Ready for a reviewer" })).toBeInTheDocument();
     expect(screen.getByText(/2 possible reports were found/)).toBeInTheDocument();
+  });
+
+  it("reads a news article from its address and says why one cannot be read", async () => {
+    const answers: unknown[] = [
+      new ApiError(400, "BAD_REQUEST", "Only public web addresses can be read."),
+      { job: job({ filename: "article.txt", source_url: "https://news.example/flood" }) },
+    ];
+    const { api, sent } = routedApi(
+      { "/v1/intake-jobs/ijb_1": () => ({ job: job({ status: "EXTRACTING" }), candidates: [] }) },
+      {
+        "/v1/incidents/inc_1/intake-url": () => {
+          const answer = answers.shift();
+          if (answer instanceof Error) throw answer;
+          return answer;
+        },
+      },
+    );
+    renderApp(signedIn(), "/incidents/inc_1/upload", api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "A news article" }));
+    const field = screen.getByLabelText("Article address");
+    await user.type(field, "news.example/flood");
+    await user.click(screen.getByRole("button", { name: "Send for review" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/starting with https/);
+    expect(sent).toEqual([]);
+
+    await user.clear(field);
+    await user.type(field, "http://localhost/admin");
+    await user.click(screen.getByRole("button", { name: "Send for review" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Only public web addresses can be read.");
+
+    await user.clear(field);
+    await user.type(field, "https://news.example/flood");
+    await user.click(screen.getByRole("button", { name: "Send for review" }));
+    expect(await screen.findByRole("heading", { name: "Reading the report" })).toBeInTheDocument();
+    expect(sent.at(-1)).toEqual({
+      path: "/v1/incidents/inc_1/intake-url",
+      body: { url: "https://news.example/flood" },
+    });
   });
 
   it("uploads a file straight to storage with the presigned form", async () => {

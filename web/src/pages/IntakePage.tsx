@@ -7,6 +7,7 @@ import {
   MAX_UPLOAD_BYTES,
   requestUpload,
   submitText,
+  submitUrl,
   UPLOAD_TYPES,
   uploadFile,
   type IntakeJob,
@@ -14,6 +15,7 @@ import {
 } from "../api/intake";
 import { PageHeader } from "../components/ui";
 import { intakeFailureLabel, INTAKE_STATUS_LABELS, labelFor } from "../labels";
+import { asApiError } from "../useLoad";
 
 export const POLL_MS = 3000;
 const STATUS_TONE: Record<string, string> = {
@@ -24,7 +26,22 @@ const STATUS_TONE: Record<string, string> = {
 };
 const MAX_TEXT = 20000;
 
-type Mode = "file" | "text";
+type Mode = "file" | "text" | "url";
+
+const MODE_LABELS: Record<Mode, string> = {
+  file: "A file",
+  text: "Pasted text",
+  url: "A news article",
+};
+
+function isWebAddress(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 function JobStatus({ jobId, onAnother }: { jobId: string; onAnother: () => void }) {
   const api = useApi();
@@ -89,11 +106,15 @@ export function IntakePage() {
   const [mode, setMode] = useState<Mode>("file");
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
+  const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
 
   function check(): string | null {
+    if (mode === "url") {
+      return isWebAddress(url) ? null : "Enter the article's web address, starting with https://.";
+    }
     if (mode === "text") {
       if (!text.trim()) return "Paste the report text first.";
       if (text.length > MAX_TEXT) return `Text can be at most ${MAX_TEXT} characters.`;
@@ -114,15 +135,23 @@ export function IntakePage() {
     if (problem) return;
     setBusy(true);
     try {
-      if (mode === "text") {
+      if (mode === "url") {
+        setJobId((await submitUrl(api, incidentId, url.trim())).job.id);
+      } else if (mode === "text") {
         setJobId((await submitText(api, incidentId, text)).job.id);
       } else if (file) {
         const form = await requestUpload(api, incidentId, file.name, file.type as UploadType);
         await uploadFile(form, file);
         setJobId(form.upload_id);
       }
-    } catch {
-      setError("This could not be sent. Check your connection and try again.");
+    } catch (err) {
+      // The server says why an article could not be read: blocked, missing, not a page.
+      const reason = mode === "url" ? asApiError(err) : null;
+      setError(
+        reason && reason.status === 400
+          ? reason.message
+          : "This could not be sent. Check your connection and try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -132,6 +161,7 @@ export function IntakePage() {
     setJobId(null);
     setFile(null);
     setText("");
+    setUrl("");
     setError(null);
   }
 
@@ -139,14 +169,14 @@ export function IntakePage() {
     <section className="page">
       <PageHeader
         title="Upload a report"
-        description="Send a scanned list, a photo of a notice or pasted text. The model suggests reports from it; nothing is published until a reviewer confirms each one. Reports are published as your organization."
+        description="Send a scanned list, a photo of a notice, pasted text or a news article's address. The model suggests reports from it; nothing is published until a reviewer confirms each one. Reports are published as your organization."
       />
       {jobId ? (
         <JobStatus jobId={jobId} onAnother={another} />
       ) : (
         <form onSubmit={submit} noValidate>
           <div className="segmented intake-mode" role="group" aria-label="What to send">
-            {(["file", "text"] as const).map((m) => (
+            {(["file", "text", "url"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -157,11 +187,27 @@ export function IntakePage() {
                   setError(null);
                 }}
               >
-                {m === "file" ? "A file" : "Pasted text"}
+                {MODE_LABELS[m]}
               </button>
             ))}
           </div>
-          {mode === "file" ? (
+          {mode === "url" ? (
+            <div className="field">
+              <label htmlFor="intake-url">Article address</label>
+              <input
+                id="intake-url"
+                type="url"
+                inputMode="url"
+                placeholder="https://"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+              <p className="hint">
+                The page is read once. Its headline and paragraphs are kept with the address, and
+                each suggested report quotes the article word for word.
+              </p>
+            </div>
+          ) : mode === "file" ? (
             <div className="field">
               <label htmlFor="intake-file">Image or single-page PDF, up to 5 MB</label>
               <input
