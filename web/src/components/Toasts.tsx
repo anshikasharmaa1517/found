@@ -13,21 +13,16 @@ interface Toast {
 
 const MAX_TOASTS = 3;
 
-/** Short notices for live messages. The full detail is always one click away. */
+/** Short notices for live review items. The full detail is always one click away. */
 export function Toasts() {
   const user = useUser();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const reviews = hasRole(user, "reviewer", "admin");
 
   useLiveMessage((m) => {
+    // New alerts get the large banner instead (AlertBanner).
     let toast: Toast | null = null;
-    if (m.type === "alert.created") {
-      toast = {
-        id: m.alert_id,
-        text: m.message,
-        link: { to: `/people/${encodeURIComponent(m.subject_id)}`, label: "View timeline" },
-      };
-    } else if (m.type === "review.created" && reviews) {
+    if (m.type === "review.created" && reviews) {
       toast = { id: m.review_id, text: "A new item is waiting for review." };
     }
     if (toast) {

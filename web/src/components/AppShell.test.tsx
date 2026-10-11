@@ -6,7 +6,15 @@ import type { RecentReport } from "../api/incidents";
 import { userFromClaims } from "../auth/user";
 import { FakeGateway, REVIEWER, renderApp, routedApi } from "../test/fakes";
 
-vi.mock("../components/PlacesMap", () => ({
+const FAMILY = userFromClaims({ sub: "f", name: "Asha", "cognito:groups": ["family"] });
+const PUBLISHER = userFromClaims({
+  sub: "p",
+  "cognito:groups": ["publisher"],
+  "custom:org_id": "org_h",
+});
+const ADMIN = userFromClaims({ sub: "a", "cognito:groups": ["admin"] });
+
+vi.mock("./PlacesMap", () => ({
   default: () => <div data-testid="map">map</div>,
 }));
 
@@ -42,8 +50,12 @@ const RECENT: RecentReport[] = [
   },
 ];
 
-function routes(overrides: Record<string, () => unknown> = {}) {
-  return routedApi({
+function routes(
+  overrides: Record<string, () => unknown> = {},
+  posts: Record<string, (body: unknown) => unknown> = {},
+) {
+  return routedApi(
+    {
     [BASE]: () => INCIDENT,
     [`${BASE}/recent`]: () => ({ reports: RECENT }),
     [`${BASE}/map`]: () => ({
@@ -109,7 +121,9 @@ function routes(overrides: Record<string, () => unknown> = {}) {
       by_kind: { person: 3, report: 1, source: 1 },
     }),
     ...overrides,
-  });
+    },
+    posts,
+  );
 }
 
 function as(user = REVIEWER) {
@@ -118,16 +132,28 @@ function as(user = REVIEWER) {
   return gateway;
 }
 
-afterEach(() => localStorage.clear());
+afterEach(() => {
+  localStorage.clear();
+  vi.restoreAllMocks();
+});
 
-describe("incident overview", () => {
-  it("names the incident and walks through the demo story", async () => {
+function tabNames() {
+  return within(screen.getByRole("navigation", { name: "Main" }))
+    .getAllByRole("link")
+    .map((a) => a.textContent);
+}
+
+describe("app shell", () => {
+  it("names the incident, opens on the map and walks through the demo story", async () => {
     const { api } = routes();
     renderApp(as(), "/incidents/inc_demo", api, { mapStyleUrl: "https://tiles.example/style" });
+    const masthead = await screen.findByRole("banner");
     expect(
-      await screen.findByRole("heading", { name: "Kesari Valley flood (fictional demo)" }),
+      await within(masthead).findByText("Kesari Valley flood (fictional demo)"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Kesari valley, Uttarakhand/)).toBeInTheDocument();
+    expect(within(masthead).getByText(/Kesari valley, Uttarakhand/)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Map", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Map" })).toHaveAttribute("aria-current", "page");
 
     expect(await screen.findByRole("heading", { name: "Maya is reported missing" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "See every report about Maya" })).toHaveAttribute(
@@ -151,10 +177,35 @@ describe("incident overview", () => {
     expect(screen.queryByRole("button", { name: "Next step" })).toBeNull();
   });
 
-  it("gives families the other record instead of the review queue", async () => {
-    const family = userFromClaims({ sub: "f", name: "Asha", "cognito:groups": ["family"] });
+  it("shows each role its own tabs", async () => {
     const { api } = routes({ "/v1/me/alerts": () => ({ alerts: [], next_cursor: null }) });
-    renderApp(as(family), "/incidents/inc_demo", api);
+    const view = renderApp(as(), "/incidents/inc_demo/map", api);
+    await screen.findByRole("heading", { name: "Map" });
+    expect(tabNames()).toEqual(["Map", "People", "Graph", "Review"]);
+    view.unmount();
+
+    const publisher = renderApp(as(PUBLISHER), "/incidents/inc_demo/map", api);
+    await screen.findByRole("heading", { name: "Map" });
+    expect(tabNames()).toEqual(["Map", "People", "Graph", "Report", "Upload"]);
+    publisher.unmount();
+
+    renderApp(as(FAMILY), "/incidents/inc_demo/map", api);
+    await screen.findByRole("heading", { name: "Map" });
+    expect(tabNames()).toEqual(["Map", "People", "Graph", "Alerts"]);
+  });
+
+  it("keeps the People tab current on a person's page", async () => {
+    const { api } = routes();
+    localStorage.setItem("found.incidentId", "inc_demo");
+    renderApp(as(), "/people/per_1", api);
+    await screen.findByRole("heading", { name: "Maya Rawat", level: 1 });
+    expect(screen.getByRole("link", { name: "People" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Map" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("gives families the other record instead of the review queue", async () => {
+    const { api } = routes({ "/v1/me/alerts": () => ({ alerts: [], next_cursor: null }) });
+    renderApp(as(FAMILY), "/incidents/inc_demo", api);
     await screen.findByRole("heading", { name: "Maya is reported missing" });
     await userEvent.setup().click(screen.getByRole("button", { name: "Next step" }));
     expect(screen.getByRole("link", { name: "See the other record" })).toHaveAttribute(
@@ -162,22 +213,60 @@ describe("incident overview", () => {
       "/people/per_2",
     );
     expect(await screen.findByText(/Follow a person from their page/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start over" })).toBeNull();
   });
 
-  it("shows recent updates with sensitive reports masked, and the people tab", async () => {
+  it("hides the story guide and remembers it", async () => {
+    const { api } = routes();
+    const view = renderApp(as(), "/incidents/inc_demo", api);
+    await screen.findByRole("heading", { name: "Maya is reported missing" });
+    await userEvent.setup().click(screen.getByRole("button", { name: "Hide story guide" }));
+    expect(screen.queryByRole("heading", { name: "Maya is reported missing" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Show story guide" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    view.unmount();
+
+    renderApp(as(), "/incidents/inc_demo", api);
+    expect(await screen.findByRole("button", { name: "Show story guide" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Maya is reported missing" })).toBeNull();
+  });
+
+  it("lets an admin start the demo over after confirming", async () => {
+    const reset = vi.fn(() => ({ incident_id: "inc_demo", status: "RESETTING" }));
+    const { api } = routes({}, { "/v1/admin/incidents/inc_demo/reset": reset });
+    const confirm = vi
+      .spyOn(window, "confirm")
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true);
+    renderApp(as(ADMIN), "/incidents/inc_demo", api);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Start over" }));
+    expect(reset).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Start over" }));
+    expect(await screen.findByText(/The demo is reloading/)).toBeInTheDocument();
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows recent updates beside the work, with sensitive reports masked", async () => {
     const { api } = routes();
     renderApp(as(), "/incidents/inc_demo", api, { mapStyleUrl: "https://tiles.example/style" });
-    const recent = (await screen.findByRole("heading", { name: "Recent updates" })).closest(
+    const rail = await screen.findByRole("complementary", {
+      name: "Notifications and recent updates",
+    });
+    const recent = (await within(rail).findByRole("heading", { name: "Recent updates" })).closest(
       "section",
     )!;
     expect(await within(recent).findByText("Sensitive report")).toBeInTheDocument();
     expect(within(recent).getByText(/A coordinator will contact you/)).toBeInTheDocument();
     expect(within(recent).getByText("Found safe")).toBeInTheDocument();
     expect(within(recent).getByText(/Central Hospital Demo/)).toBeInTheDocument();
-    expect(screen.getByText("No notifications yet")).toBeInTheDocument();
-    expect(await screen.findByTestId("map")).toBeInTheDocument();
+    expect(within(rail).getByText("No notifications yet")).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toHaveTextContent(/confirm with the source/);
 
-    await userEvent.setup().click(screen.getByRole("tab", { name: "People" }));
+    await userEvent.setup().click(screen.getByRole("link", { name: "People" }));
     const table = await screen.findByRole("table");
     expect(within(table).getByRole("link", { name: "Maya R." })).toHaveAttribute(
       "href",
@@ -188,26 +277,31 @@ describe("incident overview", () => {
   it("has no story outside the demo and explains a missing incident", async () => {
     const { api } = routes({ [BASE]: () => ({ ...INCIDENT, is_demo: false }) });
     const view = renderApp(as(), "/incidents/inc_demo", api);
-    await screen.findByRole("heading", { name: "Kesari Valley flood (fictional demo)" });
+    await screen.findByText("Kesari Valley flood (fictional demo)");
+    await screen.findByRole("heading", { name: "Map" });
     expect(screen.queryByText(/Step 1 of 4/)).toBeNull();
     view.unmount();
 
     renderApp(as(), "/incidents/inc_x", routedApi({}).api);
-    expect((await screen.findAllByRole("alert"))[0]).toHaveTextContent("This incident does not exist.");
+    expect(await screen.findByText("This incident does not exist.")).toBeInTheDocument();
+    expect(screen.getAllByRole("banner")[0]).toHaveTextContent("inc_x");
   });
 
   it("draws the graph focused on Maya and explains a selected record", async () => {
     const { api } = routes();
     renderApp(as(), "/incidents/inc_demo", api);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("tab", { name: "Graph" }));
+    await user.click(await screen.findByRole("link", { name: "Graph" }));
+    expect(screen.getByRole("link", { name: "Graph" })).toHaveAttribute("aria-current", "page");
     // Focused on Maya: her report, its source and the possible match, not Arjun.
     expect(await screen.findByRole("img", { name: "Graph of 4 records and 3 links" })).toBeInTheDocument();
     expect(screen.getByLabelText("Focus on")).toHaveValue("per_1");
     expect(screen.getByText("Records").closest(".stat")).toHaveTextContent("5");
 
     await user.click(screen.getByRole("button", { name: "Central Hospital Demo" }));
-    const details = screen.getByText("Source", { selector: ".eyebrow" }).closest(".graph-details") as HTMLElement;
+    const details = screen
+      .getByText("Source", { selector: ".eyebrow" })
+      .closest(".graph-details") as HTMLElement;
     expect(within(details).getByText("1 link")).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Focus on"), "");

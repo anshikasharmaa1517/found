@@ -9,7 +9,6 @@ import { hasRole } from "../auth/user";
 import { claimTypeLabel, formatTime } from "../labels";
 import { useLiveMessage, useLiveReconnect } from "../live/context";
 import { useLoad } from "../useLoad";
-import { ErrorNotice } from "./ErrorNotice";
 import { SkeletonRows } from "./ui";
 
 const LIVE_MAX = 6;
@@ -138,7 +137,15 @@ function RecentUpdates({ incidentId }: { incidentId: string }) {
         <span className="meta">Newest first</span>
       </div>
       {recent.status === "loading" && <SkeletonRows label="Loading recent updates" rows={4} />}
-      {recent.status === "error" && <ErrorNotice error={recent.error} onRetry={retry} />}
+      {recent.status === "error" && (
+        // The rail is secondary, so a failure here is a quiet note, not an alert.
+        <p className="meta">
+          Recent updates could not load.{" "}
+          <button type="button" className="link" onClick={retry}>
+            Try again
+          </button>
+        </p>
+      )}
       {recent.status === "ready" &&
         (recent.data.reports.length === 0 ? (
           <p className="meta">No reports yet.</p>

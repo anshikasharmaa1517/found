@@ -45,12 +45,36 @@ function count(calls: Call[], path: string) {
 afterEach(() => localStorage.clear());
 
 describe("live alerts", () => {
-  it("connects with the token, shows the status and toasts a new alert", async () => {
+  it("connects with the token, shows the status and a banner for a new alert", async () => {
     const { sockets, createSocket } = fakeSockets();
-    renderApp(as(), "/", routedApi({ "/v1/health": () => ({ status: "ok" }) }).api, {
-      wsUrl: WS,
-      createSocket,
+    const entry = (n: number, claimType: string, source: string) => ({
+      withheld: false,
+      claim_id: `clm_${n}`,
+      seq: n,
+      claim_type: claimType,
+      value: null,
+      source_id: `src_${n}`,
+      source,
+      reported_at: null,
+      relation: "UPDATE",
+      excerpt: "",
     });
+    const timeline = {
+      person: { id: "per_1", name: "Maya Rawat", age: 24 },
+      summary: { label: "", basis: "", cited_claim_id: null, conflicts: [], needs_review: false },
+      identity: [],
+      entries: [
+        entry(3, "FOUND_SAFE", "Central Hospital Demo"),
+        entry(2, "SEEN_AT_LOCATION", "Flood Relief Demo"),
+        entry(1, "MISSING", "District Police Demo"),
+      ],
+      next_cursor: null,
+    };
+    const { api } = routedApi({
+      "/v1/health": () => ({ status: "ok" }),
+      "/v1/people/per_1/timeline": () => timeline,
+    });
+    renderApp(as(), "/", api, { wsUrl: WS, createSocket });
     await waitFor(() => expect(sockets).toHaveLength(1));
     expect(sockets[0]!.url).toBe(`${WS}?token=token`);
     act(() => sockets[0]!.open());
@@ -59,14 +83,21 @@ describe("live alerts", () => {
     expect(sockets[0]!.sent).toEqual([]);
 
     act(() => sockets[0]!.push(ALERT_MESSAGE));
-    const toast = (await screen.findByText(ALERT_MESSAGE.message)).closest(".toast") as HTMLElement;
-    expect(within(toast).getByRole("link", { name: "View timeline" })).toHaveAttribute(
+    const banner = await screen.findByRole("status", { name: "New alert" });
+    expect(within(banner).getByRole("heading", { name: ALERT_MESSAGE.message })).toBeInTheDocument();
+    expect(within(banner).getByRole("link", { name: "See every report" })).toHaveAttribute(
       "href",
       "/people/per_1",
     );
+    // Older status reports stay on record; the newest one is the alert itself.
+    expect(await within(banner).findByText("District Police Demo · Missing")).toBeInTheDocument();
+    expect(within(banner).queryByText(/Central Hospital Demo ·/)).toBeNull();
+    expect(within(banner).queryByText(/Flood Relief Demo/)).toBeNull();
+    expect(within(banner).getByText("New report about Maya Rawat")).toBeInTheDocument();
+    expect(banner).toHaveClass("ok");
     expect(screen.getByRole("link", { name: "Alerts, 1 new" })).toBeInTheDocument();
 
-    await userEvent.setup().click(within(toast).getByRole("button", { name: "Dismiss" }));
+    await userEvent.setup().click(within(banner).getByRole("button", { name: "Dismiss alert" }));
     expect(screen.queryByText(ALERT_MESSAGE.message)).not.toBeInTheDocument();
   });
 
@@ -83,7 +114,14 @@ describe("live alerts", () => {
     act(() =>
       sockets[0]!.push({ type: "review.created", incident_id: "inc_1", review_id: "rev_1", item_type: "conflict" }),
     );
-    expect(await screen.findByText("A new item is waiting for review.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("A new item is waiting for review.", { selector: ".toast p" }),
+    ).toBeInTheDocument();
+    // The rail lists it too, linked to the queue.
+    expect(screen.getByRole("link", { name: "A new item is waiting for review." })).toHaveAttribute(
+      "href",
+      "/incidents/inc_1/review",
+    );
     expect(screen.queryByRole("link", { name: /^Alerts/ })).not.toBeInTheDocument();
   });
 

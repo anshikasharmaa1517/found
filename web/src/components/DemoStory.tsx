@@ -1,11 +1,22 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { resetDemo } from "../api/admin";
 import { useApi } from "../api/context";
 import { getTimeline, listPeople, type VisibleEntry } from "../api/people";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
-import { useLoad } from "../useLoad";
+import { asApiError, useLoad } from "../useLoad";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  ChevronIcon,
+  HospitalIcon,
+  PersonSearchIcon,
+  PinIcon,
+  RestartIcon,
+  SearchIcon,
+} from "./icons";
 import { TraceButton } from "./TraceButton";
 
 interface StoryData {
@@ -43,23 +54,86 @@ const STEPS = [
     short: "Reported missing",
     title: "Maya is reported missing",
     text: "After the flood, the police report Maya Rawat, 24, missing near the Old Bridge. Found keeps the report with who said it and when.",
+    icon: <PinIcon size={24} />,
   },
   {
     short: "Same person?",
     title: "Is this the same person?",
     text: "A volunteer desk reports a Maya R., 24, at the same bridge. The resolver proposes a match with its reasons; a reviewer decides, and the records are never merged.",
+    icon: <PersonSearchIcon size={24} />,
   },
   {
     short: "Hospital says safe",
     title: "The hospital says she is safe",
     text: "Central Hospital Demo reports Maya admitted and stable. Her page now cites that report, and still shows the police report that came first.",
+    icon: <HospitalIcon size={24} />,
   },
   {
     short: "Where did it come from?",
     title: "Where did the last report come from?",
     text: "Flood Relief Demo also says Maya is safe, citing the hospital. The agent traces it and finds a relay: helpful, but not independent confirmation.",
+    icon: <SearchIcon size={24} />,
   },
 ] as const;
+
+const HIDDEN_KEY = "found.storyHidden";
+
+function storyHidden(): boolean {
+  try {
+    return localStorage.getItem(HIDDEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberHidden(hidden: boolean) {
+  try {
+    if (hidden) localStorage.setItem(HIDDEN_KEY, "1");
+    else localStorage.removeItem(HIDDEN_KEY);
+  } catch {
+    // Only this visit remembers it.
+  }
+}
+
+/** Admins can reload the demo from its dataset; it runs in the background. */
+function StartOver({ incidentId }: { incidentId: string }) {
+  const api = useApi();
+  const [state, setState] = useState<"idle" | "busy" | "done" | "failed">("idle");
+  const [error, setError] = useState("");
+
+  async function onClick() {
+    if (!window.confirm("Reload the demo incident? Reports added since the last load are removed.")) {
+      return;
+    }
+    setState("busy");
+    try {
+      await resetDemo(api, incidentId);
+      setState("done");
+    } catch (err) {
+      setError(asApiError(err).message);
+      setState("failed");
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className="ghost small" onClick={onClick} disabled={state === "busy"}>
+        <RestartIcon />
+        {state === "busy" ? "Starting over" : "Start over"}
+      </button>
+      {state === "done" && (
+        <span className="story-note" role="status">
+          The demo is reloading. Refresh in about a minute.
+        </span>
+      )}
+      {state === "failed" && (
+        <span className="field-error" role="alert">
+          {error}
+        </span>
+      )}
+    </>
+  );
+}
 
 /** A guided walk through the demo incident, step by step, on real records. */
 export function DemoStory({ incidentId }: { incidentId: string }) {
@@ -67,17 +141,23 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
   const user = useUser();
   const reviewer = hasRole(user, "reviewer", "admin");
   const [step, setStep] = useState(0);
+  const [hidden, setHidden] = useState(storyHidden);
   const [story] = useLoad(`story|${incidentId}`, () => loadStory(api, incidentId));
   if (story.status !== "ready" || story.data === null) return null;
   const data = story.data;
   const person = `/people/${encodeURIComponent(data.mayaId)}`;
   const current = STEPS[step]!;
 
-  function action() {
+  function toggleHidden() {
+    rememberHidden(!hidden);
+    setHidden(!hidden);
+  }
+
+  function action(): ReactNode {
     switch (step) {
       case 0:
         return (
-          <Link className="button-link primary" to={person}>
+          <Link className="button-link primary large" to={person}>
             See every report about Maya
           </Link>
         );
@@ -85,7 +165,7 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
         if (reviewer) {
           return (
             <Link
-              className="button-link primary"
+              className="button-link primary large"
               to={`/incidents/${encodeURIComponent(incidentId)}/review?type=identity`}
             >
               Review the possible match
@@ -93,14 +173,17 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
           );
         }
         return data.otherId ? (
-          <Link className="button-link primary" to={`/people/${encodeURIComponent(data.otherId)}`}>
+          <Link
+            className="button-link primary large"
+            to={`/people/${encodeURIComponent(data.otherId)}`}
+          >
             See the other record
           </Link>
         ) : null;
       case 2:
         return (
           <Link
-            className="button-link primary"
+            className="button-link primary large"
             to={data.hospitalClaimId ? `${person}#entry-${data.hospitalClaimId}` : person}
           >
             See the hospital report
@@ -110,7 +193,7 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
         return reviewer && data.relayClaimId ? (
           <TraceButton claimId={data.relayClaimId} primary />
         ) : (
-          <Link className="button-link primary" to={person}>
+          <Link className="button-link primary large" to={person}>
             See the relayed report
           </Link>
         );
@@ -118,41 +201,64 @@ export function DemoStory({ incidentId }: { incidentId: string }) {
   }
 
   return (
-    <section className="story" aria-labelledby="story-title">
-      <ol className="story-steps" aria-label="Maya's story">
-        {STEPS.map((s, i) => (
-          <li key={s.short}>
-            <button
-              type="button"
-              className={i === step ? "story-step active" : "story-step"}
-              aria-current={i === step ? "step" : undefined}
-              onClick={() => setStep(i)}
-            >
-              <span className="story-num" aria-hidden="true">
-                {i + 1}
-              </span>
-              {s.short}
-            </button>
-          </li>
-        ))}
-      </ol>
-      <div className="story-card">
-        <div>
-          <p className="eyebrow">
-            Step {step + 1} of {STEPS.length}
-          </p>
-          <h2 id="story-title">{current.title}</h2>
-          <p>{current.text}</p>
-        </div>
-        <div className="story-actions">
-          {action()}
-          {step < STEPS.length - 1 && (
-            <button type="button" className="link" onClick={() => setStep(step + 1)}>
-              Next step
-            </button>
-          )}
+    <section className="story" aria-label="Maya's story, step by step">
+      <div className="story-bar">
+        <span className="eyebrow">Maya&apos;s story</span>
+        <ol className="story-steps" aria-label="Maya's story">
+          {STEPS.map((s, i) => (
+            <li key={s.short}>
+              <button
+                type="button"
+                className={
+                  i === step ? "story-step active" : i < step ? "story-step done" : "story-step"
+                }
+                aria-current={i === step ? "step" : undefined}
+                onClick={() => setStep(i)}
+              >
+                <span className="story-num" aria-hidden="true">
+                  {i < step ? <CheckIcon size={14} /> : i + 1}
+                </span>
+                {s.short}
+              </button>
+            </li>
+          ))}
+        </ol>
+        <div className="story-tools">
+          {hasRole(user, "admin") && <StartOver incidentId={incidentId} />}
+          <button
+            type="button"
+            className="icon-button ghost"
+            aria-label={hidden ? "Show story guide" : "Hide story guide"}
+            aria-expanded={!hidden}
+            onClick={toggleHidden}
+          >
+            <ChevronIcon up={!hidden} />
+          </button>
         </div>
       </div>
+      {!hidden && (
+        <div className="story-card" key={step}>
+          <span className="story-icon" aria-hidden="true">
+            {current.icon}
+          </span>
+          <div className="story-text">
+            <p className="eyebrow accent">
+              Step {step + 1} of {STEPS.length}
+            </p>
+            <h2>{current.title}</h2>
+            <p>{current.text}</p>
+          </div>
+          <div className="story-actions">
+            {action()}
+            {step < STEPS.length - 1 && (
+              <button type="button" className="ghost large" onClick={() => setStep(step + 1)}>
+                Next step
+                <ArrowRightIcon />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

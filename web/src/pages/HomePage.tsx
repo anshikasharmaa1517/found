@@ -28,8 +28,8 @@ function destinations(user: User, incidentId: string): Destination[] {
   const list: Destination[] = [
     {
       to: base,
-      title: "Incident overview",
-      text: "The map, what is new, and a guided walk through the demo.",
+      title: "Incident dashboard",
+      text: "The map, people, sources and graph, what is new, and a guided walk through the demo.",
     },
   ];
   if (hasRole(user, "reviewer", "admin")) {
