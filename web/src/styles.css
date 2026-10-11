@@ -3309,6 +3309,48 @@ tbody tr.selected {
   margin: var(--s-1) 0 0;
 }
 
+/* Match review: what two records share, where they differ, what neither says. */
+
+.facts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--s-4);
+  margin: var(--s-4) 0;
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+}
+
+.fact-list h4 {
+  margin: 0 0 var(--s-2);
+  font-size: var(--fs-12);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fact-list.ok h4 {
+  color: var(--ok);
+}
+
+.fact-list.warn h4 {
+  color: var(--warn);
+}
+
+.fact-list.neutral h4 {
+  color: var(--neutral);
+}
+
+.fact-list ul {
+  margin: 0;
+  padding-left: var(--s-5);
+}
+
+.facts-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
 /* People: a big search box, then the list and the person side by side. */
 
 .people-search {

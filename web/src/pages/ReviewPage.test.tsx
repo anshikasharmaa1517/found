@@ -249,6 +249,11 @@ describe("identity review", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Compare their reports" }));
     expect(await screen.findByText("Sita Tamang missing near the bridge.")).toBeInTheDocument();
     expect(screen.getByText("Sita T. seen at the Old Bridge.")).toBeInTheDocument();
+    expect(screen.getByText("Record A", { exact: false, selector: ".eyebrow" })).toHaveTextContent("per_1");
+    const facts = screen.getByRole("region", { name: "What the records share and where they differ" });
+    expect(within(facts).getByText("Same given name")).toBeInTheDocument();
+    expect(within(facts).getByText("Sita T. gives only an initial for the surname")).toBeInTheDocument();
+    expect(within(facts).getByText(/No place reported for Sita Tamang/)).toBeInTheDocument();
     expect(calls.filter((c) => c.path.endsWith("/timeline")).map((c) => c.query)).toEqual([
       { limit: 20 },
       { limit: 20 },

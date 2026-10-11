@@ -6,6 +6,7 @@ import { useApi } from "../api/context";
 import { getTimeline, type Timeline } from "../api/people";
 import { decideIdentity, type IdentityProposal, type IdentityVerdict } from "../api/review";
 import { claimTypeLabel, formatTime, labelFor, MATCH_REASON_LABELS } from "../labels";
+import { compareRecords } from "../identityFacts";
 import { asApiError } from "../useLoad";
 
 const COMPARE_LIMIT = 20;
@@ -16,10 +17,13 @@ type Comparison =
   | { status: "ready"; timelines: Timeline[] }
   | { status: "error" };
 
-function CompareRecord({ timeline }: { timeline: Timeline }) {
+function CompareRecord({ timeline, label }: { timeline: Timeline; label: string }) {
   const { person, summary, entries } = timeline;
   return (
     <div className="compare-record">
+      <p className="eyebrow">
+        {label} <span className="mono">{person.id}</span>
+      </p>
       <h3>
         <Link to={`/people/${encodeURIComponent(person.id)}`}>{person.name}</Link>
         {person.age !== null && <span className="muted">, {person.age}</span>}
@@ -41,6 +45,38 @@ function CompareRecord({ timeline }: { timeline: Timeline }) {
         )}
       </ol>
     </div>
+  );
+}
+
+function FactList({ title, items, tone }: { title: string; items: string[]; tone: string }) {
+  return (
+    <div className={`fact-list ${tone}`}>
+      <h4>{title}</h4>
+      {items.length === 0 ? (
+        <p className="meta">None found in the records.</p>
+      ) : (
+        <ul>
+          {items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Facts({ proposal, timelines }: { proposal: IdentityProposal; timelines: Timeline[] }) {
+  const facts = compareRecords(proposal.reasons, timelines[0]!, timelines[1]!);
+  return (
+    <section className="facts-grid" aria-label="What the records share and where they differ">
+      <FactList title="Similarities (rule-based)" items={facts.similarities} tone="ok" />
+      <FactList title="Differences" items={facts.differences} tone="warn" />
+      <FactList title="Unknown" items={facts.unknowns} tone="neutral" />
+      <p className="meta facts-note">
+        Read from the stored records; not a probability. Names alone never propose a match, and
+        both records stay separate whatever you decide.
+      </p>
+    </section>
   );
 }
 
@@ -125,11 +161,16 @@ export function IdentityReview({
         </p>
       )}
       {comparison.status === "ready" && (
-        <div className="compare">
-          {comparison.timelines.map((t) => (
-            <CompareRecord key={t.person.id} timeline={t} />
-          ))}
-        </div>
+        <>
+          <div className="compare">
+            {comparison.timelines.map((t, i) => (
+              <CompareRecord key={t.person.id} timeline={t} label={i === 0 ? "Record A" : "Record B"} />
+            ))}
+          </div>
+          {comparison.timelines.length === 2 && (
+            <Facts proposal={proposal} timelines={comparison.timelines} />
+          )}
+        </>
       )}
 
       {open && (
