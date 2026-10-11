@@ -27,7 +27,13 @@ from found_core.domain.models import (
     InvestigationStep,
     ReviewItem,
 )
-from found_core.fixtures import Dataset, LoadResult, load_dataset, reference_key
+from found_core.fixtures import (
+    Dataset,
+    LoadResult,
+    load_dataset,
+    publish_fixture,
+    reference_key,
+)
 from found_core.ports.clock import Clock, SystemClock
 from found_core.ports.fixtures import FixtureSource, ResetTrigger
 from found_core.ports.repository import FoundRepository
@@ -37,6 +43,16 @@ from found_core.services.ingest import IngestService
 COMPONENT = "admin"
 ACTIVITY_MAX = 100
 _PLACEHOLDER = re.compile(r"\{(claim|source|subject):([^{}]+)\}")
+
+
+@dataclass(frozen=True)
+class PreparedResult:
+    """What pressing the story's step 3 did: new reports, and ones already published."""
+
+    incident_id: str
+    claims: tuple[Claim, ...]
+    published: int
+    replayed: int
 
 
 @dataclass(frozen=True)
@@ -106,6 +122,70 @@ class DemoService:
         if incident is not None and not incident.is_demo:
             raise BadRequest("This incident is not a demo incident.", incident_id=incident_id)
         return dataset
+
+    def publish_prepared(self, caller: Caller, incident_id: str) -> PreparedResult:
+        """Publish the story's prepared reports (step 3), as in Trace's demo button.
+
+        Any signed-in role may press it, but only on the demo incident, and the reports are
+        the fixed, fictional ones in `prepared.json`, published through ingest as their
+        organizations. Each keeps its reference, so pressing twice publishes nothing new.
+        The watcher then alerts the person's followers as for any other report.
+        """
+        dataset = self._check_resettable(incident_id)
+        if not self._repo.incident_exists(incident_id):
+            raise NotFound("Load the demo incident first.", incident_id=incident_id)
+        ensure_can_read(self._repo, caller, incident_id)
+        if not dataset.prepared:
+            raise BadRequest("This demo has no prepared reports.")
+        orgs = {o.id: o for o in dataset.organizations}
+        subjects = self._subjects_by_person(incident_id, dataset)
+        claims: list[Claim] = []
+        published = replayed = 0
+        for report in dataset.prepared:
+            subject_id = subjects.get(report.person)
+            if subject_id is None:
+                raise BadRequest(
+                    "The person this report is about is not loaded. Start the demo over."
+                )
+            person = next(p for p in dataset.people if p.key == report.person)
+            result = publish_fixture(
+                incident_id,
+                orgs[report.org_id],
+                report,
+                {"type": person.type, "id": subject_id},
+                self._ingest,
+                actor=caller.user_id,
+            )
+            claims.append(result.claim)
+            if result.replayed:
+                replayed += 1
+            else:
+                published += 1
+        if published:
+            self._activity(
+                incident_id,
+                caller.user_id,
+                f"Demo story: {published} prepared report(s) published",
+                [c.id for c in claims],
+            )
+        return PreparedResult(incident_id, tuple(claims), published, replayed)
+
+    def _subjects_by_person(self, incident_id: str, dataset: Dataset) -> dict[str, str]:
+        """Each dataset person's subject id now, found through their first loaded report."""
+        sources = {s.id: s for s in self._repo.list_sources(incident_id)}
+        by_reference = {
+            reference_key(sources[c.source_id].organization_id or "", c.external_reference): c
+            for c in self._repo.list_incident_claims(incident_id)
+            if c.source_id in sources
+        }
+        subjects: dict[str, str] = {}
+        for report in dataset.reports:
+            if report.person in subjects:
+                continue
+            claim = by_reference.get(reference_key(report.org_id, report.external_reference))
+            if claim is not None:
+                subjects[report.person] = claim.subject_id
+        return subjects
 
     def request_reset(self, caller: Caller, incident_id: str) -> None:
         """Checked in the API, done by the reset worker, which can take longer."""

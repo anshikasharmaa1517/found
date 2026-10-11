@@ -19,10 +19,17 @@ from found_core.domain.enums import ExtractionMethod, SourceType, SubjectType
 from found_core.domain.models import Claim, Incident, MapContext, Organization, RiverCourse
 from found_core.domain.normalize import normalize_text
 from found_core.ports.repository import FoundRepository
-from found_core.services.ingest import IngestService
+from found_core.services.ingest import IngestService, PublishResult
 
 FIXTURE_ACTOR = "demo-loader"
-FILES = ("incident.json", "organizations.json", "people.json", "reports.json", "runs.json")
+FILES = (
+    "incident.json",
+    "organizations.json",
+    "people.json",
+    "reports.json",
+    "prepared.json",
+    "runs.json",
+)
 
 
 class _Fixture(BaseModel):
@@ -79,6 +86,8 @@ class Dataset(_Fixture):
     organizations: tuple[OrganizationFixture, ...]
     people: tuple[PersonFixture, ...]
     reports: tuple[ReportFixture, ...]
+    # Published by the demo story on request, never at load (`DemoService.publish_prepared`).
+    prepared: tuple[ReportFixture, ...] = ()
     runs: tuple[dict[str, Any], ...] = ()
 
     @classmethod
@@ -89,6 +98,7 @@ class Dataset(_Fixture):
             organizations=files["organizations.json"],
             people=files["people.json"],
             reports=files["reports.json"],
+            prepared=files.get("prepared.json") or (),
             runs=files.get("runs.json") or (),
         )
 
@@ -103,6 +113,36 @@ class LoadResult:
 
 def reference_key(org_id: str, external_reference: str) -> str:
     return f"{org_id}/{external_reference}"
+
+
+def publish_fixture(
+    incident_id: str,
+    org: OrganizationFixture,
+    report: ReportFixture,
+    subject: dict[str, Any],
+    ingest: IngestService,
+    actor: str = FIXTURE_ACTOR,
+) -> PublishResult:
+    """One dataset report through ingest, as its organization."""
+    return ingest.publish(
+        PublishCommand.parse(
+            {
+                "incident_id": incident_id,
+                "org_id": org.id,
+                "org_name": org.name,
+                "org_type": org.org_type,
+                "actor": actor,
+                "subject": subject,
+                "claim_type": report.claim_type,
+                "value": report.value,
+                "original_text": report.original_text,
+                "external_reference": report.external_reference,
+                "reported_at": report.reported_at,
+                "location": report.location.model_dump() if report.location else None,
+                "extraction_method": ExtractionMethod.FIXTURE,
+            }
+        )
+    )
 
 
 def load_dataset(dataset: Dataset, repo: FoundRepository, ingest: IngestService) -> LoadResult:
@@ -141,25 +181,7 @@ def load_dataset(dataset: Dataset, repo: FoundRepository, ingest: IngestService)
         else:
             new = {"name": person.name, "age": person.age, "notes": person.notes}
             subject = {"type": person.type, "new": {k: v for k, v in new.items() if v is not None}}
-        result = ingest.publish(
-            PublishCommand.parse(
-                {
-                    "incident_id": incident.id,
-                    "org_id": org.id,
-                    "org_name": org.name,
-                    "org_type": org.org_type,
-                    "actor": FIXTURE_ACTOR,
-                    "subject": subject,
-                    "claim_type": report.claim_type,
-                    "value": report.value,
-                    "original_text": report.original_text,
-                    "external_reference": report.external_reference,
-                    "reported_at": report.reported_at,
-                    "location": report.location.model_dump() if report.location else None,
-                    "extraction_method": ExtractionMethod.FIXTURE,
-                }
-            )
-        )
+        result = publish_fixture(incident.id, org, report, subject, ingest)
         subjects.setdefault(report.person, result.claim.subject_id)
         claims[reference_key(org.id, report.external_reference)] = result.claim
         if result.replayed:

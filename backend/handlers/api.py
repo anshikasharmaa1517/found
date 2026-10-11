@@ -896,6 +896,20 @@ def incident_activity(incident_id: str) -> Response:
     )
 
 
+@app.post("/v1/incidents/<incident_id>/demo/hospital-update")
+def publish_demo_update(incident_id: str) -> Response:
+    result = container.demo_service().publish_prepared(_caller(), incident_id)
+    return _json(
+        HTTPStatus.CREATED if result.published else HTTPStatus.OK,
+        {
+            "incident_id": result.incident_id,
+            "claim_ids": [c.id for c in result.claims],
+            "published": result.published,
+            "replayed": result.replayed,
+        },
+    )
+
+
 @app.post("/v1/admin/incidents/<incident_id>/reset")
 def reset_demo(incident_id: str) -> Response:
     container.demo_service().request_reset(_caller(), incident_id)

@@ -107,3 +107,16 @@ def test_admin_routes(api_world):
     assert status == 200
     messages = [a["message"] for a in body["activity"]]
     assert messages[0] == "Demo reset requested" and messages[1].startswith("Demo reset:")
+
+
+def test_story_route_publishes_the_hospital_report(api_world):
+    from tests.unit.test_api_handler import call, event
+
+    family = {"sub": "fam_1", "cognito:groups": "[family]"}
+    path = "/v1/incidents/inc_demo/demo/hospital-update"
+    status, body, _ = call(event("POST", path, None, family))
+    assert status == 201 and body["published"] == 1 and body["replayed"] == 0
+    assert len(body["claim_ids"]) == 1
+    status, again, _ = call(event("POST", path, None, family))
+    assert status == 200 and again["published"] == 0 and again["claim_ids"] == body["claim_ids"]
+    assert call(event("POST", "/v1/incidents/inc_x/demo/hospital-update", None, family))[0] == 400

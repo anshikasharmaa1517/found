@@ -90,10 +90,10 @@ def world():
 
 def test_reset_loads_the_demo_and_logs_it(world):
     assert world.repo.get_incident("inc_demo").is_demo
-    assert len(world.repo.list_incident_claims("inc_demo")) == 67
+    assert len(world.repo.list_incident_claims("inc_demo")) == 66
     (entry,) = world.repo.list_activity("inc_demo", 10)
     assert entry.component == "admin" and entry.actor == "adm_1"
-    assert entry.message == "Demo reset: 67 reports loaded, 0 recorded runs restored as REPLAYED"
+    assert entry.message == "Demo reset: 66 reports loaded, 0 recorded runs restored as REPLAYED"
 
 
 def test_reset_removes_demo_changes_and_keeps_everything_else(world):
@@ -108,9 +108,9 @@ def test_reset_removes_demo_changes_and_keeps_everything_else(world):
 
     world.clock.at += timedelta(hours=1)
     result = world.demo.reset("inc_demo", "adm_2")
-    assert result.removed > 67 and result.published == 67
+    assert result.removed > 66 and result.published == 66
     after = {c.id for c in repo.list_incident_claims("inc_demo")}
-    assert len(after) == 67 and not (before & after)
+    assert len(after) == 66 and not (before & after)
     assert repo.subscriptions == {} and repo.get_investigation(inv.id) is None
     assert repo.run_locks == {}
     assert repo.incident_exists("inc_other")
@@ -151,7 +151,7 @@ def record_a_real_run(world):
     """A finished live run, as the runner and tools leave it."""
     repo = world.repo
     relay = world.claim("org_ngo", "FRD-0001")
-    source = world.claim("org_hospital", "CHD-0001")
+    source = world.claim("org_police", "DPD-0001")
     starter = InvestigationService(repo, InMemoryBudgetLedger(), Queue(), CONFIG, world.clock)
     inv = starter.start(REVIEWER, relay.id).investigation
     repo.update_investigation_if(
@@ -165,7 +165,7 @@ def record_a_real_run(world):
             kind=StepKind.TOOL,
             tool_name="find_reports_by_source",
             input_json=f'{{"source_id": "{source.source_id}", "subject_id": "{relay.subject_id}"}}',
-            output_summary=f"1 report from Central Hospital ({source.id})",
+            output_summary=f"1 report from District Police ({source.id})",
             duration_ms=90,
             created_at=world.clock.now(),
         )
@@ -178,10 +178,10 @@ def record_a_real_run(world):
             "attribution": "RELAY",
             "referenced_source_id": source.source_id,
             "comparison": "SUPPORTS",
-            "summary": "The NGO repeats the hospital's admission report.",
+            "summary": "The NGO repeats the police missing report.",
             "citations": [
-                {"claim_id": relay.id, "excerpt": "According to Central Hospital"},
-                {"claim_id": source.id, "excerpt": "admitted to ward 3 at 07:40"},
+                {"claim_id": relay.id, "excerpt": "According to District Police"},
+                {"claim_id": source.id, "excerpt": "missing since the bridge collapse"},
             ],
         },
     )
@@ -192,15 +192,15 @@ def record_a_real_run(world):
 def test_recording_names_reports_by_reference_not_id(world):
     recording, inv = record_a_real_run(world)
     assert recording["claim"] == "{claim:org_ngo/FRD-0001}"
-    assert recording["referenced_source"] == "{source:Central Hospital}"
+    assert recording["referenced_source"] == "{source:District Police}"
     assert recording["citations"][1] == {
-        "claim": "{claim:org_hospital/CHD-0001}",
-        "excerpt": "admitted to ward 3 at 07:40",
+        "claim": "{claim:org_police/DPD-0001}",
+        "excerpt": "missing since the bridge collapse",
     }
     step = recording["steps"][0]
-    assert "{source:Central Hospital}" in step["input_json"]
+    assert "{source:District Police}" in step["input_json"]
     assert "{subject:org_police/DPD-0001}" in step["input_json"]
-    assert step["output_summary"].endswith("({claim:org_hospital/CHD-0001})")
+    assert step["output_summary"].endswith("({claim:org_police/DPD-0001})")
     assert "clm_" not in str(recording) and "src_" not in str(recording)
     assert recording["model_id"] == "model-a" and recording["status"] == "NEEDS_REVIEW"
 
@@ -224,7 +224,7 @@ def test_reset_restores_recorded_runs_as_replayed_and_serves_them_cached(world):
     repo = replaying.repo
     (inv,) = repo.investigations.values()
     relay = replaying.claim("org_ngo", "FRD-0001")
-    source = replaying.claim("org_hospital", "CHD-0001")
+    source = replaying.claim("org_police", "DPD-0001")
     assert inv.mode == InvestigationMode.REPLAYED and inv.id != original.id
     assert inv.claim_id == relay.id and inv.referenced_source_id == source.source_id
     assert inv.status == S.NEEDS_REVIEW and inv.outcome_reasons == ("RELAY_NOT_FIRST_HAND",)
@@ -255,3 +255,33 @@ def test_activity_feed_is_readable_by_incident_readers(world):
 
 def test_reference_key_matches_the_recording_format():
     assert reference_key("org_ngo", "FRD-0001") == "org_ngo/FRD-0001"
+
+
+def test_the_story_publishes_the_hospital_report_once_for_any_role(world):
+    family = Caller(user_id="fam_1", groups=frozenset({"family"}))
+    first = world.demo.publish_prepared(family, "inc_demo")
+    assert (first.published, first.replayed) == (1, 0)
+    (claim,) = first.claims
+    hospital = world.claim("org_hospital", "CHD-0001")
+    sita = world.claim("org_police", "DPD-0001").subject_id
+    assert claim.id == hospital.id and claim.subject_id == sita
+    assert claim.claim_type == "FOUND_SAFE" and claim.created_by == "fam_1"
+    assert len(world.repo.list_incident_claims("inc_demo")) == 67
+    entry = world.repo.list_activity("inc_demo", 10)[0]
+    assert entry.actor == "fam_1" and entry.message == "Demo story: 1 prepared report(s) published"
+
+    # Pressing again publishes nothing new and logs nothing.
+    again = world.demo.publish_prepared(family, "inc_demo")
+    assert (again.published, again.replayed) == (0, 1) and again.claims[0].id == hospital.id
+    assert world.repo.list_activity("inc_demo", 10)[0].id == entry.id
+
+
+def test_the_story_button_is_for_the_demo_incident_only(world):
+    with pytest.raises(BadRequest):
+        world.demo.publish_prepared(REVIEWER, "inc_other")
+    outsider = Caller(user_id="p", groups=frozenset({"publisher"}), org_id="org_x")
+    with pytest.raises(Forbidden):
+        world.demo.publish_prepared(outsider, "inc_demo")
+    empty = World()
+    with pytest.raises(NotFound):
+        empty.demo.publish_prepared(REVIEWER, "inc_demo")

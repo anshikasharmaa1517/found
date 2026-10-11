@@ -92,13 +92,23 @@ def test_load_goes_through_ingest_and_gives_the_story(loaded):
 
     people = PeopleService(repo, CursorCodec(b"k" * 32))
     sita = people.profile(REVIEWER, result.subjects_by_person["sita"])
-    hospital = result.claims_by_reference[reference_key("org_hospital", "CHD-0001")]
+    police = result.claims_by_reference[reference_key("org_police", "DPD-0001")]
     relay = result.claims_by_reference[reference_key("org_ngo", "FRD-0001")]
-    assert sita.summary.label == "Reported found safe"
-    # The summary cites the latest dated report, here the relay; tracing it is UC-2.
-    assert sita.summary.cited_claim_id == relay.id
-    assert relay.mentioned_source_ids == (hospital.source_id,)
-    assert relay.location_id is None and hospital.location_id is not None
+    # Until the story's step 3 publishes the hospital report, Sita is reported missing.
+    assert sita.summary.label == "Reported missing"
+    assert reference_key("org_hospital", "CHD-0001") not in result.claims_by_reference
+    # The relay passes on the police report; tracing it is UC-2 (step 4).
+    assert relay.mentioned_source_ids == (police.source_id,)
+    assert relay.location_id is None and police.location_id is not None
+
+
+def test_the_hospital_report_is_prepared_not_loaded():
+    dataset = read_dataset()
+    (hospital,) = dataset.prepared
+    assert (hospital.org_id, hospital.external_reference) == ("org_hospital", "CHD-0001")
+    assert hospital.person == "sita" and hospital.claim_type == "FOUND_SAFE"
+    loaded = {(r.org_id, r.external_reference) for r in dataset.reports}
+    assert ("org_hospital", "CHD-0001") not in loaded
 
 
 def test_story_feeds_the_review_queue(loaded):

@@ -14,27 +14,13 @@
     }
   },
   {
-    "org_id": "org_hospital",
-    "external_reference": "CHD-0001",
-    "person": "sita",
-    "claim_type": "FOUND_SAFE",
-    "value": "Ward 3, stable",
-    "original_text": "Sita Tamang, 24, admitted to ward 3 at 07:40. Condition stable.",
-    "reported_at": "2026-08-27T07:40:00+05:45",
-    "location": {
-      "name": "Central Hospital grounds",
-      "lat": 27.9246,
-      "lon": 85.1408
-    }
-  },
-  {
     "org_id": "org_ngo",
     "external_reference": "FRD-0001",
     "person": "sita",
-    "claim_type": "FOUND_SAFE",
+    "claim_type": "MISSING",
     "value": null,
-    "original_text": "According to Central Hospital, Sita Tamang was admitted to ward 3 and is stable.",
-    "reported_at": "2026-08-27T08:30:00+05:45",
+    "original_text": "According to District Police, Sita Tamang, 24, is missing near the Old Bridge.",
+    "reported_at": "2026-08-26T22:30:00+05:45",
     "location": null
   },
   {

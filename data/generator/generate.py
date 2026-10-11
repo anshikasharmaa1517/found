@@ -120,6 +120,9 @@ class Builder:
     def __init__(self) -> None:
         self.people: list[dict] = []
         self.reports: list[dict] = []
+        # Reports the demo story publishes when someone presses its button (step 3), not
+        # at load. They take their reference in order, so every other reference stays put.
+        self.prepared: list[dict] = []
         self.counters = {o[0]: 0 for o in ORGANIZATIONS}
 
     def person(self, key: str, name: str, age: int | None, notes: str | None = None) -> str:
@@ -141,10 +144,11 @@ class Builder:
         *,
         value: str | None = None,
         where: str | None = None,
+        prepared: bool = False,
     ) -> None:
         self.counters[org] += 1
         reference = f"{ORG[org][3]}-{self.counters[org]:04d}"
-        self.reports.append(
+        (self.prepared if prepared else self.reports).append(
             {
                 "org_id": org,
                 "external_reference": reference,
@@ -164,12 +168,18 @@ def story(b: Builder) -> None:
     b.report("org_police", sita, "MISSING",
              "Family reports Sita Tamang, 24, missing since the bridge collapse near the "
              "Old Bridge.", "2026-08-26T21:10:00+05:45", where="old_bridge")
+    # Held back until the story's step 3, as in Trace: publishing it is what alerts
+    # Sita's followers.
     b.report("org_hospital", sita, "FOUND_SAFE",
              "Sita Tamang, 24, admitted to ward 3 at 07:40. Condition stable.",
-             "2026-08-27T07:40:00+05:45", value="Ward 3, stable", where="hospital")
-    b.report("org_ngo", sita, "FOUND_SAFE",
-             "According to Central Hospital, Sita Tamang was admitted to ward 3 and is "
-             "stable.", "2026-08-27T08:30:00+05:45")
+             "2026-08-27T07:40:00+05:45", value="Ward 3, stable", where="hospital",
+             prepared=True)
+    # A volunteer group passing on the police report (step 4 traces it): a relay, which is
+    # never independent confirmation. Loaded from the start, so a recorded check of it can
+    # be restored on every reset.
+    b.report("org_ngo", sita, "MISSING",
+             "According to District Police, Sita Tamang, 24, is missing near the Old Bridge.",
+             "2026-08-26T22:30:00+05:45")
 
     bikash = b.person("bikash", "Bikash Shrestha", 31)
     b.report("org_police", bikash, "MISSING",
@@ -355,6 +365,7 @@ def build(seed: int = SEED) -> dict[str, object]:
         ],
         "people.json": b.people,
         "reports.json": b.reports,
+        "prepared.json": b.prepared,
         # Recorded real runs, restored as REPLAYED on reset. Filled only from real runs.
         "runs.json": [],
     }
