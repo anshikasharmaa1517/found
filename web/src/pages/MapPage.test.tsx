@@ -112,6 +112,37 @@ describe("map page", () => {
     ]);
   });
 
+  it("lists the busiest places and shows one place's counts", async () => {
+    const quiet: MapPlace = {
+      ...BRIDGE,
+      location_id: "loc_school",
+      name: "Hill School",
+      reports: 1,
+      by_status: { MISSING: 0, FOUND_SAFE: 1, NEEDS_REVIEW: 0, OTHER: 0 },
+    };
+    const { api } = routedApi({ [PATH]: () => body({ places: [quiet, BRIDGE] }), [CLIMATE]: climate() });
+    renderMap(api);
+    const group = await screen.findByRole("group", { name: "Busiest places" });
+    const chips = within(group).getAllByRole("button");
+    expect(chips.map((c) => c.textContent)).toEqual([
+      "Old Bridge · 41 reports",
+      "Hill School · 1 report",
+    ]);
+    expect(screen.getByText("Choose a place to see what was reported there.")).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(chips[0]!);
+    expect(chips[0]).toHaveAttribute("aria-pressed", "true");
+    const panel = screen.getByRole("region", { name: "Reports at Old Bridge" });
+    expect(panel).toHaveTextContent(
+      "41 reports · 12 missing · 20 found safe · 3 need review · 6 other",
+    );
+    expect(panel).toHaveTextContent(/not people, and not where anyone is now/);
+
+    await user.click(chips[0]!);
+    expect(screen.queryByRole("region", { name: "Reports at Old Bridge" })).toBeNull();
+  });
+
   it("draws the map only when a basemap is configured", async () => {
     const { api } = routedApi({ [PATH]: () => body(), [CLIMATE]: climate() });
     const view = renderMap(api);

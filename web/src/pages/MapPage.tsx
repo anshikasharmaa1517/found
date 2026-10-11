@@ -9,7 +9,13 @@ import {
   type ClimateType,
 } from "../api/climate";
 import { useApi } from "../api/context";
-import { BUCKET_LABELS, BUCKETS, getIncidentMap, type IncidentMap } from "../api/map";
+import {
+  BUCKET_LABELS,
+  BUCKETS,
+  getIncidentMap,
+  type IncidentMap,
+  type MapPlace,
+} from "../api/map";
 import { ErrorNotice } from "../components/ErrorNotice";
 import { MapLegend } from "../components/MapLegend";
 import { PageHeader, SkeletonRows } from "../components/ui";
@@ -56,6 +62,73 @@ function PlacesTable({ data }: { data: IncidentMap }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+const BUSIEST_MAX = 20;
+
+/** One color per place, most urgent first; the counts beside it say the rest. */
+function placeTone(place: MapPlace): string {
+  if (place.by_status.MISSING > 0) return "bad";
+  if (place.by_status.NEEDS_REVIEW > 0) return "warn";
+  if (place.by_status.FOUND_SAFE > 0) return "ok";
+  return "";
+}
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+/** The busiest places as chips; choosing one shows its counts. */
+function BusiestPlaces({ data }: { data: IncidentMap }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const places = [...data.places].sort(
+    (a, b) => b.reports - a.reports || a.name.localeCompare(b.name),
+  );
+  if (places.length === 0) return null;
+  const chosen = places.find((p) => p.location_id === selected);
+  return (
+    <section className="busiest" aria-labelledby="busiest-title">
+      <h2 id="busiest-title">Busiest places</h2>
+      <div className="chip-row" role="group" aria-label="Busiest places">
+        {places.slice(0, BUSIEST_MAX).map((place) => {
+          const on = place.location_id === selected;
+          return (
+            <button
+              key={place.location_id}
+              type="button"
+              className={on ? "place-chip active" : "place-chip"}
+              aria-pressed={on}
+              onClick={() => setSelected(on ? null : place.location_id)}
+            >
+              <span className={`dot ${placeTone(place)}`} aria-hidden="true" />
+              {place.name} · {plural(place.reports, "report")}
+            </button>
+          );
+        })}
+      </div>
+      {places.length > BUSIEST_MAX && (
+        <p className="meta">
+          Showing the {BUSIEST_MAX} busiest places. The table below lists every place.
+        </p>
+      )}
+      {chosen ? (
+        <section className="place-panel" aria-label={`Reports at ${chosen.name}`}>
+          <h3>{chosen.name}</h3>
+          <p>
+            {plural(chosen.reports, "report")} · {chosen.by_status.MISSING} missing ·{" "}
+            {chosen.by_status.FOUND_SAFE} found safe · {chosen.by_status.NEEDS_REVIEW} need
+            review · {chosen.by_status.OTHER} other
+          </p>
+          <p className="meta">
+            These count reports as their sources made them, not people, and not where anyone is
+            now.
+          </p>
+        </section>
+      ) : (
+        <p className="meta">Choose a place to see what was reported there.</p>
+      )}
+    </section>
   );
 }
 
@@ -183,6 +256,7 @@ export function MapPage({ mapStyleUrl }: { mapStyleUrl?: string }) {
           ) : (
             <p className="hint">The basemap is not set up here, so places are listed below.</p>
           )}
+          <BusiestPlaces data={state.data} />
           <PlacesTable data={state.data} />
           <h2>Roads, shelters and hazards</h2>
           {climate.status === "loading" && <p className="muted">Loading conditions</p>}

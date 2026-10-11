@@ -7,6 +7,7 @@ import { listReviewQueue } from "../api/review";
 import { useUser } from "../auth/context";
 import { hasRole } from "../auth/user";
 import { ErrorNotice } from "../components/ErrorNotice";
+import { AlertIcon, CheckIcon, PeopleIcon, PersonSearchIcon } from "../components/icons";
 import { PersonPreview } from "../components/PersonPreview";
 import { PersonStatusDot } from "../components/PersonStatusDot";
 import { Empty, PageHeader, SkeletonRows } from "../components/ui";
@@ -20,7 +21,25 @@ function wideScreen(): boolean {
   return typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1024px)").matches;
 }
 
-function PersonRows({
+const TONE: Record<string, string> = { MISSING: "bad", FOUND_SAFE: "ok", INJURED: "warn" };
+
+function statusTone(person: PersonRow): string {
+  const status = person.status;
+  if (!status || status.withheld) return "";
+  return TONE[status.claim_type ?? ""] ?? "";
+}
+
+/** "Maya Rawat" -> "MR"; a dot or a single name still gives something to show. */
+function nameInitials(name: string): string {
+  const parts = name.replace(/\./g, " ").split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0]!.charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1]!.charAt(0) : "";
+  return (first + last).toUpperCase();
+}
+
+/** One card per person: a status stripe, initials, age, report count and cited status. */
+function PersonCards({
   people,
   selected,
   onSelect,
@@ -36,26 +55,45 @@ function PersonRows({
   }
   return (
     <>
-      {people.map((person) => (
-        <tr key={person.id} className={person.id === selected ? "selected" : undefined}>
-          <th scope="row">
-            <Link
-              to={`/people/${encodeURIComponent(person.id)}`}
-              onClick={(e) => open(e, person.id)}
-              aria-current={person.id === selected ? "true" : undefined}
-            >
-              {person.name}
-            </Link>
-            <span className="cell-sub">
-              {person.age === null ? <span className="muted">Not reported</span> : `Age ${person.age}`}
+      {people.map((person) => {
+        const tone = statusTone(person);
+        const reports = person.status?.report_count;
+        return (
+          <li
+            key={person.id}
+            className={`person-card ${tone}${person.id === selected ? " selected" : ""}`}
+          >
+            <span className={`person-initials ${tone}`} aria-hidden="true">
+              {nameInitials(person.name)}
             </span>
-          </th>
-          <td>
-            <PersonStatusDot status={person.status} />
-          </td>
-          <td className="num">{person.status?.report_count ?? ""}</td>
-        </tr>
-      ))}
+            <span className="person-main">
+              {/* The link covers the whole card; its name stays the person's name. */}
+              <Link
+                className="card-link"
+                to={`/people/${encodeURIComponent(person.id)}`}
+                onClick={(e) => open(e, person.id)}
+                aria-current={person.id === selected ? "true" : undefined}
+              >
+                {person.name}
+              </Link>
+              <span className="meta">
+                {person.age === null ? <span className="muted">Not reported</span> : `Age ${person.age}`}
+                {reports !== undefined && (
+                  <span className="meta-sep">
+                    {reports} {reports === 1 ? "report" : "reports"}
+                  </span>
+                )}
+              </span>
+            </span>
+            <span className="person-status">
+              <PersonStatusDot status={person.status} />
+              {person.status && person.status.conflicts > 0 && !person.status.withheld && (
+                <span className="meta warn-text">Reports differ</span>
+              )}
+            </span>
+          </li>
+        );
+      })}
     </>
   );
 }
@@ -68,17 +106,32 @@ function Stats({ incidentId }: { incidentId: string }) {
   if (stats.status !== "ready") return null;
   const s = stats.data;
   const cards = [
-    { value: s.by_status.MISSING ?? 0, label: "Latest report: missing", note: "by reported time" },
-    { value: s.disagree, label: "Sources disagree", note: "all reports kept" },
-    { value: s.matches_open, label: "Possible matches to review", note: "a person decides" },
-    { value: s.matches_decided, label: "Matches decided", note: "by a reviewer" },
+    {
+      value: s.by_status.MISSING ?? 0,
+      label: "Latest report: missing",
+      note: "by reported time",
+      tone: "bad",
+      icon: <PeopleIcon />,
+    },
+    { value: s.disagree, label: "Sources disagree", note: "all reports kept", tone: "warn", icon: <AlertIcon /> },
+    {
+      value: s.matches_open,
+      label: "Possible matches to review",
+      note: "a person decides",
+      tone: "accent",
+      icon: <PersonSearchIcon />,
+    },
+    { value: s.matches_decided, label: "Matches decided", note: "by a reviewer", tone: "ok", icon: <CheckIcon /> },
   ];
   return (
     <dl className="stats" aria-label={`${s.people} people reported`}>
       {cards.map((c, i) =>
         // Families see the counts but not the review queue figures, which are staff work.
         i >= 2 && !hasRole(user, "reviewer", "admin") ? null : (
-          <div key={c.label} className="stat">
+          <div key={c.label} className="stat stat-tile">
+            <span className={`stat-icon ${c.tone}`} aria-hidden="true">
+              {c.icon}
+            </span>
             <dt>{c.label}</dt>
             <dd>
               <span className="stat-value num">{c.value}</span>
@@ -212,27 +265,10 @@ export function PeoplePage() {
         )}
         {first.status === "ready" && first.data.people.length > 0 && (
           <>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Status</th>
-                    <th scope="col" className="num">
-                      Reports
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <PersonRows
-                    people={first.data.people}
-                    selected={selected}
-                    onSelect={setSelected}
-                  />
-                  <PersonRows people={pager.items} selected={selected} onSelect={setSelected} />
-                </tbody>
-              </table>
-            </div>
+            <ul className="person-cards" aria-label="People">
+              <PersonCards people={first.data.people} selected={selected} onSelect={setSelected} />
+              <PersonCards people={pager.items} selected={selected} onSelect={setSelected} />
+            </ul>
             <div className="table-foot">
               <span>
                 Showing {first.data.people.length + pager.items.length}

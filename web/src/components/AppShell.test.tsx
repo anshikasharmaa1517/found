@@ -267,8 +267,8 @@ describe("app shell", () => {
     expect(screen.getByRole("contentinfo")).toHaveTextContent(/confirm with the source/);
 
     await userEvent.setup().click(screen.getByRole("link", { name: "People" }));
-    const table = await screen.findByRole("table");
-    expect(within(table).getByRole("link", { name: "Maya R." })).toHaveAttribute(
+    const list = await screen.findByRole("list", { name: "People" });
+    expect(within(list).getByRole("link", { name: "Maya R." })).toHaveAttribute(
       "href",
       "/people/per_2",
     );

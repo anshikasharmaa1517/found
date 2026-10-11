@@ -54,9 +54,9 @@ describe("people page", () => {
     });
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     await userEvent.setup().click(await screen.findByRole("button", { name: "Load more" }));
-    const list = await screen.findByRole("table");
+    const list = await screen.findByRole("list", { name: "People" });
     await within(list).findByRole("link", { name: "Ravi Kumar" });
-    expect(within(list).getAllByRole("row")).toHaveLength(4); // header and three people
+    expect(within(list).getAllByRole("listitem")).toHaveLength(3);
     expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
     expect(calls.at(-1)?.query.cursor).toBe("c2");
   });
@@ -198,9 +198,16 @@ describe("people overview", () => {
     const stats = await screen.findByLabelText("2 people reported");
     expect(within(stats).getByText("Latest report: missing")).toBeInTheDocument();
     expect(within(stats).getByText("Possible matches to review")).toBeInTheDocument();
-    const row = await screen.findByRole("row", { name: /Maya Rawat/ });
-    expect(within(row).getByText("Reported found safe")).toBeInTheDocument();
-    expect(within(row).getByText("3")).toBeInTheDocument();
+    const list = await screen.findByRole("list", { name: "People" });
+    const card = within(list).getByRole("link", { name: "Maya Rawat" }).closest("li")!;
+    expect(within(card).getByText("Reported found safe")).toBeInTheDocument();
+    expect(within(card).getByText("3 reports")).toBeInTheDocument();
+    expect(within(card).getByText("MR")).toBeInTheDocument();
+    expect(card).toHaveClass("ok");
+    expect(within(card).getByText("Reports differ")).toBeInTheDocument();
+    const ravi = within(list).getByRole("link", { name: "Ravi Kumar" }).closest("li")!;
+    expect(within(ravi).queryByText("Reports differ")).toBeNull();
+    expect(within(ravi).getByText("RK")).toBeInTheDocument();
     const matches = (await screen.findByRole("heading", { name: "Could these be the same person?" })).closest(
       "section",
     )!;
@@ -216,8 +223,8 @@ describe("people overview", () => {
     const { api } = overviewRoutes();
     renderApp(signedIn(), "/incidents/inc_1/people", api);
     expect(await screen.findByText("Pick someone to see what is known")).toBeInTheDocument();
-    const table = await screen.findByRole("table");
-    await userEvent.setup().click(within(table).getByRole("link", { name: "Maya Rawat" }));
+    const list = await screen.findByRole("list", { name: "People" });
+    await userEvent.setup().click(within(list).getByRole("link", { name: "Maya Rawat" }));
     const preview = (await screen.findByRole("heading", { name: "Maya Rawat", level: 2 })).closest(
       "section",
     )!;
@@ -235,8 +242,8 @@ describe("people overview", () => {
     wide(false);
     const { api } = overviewRoutes();
     renderApp(signedIn(), "/incidents/inc_1/people", api);
-    const table = await screen.findByRole("table");
-    await userEvent.setup().click(within(table).getByRole("link", { name: "Maya Rawat" }));
+    const list = await screen.findByRole("list", { name: "People" });
+    await userEvent.setup().click(within(list).getByRole("link", { name: "Maya Rawat" }));
     expect(await screen.findByRole("heading", { name: "Maya Rawat", level: 1 })).toBeInTheDocument();
   });
 });
