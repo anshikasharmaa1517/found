@@ -1,6 +1,6 @@
 # Found
 
-Sourced disaster reports with a provenance agent, built entirely on AWS.
+Sourced disaster reports with a provenance agent.
 
 During a flood or landslide, reports about missing people, damaged roads and open
 shelters arrive from police stations, hospitals, NGOs and volunteers at once, often
